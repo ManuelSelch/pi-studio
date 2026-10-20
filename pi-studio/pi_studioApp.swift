@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct pi_studioApp: App {
+    @State private var demoSession = DemoSessionModel()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(demoSession)
         }
     }
 }

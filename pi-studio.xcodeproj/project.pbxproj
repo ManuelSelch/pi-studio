@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A00000000000000000000001 /* PiSDK in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* PiSDK */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		972B0B463087E5CF0068614C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A00000000000000000000001 /* PiSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = "pi-studio";
 			packageProductDependencies = (
+				A00000000000000000000003 /* PiSDK */,
 			);
 			productName = "pi-studio";
 			productReference = 972B0B383087E5CD0068614C /* pi-studio.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 972B0B2F3087E5CD0068614C;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A00000000000000000000002 /* XCLocalSwiftPackageReference "../../../../../.pi/agent/git/pi-chat/packages/pi-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 972B0B393087E5CD0068614C /* Products */;
 			projectDirPath = "";
@@ -578,6 +587,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A00000000000000000000002 /* XCLocalSwiftPackageReference "../../../../../.pi/agent/git/pi-chat/packages/pi-sdk" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../../../../.pi/agent/git/pi-chat/packages/pi-sdk";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A00000000000000000000003 /* PiSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A00000000000000000000002 /* XCLocalSwiftPackageReference "../../../../../.pi/agent/git/pi-chat/packages/pi-sdk" */;
+			productName = PiSDK;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 972B0B303087E5CD0068614C /* Project object */;
 }
