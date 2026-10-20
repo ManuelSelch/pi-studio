@@ -1,12 +1,13 @@
-# Pi Studio Minimal MVP — Requirements
+# Pi Studio MVP and Endpoint Settings — Requirements
 
 ## Goal
-Prove that a native SwiftUI application can use PiSDK to connect to Pi Server, create one isolated session, exchange streaming text messages, stop a response and disconnect cleanly. This is the first small SDK-backed vertical slice toward a native desktop replacement for Pi Chat, not a full chat application or a claim of complete Swift SDK support.
+Prove that a native SwiftUI application can use PiSDK to connect to Pi Server, create one isolated session, exchange streaming text messages, stop a response and disconnect cleanly. This is the first small SDK-backed vertical slice toward a native desktop replacement for Pi Chat, not a full chat application or a claim of complete Swift SDK support. The next small vertical slice adds Flux-backed endpoint settings with mockable local persistence.
 
 ## Scope
 ### In Scope
 - One native SwiftUI window with connection status, Connect/Disconnect, a plain-text transcript, a message field, Send, Stop and a visible error area.
-- A fixed development endpoint and a dedicated server-side demo working directory, supplied through development configuration rather than a settings UI.
+- A configurable Pi Server WebSocket endpoint, initially defaulting to the development endpoint; the dedicated server-side demo working directory remains development-configured.
+- One shared native settings feature for macOS and iOS: draft editing, explicit Save, validation, local persistence and connection integration.
 - One dedicated session per successful explicit connection, created only after v2 initialization and controller admission succeed.
 - The minimal reusable Swift SDK implementation required for this flow, developed in the existing Pi SDK package rather than inside the app.
 - Deterministic SDK/app tests and a controlled real-Pi smoke test.
@@ -15,7 +16,7 @@ Prove that a native SwiftUI application can use PiSDK to connect to Pi Server, c
 
 ### Out of Scope
 - Replacing Pi Chat in full, a complete mobile agent-steering product, distribution or App Store submission.
-- Session browsing, opening saved history, multiple sessions/windows, project navigation and persistent app state.
+- Session browsing, opening saved history, multiple sessions/windows, project navigation and persistent app state beyond the saved server endpoint.
 - Markdown, attachments, tool-detail rendering, thinking display and optional extension UI.
 - Structured question interaction, model/provider selection, steering and queued messages.
 - Automatic reconnect, recovery across launches, remote devices, proxy setup, authentication and OAuth.
@@ -42,11 +43,22 @@ Prove that a native SwiftUI application can use PiSDK to connect to Pi Server, c
 - R18. The existing app target must build natively for both macOS and iOS; do not use Catalyst or remove iOS coverage. Platform shells own windows and lifecycle. macOS deactivation must not disconnect a session; iOS backgrounding still disposes local networking. Single-controller handoff is accepted.
 - R19. A local PiUI package and pinned Flux dependency must resolve from a fresh worktree. Configure approved package, native unit/UI and Release-build pipeline suites. Automated tests use stubs or isolated fixtures, never the live backend or real model credentials.
 
+- R20. Provide a discoverable Settings entry from the session screen on both platforms. Opening settings shows the saved endpoint, or the development default on first use. Edit a draft; only explicit Save changes the saved value. Cancel/dismiss discards unsaved edits. Show validation and save feedback without starting a connection.
+- R21. Accept an absolute URL with a `ws` or `wss` scheme and a nonempty host. Trim surrounding whitespace; preserve explicit port/path/query. Reject empty or malformed URLs, unsupported schemes, embedded credentials and fragments. Show an inline validation error without saving. Do not silently append `/ws` or test reachability. Endpoint configuration does not add remote authentication support or broaden transport-security exceptions.
+- R22. SettingsFeature owns draft, saved value, validation and save status through Flux state/actions/reducer. A small effect/controller layer invokes persistence and dispatches results, without a second observable settings model. SettingsContainer bridges store/dependencies and presentation; components import SwiftUI only and accept plain values/callbacks.
+- R23. Put loading/saving behind a small injectable endpoint-settings service protocol; only its production adapter accesses UserDefaults. Register it in the existing app-owned FactoryKit scope and inject it into the effect owner. Reducers, views and SessionController must not access UserDefaults directly. No Keychain, generic preferences framework or PiSDK changes are needed for this non-secret setting.
+- R24. Persist only validated endpoints. Missing/invalid stored data falls back to `ws://127.0.0.1:8787/ws` without crashing or connecting automatically. On a service-level save error, show the error, retain the draft for retry and leave the effective endpoint unchanged. UserDefaults does not acknowledge durable disk writes; do not claim that guarantee or use `synchronize()`.
+- R25. Proposed policy, pending confirmation: load the effective endpoint at launch and snapshot the latest saved endpoint on each explicit Connect, rather than freezing it when the cached SessionController is created. Save affects the next Connect only; active/in-flight connections keep their snapshot. Save never reconnects, disconnects, takes control or replays work. Keep the server-side working directory unchanged. Show the actual current-connection endpoint, distinguishing a saved next-connection endpoint when different.
+- R26. Cover default/loading, valid save/reload, invalid input, cancel, save failure/retry and dependency isolation with FluxTestStore and effect-owner tests using a mock/in-memory service. Test the production adapter with unique UserDefaults suites cleaned up after each test. Extend semantic integration/UI drivers with `app.settings`; verify changing settings after SessionController resolution, next-connection URL selection, and saving during active/in-flight connections. On macOS and iOS, verify settings editing and persistence across relaunch using isolated defaults and stub connections, never personal defaults or a live backend.
+
 ## Assumptions
 - Confirmed: Pi Studio is native macOS; Pi Pocket is the longer-term iOS controller. The initial SDK proof kept the existing iOS 26.1 target. The shared-package follow-on adds native macOS 26 support without removing iOS.
 - A local v2 Pi Server and a configured text-capable model are available for a controlled smoke test; the MVP does not launch or install the server.
 - A simple native layout is sufficient. Any UI mockup/approval workflow required by the implementation environment occurs before production UI changes, not as extra product scope.
-- Development configuration can supply the endpoint and an isolated working directory. No runtime configuration screen is needed.
+- The original MVP used a development-only endpoint; the settings follow-on supersedes that restriction. The working directory remains development configuration.
+- Proposed: UserDefaults is sufficient for this non-secret setting, persisted per app installation without cross-device sync. The service protocol keeps persistence replaceable and mockable.
+- Proposed: a small native settings sheet/form is sufficient; obtain layout approval before production UI changes. Do not add the deferred Router dependency.
+- Explicit test/development configuration overrides remain deterministic; automated tests never inherit personal saved settings.
 
 ## Implementation Plan
 ### 1. Confirm Target and Development Wiring
@@ -73,5 +85,10 @@ Description: Depends on slice 6. Build the shared session feature in the existin
 ### 8. Reproducible Test Pipeline
 Description: Configure worktree-safe local SDK preparation and pinned Flux resolution, package unit tests, separate native app unit/UI suites and Release builds. Document commands and run suites against injected connections. Keep isolated loopback and real-model acceptance explicit; no automatic suite may take control of a live backend. Real-model acceptance from slice 5 remains outstanding unless separately performed.
 
+### 9. Persisted Endpoint Settings Vertical Slice
+Description: Deliver one end-to-end feature, not separate infrastructure/UI horizontal slices. Build on the existing PiUI/Flux/FactoryKit architecture; slices 1–8 remain historical MVP scope and pending real-model acceptance is not a prerequisite. Confirm open decisions and approve the minimal native form first. Work test-first in small increments through SettingsFeature, the injectable endpoint-settings service and UserDefaults adapter, the effect owner and scoped registrations, SettingsContainer/value-callback components, and the session-screen entry. Update connection wiring so the cached SessionController consumes the latest successfully saved endpoint on the next explicit Connect without affecting active/in-flight connections or the working directory. Completion requires the R20–R26 acceptance cases, isolated relaunch persistence on both platforms, and existing PiUI, native unit/UI and Release-build suites passing. Document the default and next-connection policy. Do not add extra settings, router integration, automatic reconnect or live-model tests.
+
 ## Open Questions
-None.
+1. Should endpoint persistence use UserDefaults, scoped to each app installation, as proposed?
+2. Should saved endpoint changes apply only to the next explicit Connect, leaving active and in-flight connections untouched, as proposed?
+3. Is a small native settings sheet/form opened from the session screen acceptable on both macOS and iOS?
