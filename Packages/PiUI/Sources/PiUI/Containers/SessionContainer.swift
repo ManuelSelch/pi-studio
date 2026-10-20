@@ -8,6 +8,11 @@ public struct SessionContainer: View {
     private let title: String
     @ObservedObject private var store: FluxStore<SessionFeature>
 
+    public init(dependencies: SessionDependencies, title: String = "Pi Studio") {
+        self.init(controller: dependencies.sessionController(), title: title)
+    }
+
+    /// Explicit injection remains useful for focused previews and controller tests.
     public init(controller: SessionController, title: String = "Pi Studio") {
         self.controller = controller; self.title = title
         _store = ObservedObject(wrappedValue: controller.store)

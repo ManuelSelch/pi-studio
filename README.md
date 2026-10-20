@@ -13,7 +13,14 @@ The approved layout is preserved in [mockups/session](mockups/session/DESIGN.md)
 
 - [PiUI](Packages/PiUI/Package.swift) is a local Swift package shared by both
   platforms. It depends on PiSDK and [Flux](https://github.com/ManuelSelch/Flux),
-  pinned to `00c8b43799d5acbca04127833daf28f1df2ce477` (including FluxTestStore).
+  pinned to `00c8b43799d5acbca04127833daf28f1df2ce477` (including FluxTestStore),
+  and [FactoryKit](https://github.com/hmlongco/Factory) pinned to **2.5.3**.
+- [SessionDependencies](Packages/PiUI/Sources/PiUI/SessionDependencies.swift) is
+  an app-owned FactoryKit container, not a global singleton. It registers session
+  configuration, the SDK connection builder and one cached main-actor controller.
+  The shell and session container resolve the same controller; previews/tests use
+  separate scopes. Install overrides before resolving the controller. Native UI
+  tests register their debug connection through the same dependency graph.
 - [SessionFeature](Packages/PiUI/Sources/PiUI/SessionFeature.swift) holds app-owned
   interaction state and typed reducer actions. FluxStore is the sole observable
   source of that state; drafts and action/error flags are not a second model.
@@ -23,7 +30,11 @@ The approved layout is preserved in [mockups/session](mockups/session/DESIGN.md)
   uncancellable Flux middleware tasks. Generation tokens reject obsolete results.
 - [Containers](Packages/PiUI/Sources/PiUI/Containers) bridge Flux, injected
   dependencies and callbacks to presentation. Future navigation/router wiring
-  belongs here or in the host shell; this single-screen slice needs no router.
+  belongs here or in the host shell. The selected routing library is
+  [Router](https://github.com/ManuelSelch/Router), but integration is deferred by
+  agreement: version 1.0.10 unconditionally depends on UIKit-only SwiftEntryKit
+  and UIHostingController and cannot build natively for macOS. No substitute
+  router or additional screens are introduced.
 - [Components](Packages/PiUI/Sources/PiUI/Components) import SwiftUI only and take
   plain display values and callbacks. They do not read stores, resolve services,
   use SDK models or perform network work. Local focus/alert state is UI-only.
@@ -41,7 +52,7 @@ The approved layout is preserved in [mockups/session](mockups/session/DESIGN.md)
   this extraction was verified against pi-chat `b6fcc8865c25454315858be96ca2c76092395537`.
 - Run `bash scripts/prepare.sh` **before opening Xcode in a fresh checkout or
   worktree**. It creates ignored `.dependencies/pi-sdk` wiring and resolves the
-  pinned Flux dependency. Set `PI_SDK_PATH` to use a different SDK checkout.
+  pinned Flux and FactoryKit dependencies. Set `PI_SDK_PATH` to use a different SDK checkout.
   The SDK is local and is not fetched or updated automatically; no packages are
   published. Keep both Package.resolved files checked in.
 
@@ -117,7 +128,8 @@ macOS uses ad-hoc local signing (no Apple account) so UI-test runners can launch
 iOS Simulator builds disable signing. Functional iOS UI tests explicitly select
 portrait rather than inheriting rotation from launch-appearance tests.
 
-- PiUI: **12 named tests** (one with two cases), including FluxTestStore reducer
+- PiUI: **14 named tests** (one with two cases), including dependency scope
+  identity/isolation, configuration/connection overrides, FluxTestStore reducer
   transitions, draft admission/retention, duplicate guards, stale callbacks,
   setup/pending-send disconnect, connection errors and deallocation disposal.
 - The same **nine controller tests** also compile/run inside the iOS and macOS
@@ -126,7 +138,9 @@ portrait rather than inheriting rotation from launch-appearance tests.
   active disconnect, rejected send, unknown outcome), plus launch/appearance
   screenshot tests. Debug-only injected connections are never selected by normal
   app launches; tests use public SDK projections, not a second wire protocol.
-- Debug/unit/UI and Release builds pass on both platforms.
+- Debug/unit/UI and Release builds pass on both platforms with FactoryKit.
+  One macOS active-disconnect UI run failed after an automation interruption;
+  the full macOS UI suite passed on rerun without code changes.
 
 ### Explicit isolated transport acceptance
 

@@ -12,6 +12,7 @@
 		B00000000000000000000004 /* PiUI in Test Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000003 /* PiUI */; };
 		B00000000000000000000005 /* SessionControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000006 /* SessionControllerTests.swift */; };
 		B00000000000000000000007 /* PiSDK in Test Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* PiSDK */; };
+		C00000000000000000000001 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000003 /* FactoryKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +63,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000000000000000000001 /* PiUI in Frameworks */,
+				C00000000000000000000001 /* FactoryKit in Frameworks */,
 				A00000000000000000000001 /* PiSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -128,6 +130,7 @@
 			packageProductDependencies = (
 				B00000000000000000000003 /* PiUI */,
 				A00000000000000000000003 /* PiSDK */,
+				C00000000000000000000003 /* FactoryKit */,
 			);
 			productName = "pi-studio";
 			productReference = 972B0B383087E5CD0068614C /* pi-studio.app */;
@@ -214,6 +217,7 @@
 			mainGroup = 972B0B2F3087E5CD0068614C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				C00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */,
 				B00000000000000000000002 /* XCLocalSwiftPackageReference "Packages/PiUI" */,
 				A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk" */,
 			);
@@ -628,7 +632,20 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		C00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/hmlongco/Factory.git";
+			requirement = { kind = exactVersion; version = 2.5.3; };
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		C00000000000000000000003 /* FactoryKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */;
+			productName = FactoryKit;
+		};
 		A00000000000000000000003 /* PiSDK */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk" */;

@@ -1,6 +1,15 @@
 {
-  "originHash" : "50d8a3b1f7a59d94199c3eba7afb00bc376dd2cc8d7f31e965edfd423b6c4b5a",
+  "originHash" : "5116beef18f564ccc26ed14c02a88e8cbd767aa4b5a004d39abcb3b69cd83685",
   "pins" : [
+    {
+      "identity" : "factory",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hmlongco/Factory.git",
+      "state" : {
+        "revision" : "ccc898f21992ebc130bc04cc197460a5ae230bcf",
+        "version" : "2.5.3"
+      }
+    },
     {
       "identity" : "flux",
       "kind" : "remoteSourceControl",
