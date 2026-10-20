@@ -12,9 +12,9 @@ The approved layout is preserved in [mockups/session](mockups/session/DESIGN.md)
 ## App icons
 
 Both platforms use Pi Chat's black π on white (`public/apple-touch-icon.png`
-in the Pi Chat repository). iOS uses the original opaque 1024px artwork and lets
-the system apply its icon mask. macOS uses a rounded 824px tile inset by 100px
-on a transparent 1024px canvas, rendered at every required 1x/2x size.
+in the Pi Chat repository). Both platforms use opaque, full-bleed artwork without
+pre-rounded corners or transparent padding. iOS uses the original 1024px image;
+macOS uses copies resized to every required 1x/2x size.
 Assets live in `pi-studio/Assets.xcassets/AppIcon.appiconset`.
 Validate the icon slots, PNG sizes and opaque iOS format with
 `python3 scripts/test-app-icons.py`.
