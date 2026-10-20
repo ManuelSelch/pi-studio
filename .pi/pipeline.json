@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "suites": {
+    "piui": {
+      "command": [
+        "bash",
+        "scripts/test-package.sh"
+      ],
+      "cwd": ".",
+      "timeoutSeconds": 180,
+      "staleAfterMinutes": 30,
+      "auto": "after-agent"
+    },
+    "ios-unit": {
+      "command": [
+        "bash",
+        "scripts/test-app.sh",
+        "ios",
+        "unit"
+      ],
+      "cwd": ".",
+      "timeoutSeconds": 300,
+      "staleAfterMinutes": 30,
+      "auto": "manual"
+    },
+    "ios-ui": {
+      "command": [
+        "bash",
+        "scripts/test-app.sh",
+        "ios",
+        "ui"
+      ],
+      "cwd": ".",
+      "timeoutSeconds": 600,
+      "staleAfterMinutes": 30,
+      "auto": "manual"
+    },
+    "macos-unit": {
+      "command": [
+        "bash",
+        "scripts/test-app.sh",
+        "macos",
+        "unit"
+      ],
+      "cwd": ".",
+      "timeoutSeconds": 300,
+      "staleAfterMinutes": 30,
+      "auto": "manual"
+    },
+    "macos-ui": {
+      "command": [
+        "bash",
+        "scripts/test-app.sh",
+        "macos",
+        "ui"
+      ],
+      "cwd": ".",
+      "timeoutSeconds": 600,
+      "staleAfterMinutes": 30,
+      "auto": "manual"
+    },
+    "ios-release": {
+      "command": [
+        "bash",
+        "scripts/test-app.sh",
+        "ios",
+        "release"
+      ],
+      "cwd": ".",
+      "timeoutSeconds": 300,
+      "staleAfterMinutes": 30,
+      "auto": "manual"
+    },
+    "macos-release": {
+      "command": [
+        "bash",
+        "scripts/test-app.sh",
+        "macos",
+        "release"
+      ],
+      "cwd": ".",
+      "timeoutSeconds": 300,
+      "staleAfterMinutes": 30,
+      "auto": "manual"
+    }
+  },
+  "prepare": {
+    "command": [
+      "bash",
+      "scripts/prepare.sh"
+    ],
+    "cwd": ".",
+    "timeoutSeconds": 180
+  }
+}

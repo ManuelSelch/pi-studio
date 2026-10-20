@@ -2,7 +2,7 @@
 # Owns only an ephemeral fake-runtime Pi Server; never uses the live backend.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-server_repo="${PI_CHAT_CHECKOUT:-../../../../../.pi/agent/git/pi-chat}"
+server_repo="${PI_CHAT_CHECKOUT:-${HOME}/.pi/agent/git/pi-chat}"
 directory=$(mktemp -d -t pi-studio-simulator)
 pid=""
 cleanup() {
@@ -40,9 +40,7 @@ for _ in $(seq 1 100); do
 done
 [[ -f "$directory/endpoint" ]] || { echo "Fixture startup timed out" >&2; exit 1; }
 endpoint=$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).read_text())' "$directory/endpoint")
-echo "Testing iOS URLSession transport against isolated $endpoint"
+echo "Testing native PiUI/Flux with URLSession against isolated $endpoint"
 TEST_RUNNER_PI_STUDIO_TEST_ENDPOINT="$endpoint" \
 TEST_RUNNER_PI_STUDIO_TEST_PROJECT="$directory" \
-xcodebuild -project pi-studio.xcodeproj -scheme pi-studio \
-  -destination "${PI_STUDIO_TEST_DESTINATION:-platform=iOS Simulator,name=iPhone 17}" \
-  -parallel-testing-enabled NO -only-testing:pi-studioTests test CODE_SIGNING_ALLOWED=NO
+bash scripts/test-app.sh "${1:-ios}" unit
