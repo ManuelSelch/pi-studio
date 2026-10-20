@@ -10,10 +10,11 @@ Prove that a native SwiftUI application can use PiSDK to connect to Pi Server, c
 - One dedicated session per successful explicit connection, created only after v2 initialization and controller admission succeed.
 - The minimal reusable Swift SDK implementation required for this flow, developed in the existing Pi SDK package rather than inside the app.
 - Deterministic SDK/app tests and a controlled real-Pi smoke test.
-- Provisional macOS-first delivery, subject to the platform question below.
+- Native macOS Pi Studio and the existing iOS app (future Pi Pocket), sharing a local PiUI Swift package.
+- Flux state management, container/component separation, and reproducible local test pipeline suites.
 
 ### Out of Scope
-- Replacing Pi Chat in full, a separate mobile controller, distribution or App Store submission.
+- Replacing Pi Chat in full, a complete mobile agent-steering product, distribution or App Store submission.
 - Session browsing, opening saved history, multiple sessions/windows, project navigation and persistent app state.
 - Markdown, attachments, tool-detail rendering, thinking display and optional extension UI.
 - Structured question interaction, model/provider selection, steering and queued messages.
@@ -36,9 +37,13 @@ Prove that a native SwiftUI application can use PiSDK to connect to Pi Server, c
 - R13. Link the SDK as an explicit local SwiftPM dependency during development and document its checkout location and required revision. SDK changes belong in the SDK workspace, starting from the current main containing slices 1–6, not the older backend cutover checkout. No publication or repository split is necessary for this MVP.
 - R14. Before implementation, record the installed stable Xcode/Swift versions and chosen deployment target, reconciling them with the parent SDK plan's stable-toolchain policy. Verify the reusable package with SwiftPM and the app on the agreed native target. Do not silently convert or remove the existing iOS targets.
 - R15. Acceptance: connect to a controlled local Pi Server; send “Say hello”; observe incremental text and normal completion; send a second prompt; stop the active response; observe settled state with partial text retained; disconnect without hangs. Also verify unreachable server, rejected initialization/controller access, rejected send and disconnect during a pending request. Record what was tested and which SDK operations remain unsupported.
+- R16. PiUI owns shared app state through Flux features/reducers, never a second wire protocol. SDK lifecycle effects feed typed actions into the store. PiSDK stays independent of Flux and SwiftUI.
+- R17. Containers bridge Flux, app dependencies and navigation to presentation. UI components accept values and callbacks only; they must not import Flux, resolve dependencies or perform SDK operations. Preserve the approved single-screen layout; no router is necessary yet.
+- R18. The existing app target must build natively for both macOS and iOS; do not use Catalyst or remove iOS coverage. Platform shells own windows and lifecycle. macOS deactivation must not disconnect a session; iOS backgrounding still disposes local networking. Single-controller handoff is accepted.
+- R19. A local PiUI package and pinned Flux dependency must resolve from a fresh worktree. Configure approved package, native unit/UI and Release-build pipeline suites. Automated tests use stubs or isolated fixtures, never the live backend or real model credentials.
 
 ## Assumptions
-- Pi Studio is the desktop app described in the conversation, so macOS is the proposed first target. The supplied Xcode project currently targets iPhone/iPad only (iOS deployment target 26.1); this discrepancy needs confirmation before target changes.
+- Confirmed: Pi Studio is native macOS; Pi Pocket is the longer-term iOS controller. The initial SDK proof kept the existing iOS 26.1 target. The shared-package follow-on adds native macOS 26 support without removing iOS.
 - A local v2 Pi Server and a configured text-capable model are available for a controlled smoke test; the MVP does not launch or install the server.
 - A simple native layout is sufficient. Any UI mockup/approval workflow required by the implementation environment occurs before production UI changes, not as extra product scope.
 - Development configuration can supply the endpoint and an isolated working directory. No runtime configuration screen is needed.
@@ -59,5 +64,14 @@ Description: Depends on slice 3. Implement the single-window native screen using
 ### 5. Real-Pi Acceptance and Handover
 Description: Depends on slice 4. Run the acceptance flow against a temporary local server and isolated demo directory, then verify failure paths and repeated connect/disconnect teardown. Explicitly close smoke-test runtimes and stop test-owned server processes. Run SDK tests, app unit/UI tests and the agreed native build. Record reproducible launch instructions, package revision, retained-runtime cleanup, supported operations and deferred dialog/reconnect limitations. Do not mark the full production Swift SDK slice complete or publish anything.
 
+### 6. Shared Flux Session Feature
+Description: Extract a local PiUI Swift package, depend on pinned Flux, and move app-owned state into a tested Flux reducer. Keep SDK authority, consent, action guards, draft retention, stale callback handling and disposal behavior unchanged. Provide pure value/callback components with a container that bridges the session store and injected dependencies. Verify reducer transitions using FluxTestStore and lifecycle regressions with injected connections.
+
+### 7. Native macOS Shell
+Description: Depends on slice 6. Build the shared session feature in the existing iOS app and a native macOS application using thin platform shells. Preserve the approved screen without adding navigation or redesigning it. Verify native Debug/unit/UI and Release builds on both platforms; keep iOS background disposal and avoid disconnecting when macOS merely loses focus.
+
+### 8. Reproducible Test Pipeline
+Description: Configure worktree-safe local SDK preparation and pinned Flux resolution, package unit tests, separate native app unit/UI suites and Release builds. Document commands and run suites against injected connections. Keep isolated loopback and real-model acceptance explicit; no automatic suite may take control of a live backend. Real-model acceptance from slice 5 remains outstanding unless separately performed.
+
 ## Open Questions
-1. Should this first Pi Studio MVP target macOS, as its desktop role suggests, or keep the existing iOS Simulator target for the initial SDK proof?
+None.
