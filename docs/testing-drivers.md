@@ -8,6 +8,9 @@ Use Swift **lowerCamelCase**, not C# PascalCase or Given/When/Then.
 - **Scenario → root driver → feature driver → shared context → system under test.**
 - `app.session` owns connection, consent, status, errors and disconnect.
 - `app.chat` owns prompts, drafts, streaming replies, Stop and transcript assertions.
+- `app.settings` owns opening/editing/saving/cancelling endpoint settings. UI tests
+  also assert rendered validation, endpoint values and connection details.
+  `app.relaunch()` reuses the isolated defaults suite to verify persistence.
 - Integration-only `app.server` controls the isolated SDK-facing fixture. It is not
   an application action and is only usable in the default stub-backed mode.
 - Contexts keep controllers, SDK projections, XCTest selectors, native-platform
@@ -70,6 +73,13 @@ Keep integration and UI implementations independent: their boundary, scheduling
 and assertion mechanisms differ. Share vocabulary where behavior matches; do not
 force a generic protocol or expose framework objects just to reuse test code.
 Reducer unit tests intentionally continue to use FluxTestStore directly.
+
+Settings UI scenarios use a unique `PiStudio.UITests.*` UserDefaults suite passed
+through debug-only launch arguments. Initial launch resets only that suite;
+relaunch preserves it, and teardown resets it again. All launches use injected
+connections. Integration scenarios use an in-memory settings service and record
+connection-builder endpoints separately from app assertions. Production adapter
+unit tests own and clean unique `PiStudio.Tests.*` suites.
 Launch/appearance screenshot tests are platform harness checks, not chat workflows.
 
 ## Adding coverage

@@ -7,7 +7,8 @@ still a Simulator/local-server demo, not a remotely deployed phone controller.
 
 One screen shows connection state, explicit Connect/Disconnect, a plain-text
 transcript, message field, Send, Stop and errors. No connection opens on launch.
-The approved layout is preserved in [mockups/session](mockups/session/DESIGN.md).
+The approved layouts are preserved in [mockups/session](mockups/session/DESIGN.md)
+and [mockups/settings](mockups/settings/DESIGN.md).
 
 ## App icons
 
@@ -25,26 +26,26 @@ Validate the icon slots, PNG sizes and opaque iOS format with
   platforms. It depends on PiSDK and [Flux](https://github.com/ManuelSelch/Flux),
   pinned to `00c8b43799d5acbca04127833daf28f1df2ce477` (including FluxTestStore),
   and [FactoryKit](https://github.com/hmlongco/Factory) pinned to **2.5.3**.
-- [SessionDependencies](Packages/PiUI/Sources/PiUI/SessionDependencies.swift) is
+- [SessionDependencies](Packages/PiUI/Sources/PiUI/App/SessionDependencies.swift) is
   an app-owned FactoryKit container, not a global singleton. It registers session
   configuration, the SDK connection builder and one cached main-actor controller.
   The shell and session container resolve the same controller; previews/tests use
   separate scopes. Install overrides before resolving the controller. Native UI
   tests register their debug connection through the same dependency graph.
-- [SessionFeature](Packages/PiUI/Sources/PiUI/SessionFeature.swift) holds app-owned
+- [SessionFeature](Packages/PiUI/Sources/PiUI/App/SessionFeature.swift) holds app-owned
   interaction state and typed reducer actions. FluxStore is the sole observable
   source of that state; drafts and action/error flags are not a second model.
-- [SessionController](Packages/PiUI/Sources/PiUI/SessionController.swift) owns
+- [SessionController](Packages/PiUI/Sources/PiUI/App/SessionController.swift) owns
   awaitable SDK effects, observation tasks and disposal, feeding Flux actions.
   Long-lived SDK observation is explicitly cancelled rather than hidden inside
   uncancellable Flux middleware tasks. Generation tokens reject obsolete results.
-- [Containers](Packages/PiUI/Sources/PiUI/Containers) bridge Flux, injected
+- [Containers](Packages/PiUI/Sources/PiUI/SessionContainer.swift) bridge Flux, injected
   dependencies and callbacks to presentation. Future navigation/router wiring
   belongs here or in the host shell. The selected routing library is
   [Router](https://github.com/ManuelSelch/Router), but integration is deferred by
   agreement: version 1.0.10 unconditionally depends on UIKit-only SwiftEntryKit
   and UIHostingController and cannot build natively for macOS. No substitute
-  router or additional screens are introduced.
+  router is introduced; settings uses native sheet presentation.
 - [Components](Packages/PiUI/Sources/PiUI/Components) import SwiftUI only and take
   plain display values and callbacks. They do not read stores, resolve services,
   use SDK models or perform network work. Local focus/alert state is UI-only.
@@ -66,11 +67,34 @@ Validate the icon slots, PNG sizes and opaque iOS format with
   The SDK is local and is not fetched or updated automatically; no packages are
   published. Keep both Package.resolved files checked in.
 
-[SessionConfiguration](Packages/PiUI/Sources/PiUI/SessionController.swift)
+[SessionConfiguration](Packages/PiUI/Sources/PiUI/App/SessionController.swift)
 defaults to `ws://127.0.0.1:8787/ws` and the dedicated **server-side** directory
 `/tmp/pi-studio-demo`. Create that directory and start the local v2 Pi Server
 before connecting. The app does not start/install the backend or store model
-credentials. Configuration is injected, not a settings screen.
+credentials. The endpoint can be changed from **Settings** in the session header;
+the server-side working directory remains development configuration.
+
+### Endpoint settings
+
+- The native sheet has one endpoint field, inline errors, Cancel and Save, without
+  helper text. Edits are drafts until Save; Cancel or dismissal discards them.
+- Accepts full `ws://` or `wss://` URLs with a host, preserving port/path/query
+  and trimming surrounding whitespace. Credentials, fragments and invalid URLs
+  are rejected. Nothing probes the server or appends a path.
+- Saved endpoints persist per installation in UserDefaults (`pi.serverEndpoint`).
+  Missing/invalid stored values fall back to `ws://127.0.0.1:8787/ws`.
+- Save changes the **next explicit Connect** only. Active/in-flight connections
+  keep their endpoint snapshot and are not disconnected or restarted. The header
+  distinguishes current and next endpoints when they differ.
+- [Settings](Packages/PiUI/Sources/PiUI/Settings) is a vertical Flux feature.
+  SettingsController depends on the small `EndpointSettingsService` protocol;
+  only `UserDefaultsEndpointSettingsService` touches UserDefaults. Tests inject
+  in-memory services or isolated suites, never personal defaults. The existing
+  FactoryKit app scope owns both cached controllers and the service.
+- Explicit configuration overrides still win; the app resolves the endpoint
+  anew on Connect, not just when its cached SessionController is created.
+  UserDefaults provides no durable-write acknowledgement. This adds no remote
+  authentication, automatic reconnect or transport-security exceptions.
 
 Keep the backend loopback-only. Debug builds permit local networking through
 [DebugInfo.plist](Configuration/DebugInfo.plist); Release has no ATS exception.
@@ -138,14 +162,17 @@ macOS uses ad-hoc local signing (no Apple account) so UI-test runners can launch
 iOS Simulator builds disable signing. Functional iOS UI tests explicitly select
 portrait rather than inheriting rotation from launch-appearance tests.
 
-- PiUI: **15 named tests** (one with two cases), including dependency scope
+- PiUI: **26 named tests** (including parameterized URL cases), covering settings
+  reducers, mock-service failure/retry, isolated UserDefaults persistence,
+  next-connection snapshots during setup/streaming, and dependency scope
   identity/isolation, configuration/connection overrides, FluxTestStore reducer
   transitions, draft admission/retention, duplicate guards, stale callbacks,
   setup/pending-send disconnect, connection errors and deallocation disposal.
-- The same **ten controller tests** also compile/run inside the iOS and macOS
-  native unit-test targets; their source is shared, not copied.
-- Both platforms run five functional UI tests (consent, two turns/Stop,
-  active disconnect, rejected send, unknown outcome), plus launch/appearance
+- The settings connection integration scenario and semantic driver also compile
+  into both native unit-test targets; their source is shared, not copied.
+- Both platforms run seven functional UI tests (settings validation/cancel/save/
+  relaunch and next-connection behavior, consent, two turns/Stop, active disconnect,
+  rejected send, unknown outcome), plus launch/appearance
   screenshot tests. Debug-only injected connections are never selected by normal
   app launches; tests use public SDK projections, not a second wire protocol.
 - Debug/unit/UI and Release builds pass on both platforms with FactoryKit.
@@ -155,7 +182,8 @@ portrait rather than inheriting rotation from launch-appearance tests.
 ### Semantic test DSL
 
 Integration and functional UI scenarios use lowerCamelCase feature drivers:
-`app.session.connect()`, `app.chat.sendPrompt(...)` and semantic assertions.
+`app.session.connect()`, `app.chat.sendPrompt(...)`, `app.settings.open()` and
+semantic assertions.
 Drivers hide controllers, SDK projections, selectors and synchronization;
 `app.server` separately controls integration fixtures. Both roots own cleanup.
 

@@ -5,6 +5,7 @@ struct SessionHeader: View {
     let status: String
     let details: String
     let canConnect: Bool
+    let onSettings: @MainActor () -> Void
     let onConnectionTapped: @MainActor () -> Void
 
     var body: some View {
@@ -12,7 +13,8 @@ struct SessionHeader: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(title).font(.largeTitle.bold())
                 Spacer()
-                Text("Demo session").font(.caption).foregroundStyle(.secondary)
+                Button("Settings", action: onSettings)
+                    .buttonStyle(.bordered).accessibilityIdentifier("settingsButton")
             }
             HStack {
                 Text(status).font(.subheadline.weight(.semibold))
@@ -22,6 +24,7 @@ struct SessionHeader: View {
                     .buttonStyle(.bordered).accessibilityIdentifier("connectButton")
             }
             Text(details).font(.caption).foregroundStyle(.secondary)
+                .accessibilityIdentifier("connectionDetails")
         }
         .padding()
     }

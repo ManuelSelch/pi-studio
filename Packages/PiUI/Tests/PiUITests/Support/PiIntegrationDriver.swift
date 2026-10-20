@@ -1,5 +1,6 @@
 import Foundation
 import PiSDK
+import Synchronization
 import PiUI
 import Testing
 
@@ -9,6 +10,7 @@ final class PiIntegrationDriver {
     let session: IntegrationSessionDriver
     let chat: IntegrationChatDriver
     let server: IntegrationServerDriver
+    let settings: IntegrationSettingsDriver
     private let context: IntegrationContext
 
     private init(configuration: SessionConfiguration?) {
@@ -17,6 +19,7 @@ final class PiIntegrationDriver {
         session = IntegrationSessionDriver(context)
         chat = IntegrationChatDriver(context)
         server = IntegrationServerDriver(context)
+        settings = IntegrationSettingsDriver(context)
     }
 
     /// A nil configuration uses an isolated stub; explicit configuration opts into transport.
@@ -34,22 +37,51 @@ final class PiIntegrationDriver {
     }
 }
 
+fileprivate final class EndpointLog: Sendable {
+    let values = Mutex<[String]>([])
+}
+
+@MainActor
+fileprivate final class IntegrationEndpointSettings: EndpointSettingsService {
+    var value: String?
+    func load() -> String? { value }
+    func save(_ endpoint: String) throws { value = endpoint }
+}
+
+@MainActor
+final class IntegrationSettingsDriver {
+    private let context: IntegrationContext
+    fileprivate init(_ context: IntegrationContext) { self.context = context }
+    func open() { context.settings.open() }
+    func enterEndpoint(_ value: String) { context.settings.setDraft(value) }
+    func save() { context.settings.save() }
+    func cancel() { context.settings.cancel() }
+}
+
 @MainActor
 fileprivate final class IntegrationContext {
     var controller: SessionController?
+    let settings: SettingsController
+    let endpoints = EndpointLog()
     let stub: DemoConnectionStub?
     var connecting: Task<Void, Never>?
     var sending: Task<Void, Never>?
     var model: SessionController { controller! }
 
     init(configuration: SessionConfiguration?) {
+        let settings = SettingsController(service: IntegrationEndpointSettings())
+        self.settings = settings
         if let configuration {
             stub = nil
             controller = SessionController(configuration: configuration)
         } else {
             let stub = DemoConnectionStub()
             self.stub = stub
-            controller = SessionController(makeConnection: { _ in stub })
+            let endpoints = endpoints
+            controller = SessionController(endpointProvider: { settings.endpoint }, makeConnection: { endpoint in
+                endpoints.values.withLock { $0.append(endpoint.absoluteString) }
+                return stub
+            })
         }
     }
 
@@ -93,8 +125,9 @@ final class IntegrationSessionDriver {
         let stub = try #require(context.stub, sourceLocation: sourceLocation)
         try #require(context.connecting == nil, sourceLocation: sourceLocation)
         let model = context.model
+        let previous = await stub.count
         context.connecting = Task { await model.connect(takingControl: true) }
-        try await context.wait("connection request", sourceLocation: sourceLocation) { await stub.count > 0 }
+        try await context.wait("connection request", sourceLocation: sourceLocation) { await stub.count > previous }
     }
 
     func connectAgain() async { await context.model.connect(takingControl: true) }
@@ -108,6 +141,10 @@ final class IntegrationSessionDriver {
             let closed = await self.context.stub?.closed == true
             return model == nil && closed
         }
+    }
+
+    func endpointShouldBe(_ endpoint: String, sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.model.state.connectionEndpoint?.absoluteString == endpoint, sourceLocation: sourceLocation)
     }
 
     func shouldBeDisconnected(sourceLocation: SourceLocation = #_sourceLocation) {
@@ -241,6 +278,13 @@ final class IntegrationServerDriver {
         await stub.finishReply()
         try await context.wait("idle projection", sourceLocation: sourceLocation) { self.context.model.state.projection?.status == .idle }
     }
+    func connectionEndpointsShouldBe(_ endpoints: [String], sourceLocation: SourceLocation = #_sourceLocation) async {
+        #expect(context.endpoints.values.withLock { $0 } == endpoints, sourceLocation: sourceLocation)
+    }
+    func projectPathShouldBe(_ path: String, sourceLocation: SourceLocation = #_sourceLocation) async {
+        #expect(await stub.projectPath == path, sourceLocation: sourceLocation)
+    }
+
     func shouldHaveConnectionCount(_ count: Int, sourceLocation: SourceLocation = #_sourceLocation) async {
         #expect(await stub.count == count, sourceLocation: sourceLocation)
     }
@@ -257,13 +301,14 @@ final class IntegrationServerDriver {
 
 fileprivate actor DemoConnectionStub: PiDemoConnection {
     var count = 0
+    var projectPath: String?
     var closed = false
     var wait: CheckedContinuation<DemoSession, Error>?
     var sendWait: CheckedContinuation<Void, Error>?
     var sendCount = 0
     var receivedPrompts: [String] = []
     var current: DemoSessionProjection?
-    let (updates, continuation) = AsyncStream<DemoSessionProjection>.makeStream(bufferingPolicy: .bufferingNewest(1))
+    var (updates, continuation) = AsyncStream<DemoSessionProjection>.makeStream(bufferingPolicy: .bufferingNewest(1))
     func projections() async -> AsyncStream<DemoSessionProjection> { if let current { continuation.yield(current) }; return updates }
     func setProjection(_ value: DemoSessionProjection) { current = value; continuation.yield(value) }
     func send(_ text: String) async throws {
@@ -284,7 +329,12 @@ fileprivate actor DemoConnectionStub: PiDemoConnection {
     }
     func states() async -> AsyncStream<PiConnectionState> { AsyncStream { $0.finish() } }
     func connectDemo(projectPath: String, takingControl: Bool) async throws -> DemoSession {
+        if closed {
+            (updates, continuation) = AsyncStream<DemoSessionProjection>.makeStream(bufferingPolicy: .bufferingNewest(1))
+            closed = false
+        }
         count += 1
+        self.projectPath = projectPath
         guard wait == nil else { throw PiError.rejected(code: "sessionBusy", message: "Connection already pending") }
         return try await withCheckedThrowingContinuation { wait = $0 }
     }

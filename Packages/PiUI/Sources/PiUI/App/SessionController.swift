@@ -24,14 +24,17 @@ public struct SessionConfiguration: Sendable {
     public let store: FluxStore<SessionFeature>
     public let configuration: SessionConfiguration
     public var state: SessionFeature.State { store.state }
+    private let endpointProvider: @MainActor () -> URL
     private let makeConnection: @Sendable (URL) -> any PiDemoConnection
     private var connection: (any PiDemoConnection)?
     private var observation: Task<Void, Never>?
     private var sessionObservation: Task<Void, Never>?
 
     public init(configuration: SessionConfiguration = .development,
+                endpointProvider: (@MainActor () -> URL)? = nil,
                 makeConnection: @escaping @Sendable (URL) -> any PiDemoConnection = { PiClient(endpoint: $0) }) {
         self.configuration = configuration
+        self.endpointProvider = endpointProvider ?? { configuration.endpoint }
         self.makeConnection = makeConnection
         store = FluxStore(state: .init())
     }
@@ -41,12 +44,13 @@ public struct SessionConfiguration: Sendable {
     public func connect(takingControl: Bool) async {
         guard takingControl, state.canConnect else { return }
         let token = UUID()
+        let endpoint = endpointProvider()
         observation?.cancel(); sessionObservation?.cancel()
-        store.dispatch(.connectStarted(token))
+        store.dispatch(.connectStarted(token, endpoint: endpoint))
         let previous = connection; connection = nil
         await previous?.disconnect()
         guard state.generation == token else { return }
-        let client = makeConnection(configuration.endpoint)
+        let client = makeConnection(endpoint)
         connection = client
         do {
             let session = try await client.connectDemo(projectPath: configuration.projectPath, takingControl: true)
