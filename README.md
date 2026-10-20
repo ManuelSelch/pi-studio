@@ -162,6 +162,13 @@ macOS uses ad-hoc local signing (no Apple account) so UI-test runners can launch
 iOS Simulator builds disable signing. Functional iOS UI tests explicitly select
 portrait rather than inheriting rotation from launch-appearance tests.
 
+Do not run two worktrees' native UI suites against the same Simulator at once.
+They share the app bundle identifier, so one installation can replace the other
+while its runner supplies framework paths from a different build. This can cause
+DYLD missing-symbol crashes and misleading macOS compatibility dialogs. Use
+separate Simulator devices via `PI_STUDIO_TEST_DESTINATION` (or run serially);
+separate derived-data directories alone do not isolate Simulator installations.
+
 - PiUI: **26 named tests** (including parameterized URL cases), covering settings
   reducers, mock-service failure/retry, isolated UserDefaults persistence,
   next-connection snapshots during setup/streaming, and dependency scope
