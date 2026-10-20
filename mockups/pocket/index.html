@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pi Pocket · Projects and sessions</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app" aria-label="Pi Pocket">
+    <header>
+      <div class="toolbar">
+        <button id="back" class="text-button" hidden>‹ Projects</button>
+        <span id="connection-status" class="subtitle" role="status">Connected</span>
+        <button id="connection" class="text-button">Disconnect</button>
+      </div>
+      <h1 id="title" hidden></h1>
+    </header>
+    <p id="error" class="error" role="alert" hidden></p>
+    <section id="catalogue" aria-label="Projects and sessions"></section>
+    <section id="conversation" hidden>
+      <div id="transcript" tabindex="0" aria-label="Conversation"></div>
+      <form id="composer">
+        <label for="message">Message</label>
+        <textarea id="message" rows="2" placeholder="Message Pi…"></textarea>
+        <div class="composer-actions"><span id="run-state">Idle</span><button id="stop" class="text-button" type="button" hidden>Stop</button><button id="send" class="primary" disabled>Send</button></div>
+      </form>
+    </section>
+  </main>
+  <aside class="review"><strong>Slice 1 · Mockup revision 2</strong><br>
+    Approximation of native SwiftUI. All projects, messages and actions are fake.
+    <nav aria-label="Preview states">
+      <a href="./">Populated</a><a href="?state=empty">Empty</a><a href="?state=loading">Loading</a><a href="?state=error">Catalogue error</a><a href="?state=open-error">Open error</a><a href="?state=disconnected">Disconnected</a>
+    </nav>
+  </aside>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
