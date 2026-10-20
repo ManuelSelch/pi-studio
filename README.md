@@ -9,6 +9,16 @@ One screen shows connection state, explicit Connect/Disconnect, a plain-text
 transcript, message field, Send, Stop and errors. No connection opens on launch.
 The approved layout is preserved in [mockups/session](mockups/session/DESIGN.md).
 
+## App icons
+
+Both platforms use Pi Chat's black π on white (`public/apple-touch-icon.png`
+in the Pi Chat repository). iOS uses the original opaque 1024px artwork and lets
+the system apply its icon mask. macOS uses a rounded 824px tile inset by 100px
+on a transparent 1024px canvas, rendered at every required 1x/2x size.
+Assets live in `pi-studio/Assets.xcassets/AppIcon.appiconset`.
+Validate the icon slots, PNG sizes and opaque iOS format with
+`python3 scripts/test-app-icons.py`.
+
 ## Architecture
 
 - [PiUI](Packages/PiUI/Package.swift) is a local Swift package shared by both
