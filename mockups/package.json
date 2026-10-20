@@ -1,0 +1,7 @@
+{
+  "name": "pi-studio-mockups",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite --host localhost" },
+  "devDependencies": { "vite": "7.3.7" }
+}

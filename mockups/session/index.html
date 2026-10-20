@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pi Studio · UI draft</title><link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app">
+    <header><h1>Pi Studio</h1><span class="demo">Demo session</span></header>
+    <section class="connection" aria-label="Connection">
+      <div class="connection-row"><span id="status" role="status">Disconnected</span><button id="connection">Connect</button></div>
+      <p class="endpoint">localhost:8787 · /tmp/pi-studio-demo</p>
+    </section>
+    <p id="error" role="alert" hidden></p>
+    <section id="transcript" aria-label="Conversation" tabindex="0"></section>
+    <form id="composer">
+      <label for="message">Message</label>
+      <textarea id="message" rows="2" placeholder="Say hello"></textarea>
+      <div class="actions"><span id="hint">Connect to start a fresh demo.</span><button id="stop" type="button" disabled>Stop</button><button id="send" type="submit" disabled>Send</button></div>
+    </form>
+  </main>
+  <aside class="review"><strong>Mockup only</strong> · approximates SwiftUI, no real server.
+    <label for="review-state">Preview state</label>
+    <select id="review-state">
+      <option value="disconnected">Disconnected</option><option value="connecting">Connecting</option><option value="ready">Ready</option><option value="generating">Generating</option><option value="stopping">Stopping</option><option value="error">Connection error</option><option value="unknown">Unknown send outcome</option>
+    </select>
+  </aside>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
