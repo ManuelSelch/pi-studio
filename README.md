@@ -12,11 +12,15 @@ The approved layout is preserved in [mockups/session](mockups/session/DESIGN.md)
 ## App icons
 
 Both platforms use Pi Chat's black π on white (`public/apple-touch-icon.png`
-in the Pi Chat repository). Both platforms use opaque, full-bleed artwork without
-pre-rounded corners or transparent padding. iOS uses the original 1024px image;
-macOS uses copies resized to every required 1x/2x size.
-Assets live in `pi-studio/Assets.xcassets/AppIcon.appiconset`.
-Validate the icon slots, PNG sizes and opaque iOS format with
+in the Pi Chat repository). macOS uses the native Icon Composer document
+`pi-studio/StudioIcon.icon`: a full-size solid white background and a separate
+transparent black π layer, without a baked-in tile or corner mask. Open this
+file in Icon Composer to edit the composition. Debug and Release select
+`StudioIcon` on macOS, avoiding Tahoe's gray legacy-icon wrapper.
+iOS continues using the original opaque 1024px artwork from
+`pi-studio/Assets.xcassets/AppIcon.appiconset`. The legacy macOS PNG slots remain
+in that catalog but are not the selected macOS app icon.
+Validate the legacy icon slots, PNG sizes and opaque iOS format with
 `python3 scripts/test-app-icons.py`.
 
 ## Architecture
