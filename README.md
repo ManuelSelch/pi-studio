@@ -1,119 +1,115 @@
-# Pi Studio / Pi Pocket — shared native session demo
+# Pi Studio / Pi Pocket
 
-Native SwiftUI for **macOS 26** (Pi Studio) and **iPhone/iPad iOS 26.1**
-(Pi Pocket). The existing `pi-studio` scheme/target builds for both platforms;
-select **My Mac** for a native desktop app, not Catalyst. The mobile product is
-still a Simulator/local-server demo, not a remotely deployed phone controller.
+Native SwiftUI for **macOS 26** (Pi Studio) and **iOS 26.1** (Pi Pocket), sharing
+PiUI and PiSDK. The `pi-studio` target/scheme builds natively on both platforms;
+select **My Mac** for desktop, not Catalyst.
 
-One screen shows connection state, explicit Connect/Disconnect, a plain-text
-transcript, message field, Send, Stop and errors. No connection opens on launch.
-The approved layout is preserved in [mockups/session](mockups/session/DESIGN.md).
+Pocket slice 1 adds a compact project/session browser. Connect lists the server's
+projects without creating a demo session. Quick Chats stays first; expand a
+project, open saved history or a running session, or use **+** to explicitly start
+a session. Conversation supports plain-text streaming, idle Send and Stop.
+There is no Pi Pocket title, server label, endpoint editor or explanatory footer.
+The approved reference is [mockup revision 2](mockups/pocket/DESIGN.md).
 
-## App icons
-
-Both platforms use Pi Chat's black π on white (`public/apple-touch-icon.png`
-in the Pi Chat repository). iOS uses the original opaque 1024px artwork and lets
-the system apply its icon mask. macOS uses a rounded 824px tile inset by 100px
-on a transparent 1024px canvas, rendered at every required 1x/2x size.
-Assets live in `pi-studio/Assets.xcassets/AppIcon.appiconset`.
-Validate the icon slots, PNG sizes and opaque iOS format with
-`python3 scripts/test-app-icons.py`.
-
-## Architecture
-
-- [PiUI](Packages/PiUI/Package.swift) is a local Swift package shared by both
-  platforms. It depends on PiSDK and [Flux](https://github.com/ManuelSelch/Flux),
-  pinned to `00c8b43799d5acbca04127833daf28f1df2ce477` (including FluxTestStore),
-  and [FactoryKit](https://github.com/hmlongco/Factory) pinned to **2.5.3**.
-- [SessionDependencies](Packages/PiUI/Sources/PiUI/SessionDependencies.swift) is
-  an app-owned FactoryKit container, not a global singleton. It registers session
-  configuration, the SDK connection builder and one cached main-actor controller.
-  The shell and session container resolve the same controller; previews/tests use
-  separate scopes. Install overrides before resolving the controller. Native UI
-  tests register their debug connection through the same dependency graph.
-- [SessionFeature](Packages/PiUI/Sources/PiUI/SessionFeature.swift) holds app-owned
-  interaction state and typed reducer actions. FluxStore is the sole observable
-  source of that state; drafts and action/error flags are not a second model.
-- [SessionController](Packages/PiUI/Sources/PiUI/SessionController.swift) owns
-  awaitable SDK effects, observation tasks and disposal, feeding Flux actions.
-  Long-lived SDK observation is explicitly cancelled rather than hidden inside
-  uncancellable Flux middleware tasks. Generation tokens reject obsolete results.
-- [Containers](Packages/PiUI/Sources/PiUI/Containers) bridge Flux, injected
-  dependencies and callbacks to presentation. Future navigation/router wiring
-  belongs here or in the host shell. The selected routing library is
-  [Router](https://github.com/ManuelSelch/Router), but integration is deferred by
-  agreement: version 1.0.10 unconditionally depends on UIKit-only SwiftEntryKit
-  and UIHostingController and cannot build natively for macOS. No substitute
-  router or additional screens are introduced.
-- [Components](Packages/PiUI/Sources/PiUI/Components) import SwiftUI only and take
-  plain display values and callbacks. They do not read stores, resolve services,
-  use SDK models or perform network work. Local focus/alert state is UI-only.
-- The [app shell](pi-studio/pi_studioApp.swift) owns lifetime and native windows.
-  iOS backgrounding disposes local networking. macOS losing focus does not;
-  closing its single window disposes the local connection.
-- PiSDK owns protocol validation, request correlation, transport, authoritative
-  session projections and run settlement. It does not depend on Flux or PiUI.
+The root [requirements](REQUIREMENTS.md) preserve the original demo MVP;
+[Pocket requirements](docs/pi-pocket/REQUIREMENTS.md) define the follow-on slices.
+This is still a localhost development client, **not a remotely deployed phone
+controller**. Foreground recovery, steering and question responses are later slices.
 
 ## Development wiring
 
-- Verified stable toolchain: **Xcode 26.1.1 (17B100), Swift 6.2.1**.
-- PiSDK checkout defaults to `~/.pi/agent/git/pi-chat/packages/pi-sdk`.
-- Required SDK API baseline: `66ce80552d1757280bbdfdc8bab05f0c3ba8b88c` or later;
-  this extraction was verified against pi-chat `b6fcc8865c25454315858be96ca2c76092395537`.
-- Run `bash scripts/prepare.sh` **before opening Xcode in a fresh checkout or
-  worktree**. It creates ignored `.dependencies/pi-sdk` wiring and resolves the
-  pinned Flux and FactoryKit dependencies. Set `PI_SDK_PATH` to use a different SDK checkout.
-  The SDK is local and is not fetched or updated automatically; no packages are
-  published. Keep both Package.resolved files checked in.
-
-[SessionConfiguration](Packages/PiUI/Sources/PiUI/SessionController.swift)
-defaults to `ws://127.0.0.1:8787/ws` and the dedicated **server-side** directory
-`/tmp/pi-studio-demo`. Create that directory and start the local v2 Pi Server
-before connecting. The app does not start/install the backend or store model
-credentials. Configuration is injected, not a settings screen.
-
-Keep the backend loopback-only. Debug builds permit local networking through
-[DebugInfo.plist](Configuration/DebugInfo.plist); Release has no ATS exception.
-The macOS app sandbox permits outgoing network connections. No global arbitrary
-loads exemption, remote-device networking, proxy or auth was added. On a physical
-iPhone, loopback refers to the phone, not your Mac.
-
-## Behavior
-
-- Connect asks for takeover consent: initialization replaces the existing server
-  controller. **Single-controller handoff is intentional**; simultaneous Studio
-  and Pocket control is not required.
-- Each explicit connection creates one fresh demo session. Existing runtimes are
-  never attached to, aborted or closed by the app.
-- Send permits one nonempty plain-text prompt while idle. Slash/bash commands,
-  steering and queued messages are deliberately unsupported. Drafts clear only
-  after admission, remain on rejection/unknown outcome, and are never replayed.
-- SDK-owned complete projections deliver incremental text, ordered messages and
-  finalized answers without duplicate drafts. Admission is not answer completion.
-- Stop retains partial text and shows Stopping until authoritative settlement.
-  A completed abort response means the server is idle; an accepted abort is not
-  completion. Missing start/stop settlement has a bounded deadline.
-- Disconnect during active/pending work warns that server work may continue.
-  Disconnect retains the transcript; a new explicit connection resets it.
-  Background/teardown disposal never implicitly aborts or closes server runtimes.
-- Unknown mutation outcomes remain visible and disable automatic resubmission.
-  Unexpected closure, malformed data, overflow, sequence gaps and unsupported
-  structured questions end the connection explicitly, retaining observed text.
-
-Disconnect does **not** close server runtimes. Clean up retained demo IDs through
-Pi Chat or explicit v2 `session.close`. A lost create response may leave a runtime
-behind. Avoid repeated connections without cleanup.
-
-## Test pipeline
-
-[.pi/pipeline.json](.pi/pipeline.json) configures once-per-worktree preparation and
-seven independent suites. Only fast `piui` tests opt into after-agent execution;
-UI automation is manual because it takes control of the Simulator/desktop.
-
-Equivalent commands after preparation:
+- Baseline: **Xcode 26.1.1 (17B100), Swift 6.2.1**, macOS 26 and iOS 26.1 targets.
+- Required Swift SDK: pi-chat commit **`3abb883`**, branch **`feat/pocket-sdk`**,
+  or a later revision containing its APIs. SDK changes are isolated from pi-chat
+  main and have not been pushed, published or merged there.
+- This worktree's ignored `.dependencies/pi-sdk` symlink points to
+  `~/.worktrees/pi-chat/feat-pocket-sdk/packages/pi-sdk`.
+- For a fresh worktree, prepare with that SDK explicitly:
 
 ```sh
-bash scripts/prepare.sh
+PI_SDK_PATH="$HOME/.worktrees/pi-chat/feat-pocket-sdk/packages/pi-sdk" bash scripts/prepare.sh
+```
+
+Preparation creates the symlink and resolves the pinned packages. The normal
+fallback SDK location is `~/.pi/agent/git/pi-chat/packages/pi-sdk`; it must contain
+the required browsing API before it can replace the override above. Local SDK
+sources are not fetched, updated or published automatically. Keep both
+Package.resolved files tracked.
+
+The fixed development endpoint remains **`ws://127.0.0.1:8787/ws`** in
+[SessionConfiguration](Packages/PiUI/Sources/PiUI/App/SessionController.swift).
+Start the local v2 Pi Server before connecting. No endpoint settings were added;
+the user will provide a separate settings feature later. On a physical phone,
+loopback refers to the phone, not the development Mac.
+
+The old demo-only API still uses the isolated server directory
+`/tmp/pi-studio-demo`; product browsing does not use it. New sessions use the
+chosen project's server-side folder; Quick Chats uses the server-designated home
+folder, not the phone's filesystem. The app starts no server and stores no model
+credentials. Keep the backend loopback-only. Debug permits narrow local networking
+through [DebugInfo.plist](Configuration/DebugInfo.plist); Release has no global
+ATS exemption. The Mac sandbox permits outgoing connections.
+
+## Behavior and safety
+
+- Nothing connects automatically. Explicit consent precedes single-controller
+  handoff; concurrent desktop/phone control is intentionally unsupported.
+- Initialization uses the server's cached catalogue. Cold catalogue updates
+  arrive asynchronously and update the list without another connection.
+- Saved history paths and fresh runtime IDs are distinct. Attach an inventoried
+  runtime using a fresh snapshot; opening saved history reuses a known runtime
+  when available. Failed opens do not create fallback sessions. Opening/creation
+  guards prevent duplicate submissions.
+- Repository checkouts/worktrees group together; branch context remains on the
+  session row. Archived history is hidden. Running/blocked/closing sessions are
+  distinguished; missing project folders disable new-session creation.
+- Projects back changes local navigation only. Server work is neither stopped nor
+  closed. Drafts are isolated by runtime within the current connection.
+- Plain-text Send is enabled only while idle. No slash/bash commands, steering or
+  question responses are implemented yet. Drafts clear only after admission;
+  rejection and unknown outcomes retain them. Mutations are never replayed.
+- Stop retains partial text and waits for authoritative settlement. Admission is
+  not completion. Deadlines, malformed required data and sequence gaps fail
+  explicitly. Unsupported structured questions are reported rather than treated
+  as completed answers; blocked background sessions can still be listed.
+- Disconnect warns about active/pending work and never implicitly aborts/closes
+  server runtimes. An open conversation's observed transcript remains visible.
+  New Connect returns to browsing, not a new demo. Uncertain opens require an
+  explicit disconnect/reconnect before retrying; inspect server state first.
+- iOS backgrounding disposes networking. macOS losing focus does not; closing its
+  single window disconnects. Automatic reattachment/recovery is slice 2.
+
+## Architecture
+
+- Local [PiUI](Packages/PiUI/Package.swift) depends on PiSDK, Flux pinned to
+  `00c8b43799d5acbca04127833daf28f1df2ce477`, and FactoryKit **2.5.3**.
+- [SessionDependencies](Packages/PiUI/Sources/PiUI/App/SessionDependencies.swift)
+  is an app-owned FactoryKit scope, not a singleton. It caches the shared
+  SessionController and ProjectsController. Tests/previews own separate scopes
+  and install overrides before resolution.
+- [Projects](Packages/PiUI/Sources/PiUI/Projects) owns browsing/navigation in a
+  Flux feature, SDK-facing controller, plain domain values and pure components.
+  The thin ProjectsContainer binds state and callbacks to presentation.
+- The existing SessionController/SessionFeature own conversation interaction
+  state. Explicit session adoption reuses the browsing connection without
+  creating or closing runtimes. The legacy demo entry point remains available
+  for focused regression/transport tests, but is not the product Connect flow.
+- Components import SwiftUI only and accept values/callbacks; they never resolve
+  services, parse protocol data or read stores. Focus, disclosure and confirmation
+  flags remain UI-only. SDK effects feed typed Flux actions; generation tokens
+  reject obsolete callbacks. Long-lived observation is explicitly cancelled.
+- PiSDK owns transport, contract validation, request correlation, catalogue
+  revisions and authoritative session projections independently of Flux/SwiftUI.
+- The selected Router library remains deferred until it supports native macOS.
+  No substitute router was introduced for this small navigation flow.
+
+## Verification
+
+[.pi/pipeline.json](.pi/pipeline.json) provides seven serial suites. Only `piui`
+runs automatically; native UI automation is manual because it controls the
+Simulator/desktop. After preparing the SDK dependency:
+
+```sh
 bash scripts/test-package.sh
 bash scripts/test-app.sh ios unit
 bash scripts/test-app.sh ios ui
@@ -121,70 +117,66 @@ bash scripts/test-app.sh macos unit
 bash scripts/test-app.sh macos ui
 bash scripts/test-app.sh ios release
 bash scripts/test-app.sh macos release
+python3 scripts/test-simulator-isolation.py
 ```
 
-Native suites use a checked-in shared scheme, per-platform derived data,
-serial execution, and no development backend. Build products and test-process
-working directories live outside the protected Documents checkout, under
-`~/Library/Developer/Xcode/DerivedData/PiStudio-<worktree-hash>`; override with
-`PI_STUDIO_BUILD_ROOT` using another non-protected location. This avoids test
-runners requesting Documents-folder access just to load their own products.
-The app itself needs no access to local Documents files. Do not grant Full Disk
-Access as a workaround. Ad-hoc signing can also invalidate TCC approvals between
-builds; use stable Apple Development signing if future app features genuinely
-need protected permissions. iOS defaults to the **iPhone 17**
-Simulator; override `PI_STUDIO_TEST_DESTINATION` for another installed device.
-macOS uses ad-hoc local signing (no Apple account) so UI-test runners can launch;
-iOS Simulator builds disable signing. Functional iOS UI tests explicitly select
-portrait rather than inheriting rotation from launch-appearance tests.
+All seven suites passed together for Pocket slice 1: **24 named PiUI tests**,
+**9 native unit tests plus the normally skipped transport acceptance** on each
+platform, **8 functional UI tests** plus launch/appearance tests (12 total on
+iOS, 10 on macOS), and both Release builds. SDK Swift tests: **28 passed**,
+including a real isolated Pi Server/fake-runtime loopback that proves browsing,
+Quick Chats publication, explicit creation, streaming, fresh-client attachment,
+Stop, disconnect retention and explicit cleanup. Four test-script isolation
+checks also pass. No live user sessions or model credentials were used.
 
-- PiUI: **15 named tests** (one with two cases), including dependency scope
-  identity/isolation, configuration/connection overrides, FluxTestStore reducer
-  transitions, draft admission/retention, duplicate guards, stale callbacks,
-  setup/pending-send disconnect, connection errors and deallocation disposal.
-- The same **ten controller tests** also compile/run inside the iOS and macOS
-  native unit-test targets; their source is shared, not copied.
-- Both platforms run five functional UI tests (consent, two turns/Stop,
-  active disconnect, rejected send, unknown outcome), plus launch/appearance
-  screenshot tests. Debug-only injected connections are never selected by normal
-  app launches; tests use public SDK projections, not a second wire protocol.
-- Debug/unit/UI and Release builds pass on both platforms with FactoryKit.
-  One macOS active-disconnect UI run failed after an automation interruption;
-  the full macOS UI suite passed on rerun without code changes.
+Tests use lowerCamelCase semantic drivers, with fixture controls separate from
+app actions. See [testing drivers](docs/testing-drivers.md). Screenshots of the
+native projects and saved-chat views are attached to the browsing UI tests;
+exported local artifacts live under ignored `.build/ui-artifacts`.
 
-### Semantic test DSL
+### Worktree isolation and macOS launch diagnostics
 
-Integration and functional UI scenarios use lowerCamelCase feature drivers:
-`app.session.connect()`, `app.chat.sendPrompt(...)` and semantic assertions.
-Drivers hide controllers, SDK projections, selectors and synchronization;
-`app.server` separately controls integration fixtures. Both roots own cleanup.
+Products and test working directories live outside Documents/Desktop/Downloads
+under `~/Library/Developer/Xcode/DerivedData/PiStudio-<worktree-hash>`; override
+`PI_STUDIO_BUILD_ROOT` only with another non-protected location. Do not grant
+Full Disk Access as a workaround for test-product placement. macOS uses ad-hoc
+signing so local UI runners can launch; iOS Simulator builds disable signing.
 
-See [testing drivers](docs/testing-drivers.md) for architecture, examples and
-extension rules. Reducer tests remain focused FluxTestStore unit tests.
+Each worktree now reuses/creates its own **PiStudio-<worktree-hash>** iPhone 17
+Simulator. Override `PI_STUDIO_TEST_DESTINATION` to select another device, but
+avoid sharing it with concurrently tested worktrees: identical app/test bundle
+IDs can replace each other's installed binaries despite separate DerivedData.
+A concurrent settings/Pocket run caused a launch-time DYLD missing-symbol error
+and a generic macOS compatibility alert. Dedicated Simulator reruns passed;
+no OS update or app reinstall was needed. This diagnosis applies to that test
+collision, not to every future launch error.
 
 ### Explicit isolated transport acceptance
-
-Normal suites skip the opt-in network test. To exercise **PiUI + Flux + actual
-URLSession/Pi Server transport** without model credentials:
 
 ```sh
 bash scripts/test-simulator-loopback.sh ios
 bash scripts/test-simulator-loopback.sh macos
 ```
 
-This requires pi-chat's installed Node/tsx dependencies and built SDK dist
-(`npm ci` and `npm run build:sdk` there). Override `PI_CHAT_CHECKOUT` if needed.
-The script owns an ephemeral-loopback fake-runtime server with temporary metadata
-and empty history. It verifies streaming, a second turn, Stop/retained text and
-disconnect through SessionController, then verifies exactly one retained runtime
-is explicitly closed and the test-owned server is stopped. It never points to the
-user's development server. Failure logs are retained in a temporary directory.
+These opt-in tests exercise SessionController/Flux and real URLSession transport
+against a script-owned ephemeral fake-runtime server. Install pi-chat Node/tsx
+dependencies and build its SDK dist first; override `PI_CHAT_CHECKOUT` if needed.
+The script checks exactly one retained runtime is explicitly closed, stops its
+own server and retains temporary failure logs. It never points at a live backend.
 
-## Limitations
+## App icons
 
-Controlled **real-model Pi acceptance is still outstanding**; fake-runtime tests
-are not model-provider proof. Dialog answers, Markdown, tool/thinking rendering,
-session browsing/opening, public close APIs, reconnect/gap recovery, optional
-extension UI and secure remote access remain out of scope. Sequence gaps fail
-explicitly instead of attempting recovery. This remains a subset of the parent
-SDK Swift vertical slice, not full parity or a complete Pi Chat replacement.
+Both platforms use Pi Chat's black π on white. iOS uses the opaque 1024px source
+and the system mask; macOS uses a rounded inset tile on a transparent canvas.
+Assets are in [AppIcon.appiconset](pi-studio/Assets.xcassets/AppIcon.appiconset).
+Validate slots, sizes and opacity with `python3 scripts/test-app-icons.py`.
+
+## Remaining limits
+
+Controlled **real-model acceptance remains outstanding**; fake-runtime proof is
+not provider acceptance or full Swift SDK parity. There is no foreground/relaunch
+recovery, steering, structured question interaction, public runtime-close UI,
+remote authentication/TLS deployment, Markdown, rich tool/thinking UI or
+attachments. Navigating across independent server installations does not sync
+histories or runtimes. Clean retained test/demo runtimes through Pi Chat or an
+explicit server `session.close`; disconnecting alone never removes them.
