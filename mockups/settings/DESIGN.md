@@ -1,0 +1,11 @@
+# Endpoint settings
+- Revision: 2
+- Status: approved.
+- Scope: small native settings sheet on macOS/iOS, approximated in HTML.
+- Layout: Settings entry in the existing session header; sheet with title, one labelled endpoint field without helper text, inline validation, Cancel and Save.
+- Narrow screens: bottom sheet approximation; desktop: centred sheet. Native SwiftUI presentation will follow platform conventions.
+- Save closes the sheet after success; Cancel/Escape discards the draft. Opening reloads the saved value.
+- Current connection remains untouched; if saved endpoint differs, the header distinguishes current and next endpoints.
+- Fake behavior: in-memory state only; Connect toggles a simulated connection. No server calls, disk persistence or real consent flow.
+- Production service errors will remain inline and retain the draft for retry.
+- Approval: user approved revision 2 with “approve. implement it”.
