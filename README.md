@@ -117,16 +117,26 @@ macOS uses ad-hoc local signing (no Apple account) so UI-test runners can launch
 iOS Simulator builds disable signing. Functional iOS UI tests explicitly select
 portrait rather than inheriting rotation from launch-appearance tests.
 
-- PiUI: **12 named tests** (one with two cases), including FluxTestStore reducer
+- PiUI: **13 named tests** (one with two cases), including FluxTestStore reducer
   transitions, draft admission/retention, duplicate guards, stale callbacks,
   setup/pending-send disconnect, connection errors and deallocation disposal.
-- The same **nine controller tests** also compile/run inside the iOS and macOS
+- The same **ten controller tests** also compile/run inside the iOS and macOS
   native unit-test targets; their source is shared, not copied.
 - Both platforms run five functional UI tests (consent, two turns/Stop,
   active disconnect, rejected send, unknown outcome), plus launch/appearance
   screenshot tests. Debug-only injected connections are never selected by normal
   app launches; tests use public SDK projections, not a second wire protocol.
 - Debug/unit/UI and Release builds pass on both platforms.
+
+### Semantic test DSL
+
+Integration and functional UI scenarios use lowerCamelCase feature drivers:
+`app.session.connect()`, `app.chat.sendPrompt(...)` and semantic assertions.
+Drivers hide controllers, SDK projections, selectors and synchronization;
+`app.server` separately controls integration fixtures. Both roots own cleanup.
+
+See [testing drivers](docs/testing-drivers.md) for architecture, examples and
+extension rules. Reducer tests remain focused FluxTestStore unit tests.
 
 ### Explicit isolated transport acceptance
 
