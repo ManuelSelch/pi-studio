@@ -10,8 +10,19 @@ public final class SessionDependencies: ManagedContainer {
 
     public init() {}
 
+    public var endpointSettingsService: Factory<any EndpointSettingsService> {
+        self { @MainActor in UserDefaultsEndpointSettingsService() }.cached
+    }
+
+    public var settingsController: Factory<SettingsController> {
+        self { @MainActor in SettingsController(service: self.endpointSettingsService()) }.cached
+    }
+
     public var sessionConfiguration: Factory<SessionConfiguration> {
-        self { SessionConfiguration.development }
+        self { @MainActor in
+            SessionConfiguration(endpoint: self.settingsController().endpoint,
+                                 projectPath: SessionConfiguration.development.projectPath)
+        }
     }
 
     public var makeConnection: Factory<@Sendable (URL) -> any PiDemoConnection> {
@@ -22,7 +33,12 @@ public final class SessionDependencies: ManagedContainer {
     /// container, not globally, so the shell and containers share one controller.
     public var sessionController: Factory<SessionController> {
         self { @MainActor in
-            SessionController(configuration: self.sessionConfiguration(), makeConnection: self.makeConnection())
+            let configuration = self.sessionConfiguration()
+            return SessionController(
+                configuration: configuration,
+                endpointProvider: { [weak self] in self?.sessionConfiguration().endpoint ?? configuration.endpoint },
+                makeConnection: self.makeConnection()
+            )
         }.cached
     }
 }

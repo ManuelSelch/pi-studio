@@ -25,22 +25,25 @@ public struct SessionScreen: View {
     public let onDisconnect: @MainActor () -> Void
     public let onSend: @MainActor () -> Void
     public let onStop: @MainActor () -> Void
+    public let onSettings: @MainActor () -> Void
     @State private var confirmConnect = false
     @State private var confirmDisconnect = false
     @FocusState private var messageFocused: Bool
 
     public init(presentation: SessionPresentation, onDraftChanged: @escaping @MainActor (String) -> Void,
                 onConnect: @escaping @MainActor () -> Void, onDisconnect: @escaping @MainActor () -> Void,
-                onSend: @escaping @MainActor () -> Void, onStop: @escaping @MainActor () -> Void) {
+                onSend: @escaping @MainActor () -> Void, onStop: @escaping @MainActor () -> Void,
+                onSettings: @escaping @MainActor () -> Void = {}) {
         self.presentation = presentation; self.onDraftChanged = onDraftChanged
         self.onConnect = onConnect; self.onDisconnect = onDisconnect
-        self.onSend = onSend; self.onStop = onStop
+        self.onSend = onSend; self.onStop = onStop; self.onSettings = onSettings
     }
 
     public var body: some View {
         VStack(spacing: 0) {
             SessionHeader(title: presentation.title, status: presentation.status,
-                          details: presentation.details, canConnect: presentation.canConnect) {
+                          details: presentation.details, canConnect: presentation.canConnect,
+                          onSettings: { messageFocused = false; onSettings() }) {
                 messageFocused = false
                 if presentation.canConnect { confirmConnect = true }
                 else if presentation.requiresDisconnectWarning { confirmDisconnect = true }

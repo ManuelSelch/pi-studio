@@ -6,6 +6,7 @@ import PiSDK
 public struct SessionFeature: Feature {
     public struct State: Equatable, Sendable {
         public internal(set) var connection: PiConnectionState = .disconnected
+        public internal(set) var connectionEndpoint: URL?
         public internal(set) var projection: DemoSessionProjection?
         public internal(set) var draft = ""
         public internal(set) var isSending = false
@@ -54,7 +55,7 @@ public struct SessionFeature: Feature {
 
     public enum Action: Equatable, Sendable {
         case draftChanged(String)
-        case connectStarted(UUID)
+        case connectStarted(UUID, endpoint: URL? = nil)
         case connected(UUID, DemoSession)
         case connectionChanged(UUID, PiConnectionState)
         case projectionChanged(UUID, DemoSessionProjection)
@@ -71,8 +72,9 @@ public struct SessionFeature: Feature {
     @MainActor public func reduce(_ state: inout State, _ action: Action) {
         switch action {
         case .draftChanged(let draft): state.draft = draft
-        case .connectStarted(let token):
+        case .connectStarted(let token, let endpoint):
             guard state.canConnect else { return }
+            state.connectionEndpoint = endpoint
             state.generation = token; state.connection = .connecting
             state.projection = nil; state.actionError = nil
             state.isSending = false; state.isStopping = false

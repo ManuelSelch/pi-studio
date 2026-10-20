@@ -6,15 +6,19 @@ final class PiUIDriver {
     enum SendOutcome { case accepted, rejected, unknown }
     let session: UISessionDriver
     let chat: UIChatDriver
+    let settings: UISettingsDriver
+    private let context: UIContext
 
     private init(_ context: UIContext) {
+        self.context = context
         session = UISessionDriver(context)
         chat = UIChatDriver(context)
+        settings = UISettingsDriver(context)
     }
 
     static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted) -> PiUIDriver {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing"]
+        app.launchArguments = ["--ui-testing", "--ui-settings-suite", "PiStudio.UITests." + UUID().uuidString, "--ui-reset-settings"]
         switch sendOutcome {
         case .accepted: break
         case .rejected: app.launchArguments.append("--ui-send-rejected")
@@ -25,8 +29,19 @@ final class PiUIDriver {
         XCUIDevice.shared.orientation = .portrait
         #endif
         app.launch()
-        test.addTeardownBlock { @MainActor in app.terminate() }
+        test.addTeardownBlock { @MainActor in
+            app.terminate()
+            app.launchArguments.append("--ui-reset-settings")
+            app.launch()
+            app.terminate()
+        }
         return PiUIDriver(UIContext(app))
+    }
+
+    func relaunch() {
+        context.app.terminate()
+        context.app.launchArguments.removeAll { $0 == "--ui-reset-settings" }
+        context.app.launch()
     }
 }
 
@@ -97,6 +112,45 @@ final class UISessionDriver {
     }
     func shouldShowError(file: StaticString = #filePath, line: UInt = #line) {
         context.waitFor(context.app.staticTexts["errorMessage"], file: file, line: line)
+    }
+}
+
+@MainActor
+final class UISettingsDriver {
+    private let context: UIContext
+    fileprivate init(_ context: UIContext) { self.context = context }
+    private var field: XCUIElement { context.app.textFields["endpointField"].firstMatch }
+
+    func open(file: StaticString = #filePath, line: UInt = #line) {
+        context.app.buttons["settingsButton"].firstMatch.tap()
+        context.waitFor(field, file: file, line: line)
+    }
+    func enterEndpoint(_ text: String) {
+        field.tap()
+        #if os(macOS)
+        field.typeKey("a", modifierFlags: .command)
+        field.typeText(text)
+        #else
+        let value = field.value as? String ?? ""
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: value.count))
+        field.typeText(text)
+        #endif
+    }
+    func save() { context.app.buttons["saveSettingsButton"].firstMatch.tap() }
+    func cancel() { context.app.buttons["cancelSettingsButton"].firstMatch.tap() }
+    func endpointShouldBe(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(field.value as? String, text, file: file, line: line)
+    }
+    func shouldShowValidationError(file: StaticString = #filePath, line: UInt = #line) {
+        context.waitFor(context.app.staticTexts["settingsError"].firstMatch, file: file, line: line)
+    }
+    func shouldBeClosed(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(field.waitForNonExistence(timeout: 4), file: file, line: line)
+    }
+    func sessionDetailsShouldContain(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+        let details = context.app.staticTexts["connectionDetails"].firstMatch
+        context.waitFor(details, file: file, line: line)
+        XCTAssertTrue(context.renderedText(details).contains(text), file: file, line: line)
     }
 }
 

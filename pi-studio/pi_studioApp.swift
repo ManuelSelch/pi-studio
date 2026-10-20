@@ -12,6 +12,19 @@ struct pi_studioApp: App {
         let dependencies = SessionDependencies()
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
+            let arguments = ProcessInfo.processInfo.arguments
+            let suiteIndex = arguments.firstIndex(of: "--ui-settings-suite")
+            let suite = suiteIndex.flatMap { index in
+                arguments.indices.contains(index + 1) ? arguments[index + 1] : nil
+            }
+            let suiteName = suite?.hasPrefix("PiStudio.UITests.") == true
+                ? suite! : "PiStudio.UITests." + UUID().uuidString
+            let defaults = UserDefaults(suiteName: suiteName)!
+            if arguments.contains("--ui-reset-settings") {
+                defaults.removePersistentDomain(forName: suiteName)
+            }
+            let service = UserDefaultsEndpointSettingsService(defaults: defaults)
+            dependencies.endpointSettingsService.register { service }
             let rejected = ProcessInfo.processInfo.arguments.contains("--ui-send-rejected")
             let unknown = ProcessInfo.processInfo.arguments.contains("--ui-send-unknown")
             dependencies.makeConnection.register {
