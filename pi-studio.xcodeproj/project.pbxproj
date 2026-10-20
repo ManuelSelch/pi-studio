@@ -12,7 +12,8 @@
 		B00000000000000000000004 /* PiUI in Test Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000003 /* PiUI */; };
 		B00000000000000000000005 /* SessionControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000006 /* SessionControllerTests.swift */; };
 		B00000000000000000000007 /* PiSDK in Test Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* PiSDK */; };
-		C00000000000000000000001 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000003 /* FactoryKit */; };
+		D00000000000000000000001 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000003 /* FactoryKit */; };
+		C00000000000000000000001 /* PiIntegrationDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002 /* PiIntegrationDriver.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,6 +38,7 @@
 		972B0B453087E5CF0068614C /* pi-studioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pi-studioTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		972B0B4F3087E5CF0068614C /* pi-studioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pi-studioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00000000000000000000006 /* SessionControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/SessionControllerTests.swift; sourceTree = SOURCE_ROOT; };
+		C00000000000000000000002 /* PiIntegrationDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -63,7 +65,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000000000000000000001 /* PiUI in Frameworks */,
-				C00000000000000000000001 /* FactoryKit in Frameworks */,
+				D00000000000000000000001 /* FactoryKit in Frameworks */,
 				A00000000000000000000001 /* PiSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -130,7 +132,7 @@
 			packageProductDependencies = (
 				B00000000000000000000003 /* PiUI */,
 				A00000000000000000000003 /* PiSDK */,
-				C00000000000000000000003 /* FactoryKit */,
+				D00000000000000000000003 /* FactoryKit */,
 			);
 			productName = "pi-studio";
 			productReference = 972B0B383087E5CD0068614C /* pi-studio.app */;
@@ -217,7 +219,7 @@
 			mainGroup = 972B0B2F3087E5CD0068614C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				C00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */,
+				D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */,
 				B00000000000000000000002 /* XCLocalSwiftPackageReference "Packages/PiUI" */,
 				A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk" */,
 			);
@@ -270,6 +272,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000000000000000000005 /* SessionControllerTests.swift in Sources */,
+				C00000000000000000000001 /* PiIntegrationDriver.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -633,7 +636,7 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		C00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */ = {
+		D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/hmlongco/Factory.git";
 			requirement = { kind = exactVersion; version = 2.5.3; };
@@ -641,9 +644,9 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		C00000000000000000000003 /* FactoryKit */ = {
+		D00000000000000000000003 /* FactoryKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */;
+			package = D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */;
 			productName = FactoryKit;
 		};
 		A00000000000000000000003 /* PiSDK */ = {

@@ -9,6 +9,16 @@ One screen shows connection state, explicit Connect/Disconnect, a plain-text
 transcript, message field, Send, Stop and errors. No connection opens on launch.
 The approved layout is preserved in [mockups/session](mockups/session/DESIGN.md).
 
+## App icons
+
+Both platforms use Pi Chat's black π on white (`public/apple-touch-icon.png`
+in the Pi Chat repository). iOS uses the original opaque 1024px artwork and lets
+the system apply its icon mask. macOS uses a rounded 824px tile inset by 100px
+on a transparent 1024px canvas, rendered at every required 1x/2x size.
+Assets live in `pi-studio/Assets.xcassets/AppIcon.appiconset`.
+Validate the icon slots, PNG sizes and opaque iOS format with
+`python3 scripts/test-app-icons.py`.
+
 ## Architecture
 
 - [PiUI](Packages/PiUI/Package.swift) is a local Swift package shared by both
@@ -128,11 +138,11 @@ macOS uses ad-hoc local signing (no Apple account) so UI-test runners can launch
 iOS Simulator builds disable signing. Functional iOS UI tests explicitly select
 portrait rather than inheriting rotation from launch-appearance tests.
 
-- PiUI: **14 named tests** (one with two cases), including dependency scope
+- PiUI: **15 named tests** (one with two cases), including dependency scope
   identity/isolation, configuration/connection overrides, FluxTestStore reducer
   transitions, draft admission/retention, duplicate guards, stale callbacks,
   setup/pending-send disconnect, connection errors and deallocation disposal.
-- The same **nine controller tests** also compile/run inside the iOS and macOS
+- The same **ten controller tests** also compile/run inside the iOS and macOS
   native unit-test targets; their source is shared, not copied.
 - Both platforms run five functional UI tests (consent, two turns/Stop,
   active disconnect, rejected send, unknown outcome), plus launch/appearance
@@ -141,6 +151,16 @@ portrait rather than inheriting rotation from launch-appearance tests.
 - Debug/unit/UI and Release builds pass on both platforms with FactoryKit.
   One macOS active-disconnect UI run failed after an automation interruption;
   the full macOS UI suite passed on rerun without code changes.
+
+### Semantic test DSL
+
+Integration and functional UI scenarios use lowerCamelCase feature drivers:
+`app.session.connect()`, `app.chat.sendPrompt(...)` and semantic assertions.
+Drivers hide controllers, SDK projections, selectors and synchronization;
+`app.server` separately controls integration fixtures. Both roots own cleanup.
+
+See [testing drivers](docs/testing-drivers.md) for architecture, examples and
+extension rules. Reducer tests remain focused FluxTestStore unit tests.
 
 ### Explicit isolated transport acceptance
 
