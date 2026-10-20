@@ -16,10 +16,10 @@ struct SessionTranscript: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 24) {
+                LazyVStack(alignment: .leading, spacing: 18) {
                     if messages.isEmpty {
                         Text(placeholder).font(.subheadline).foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, minHeight: 200).multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity, minHeight: 120).multilineTextAlignment(.center)
                     }
                     ForEach(messages) { message in
                         VStack(alignment: .leading, spacing: 5) {

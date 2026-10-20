@@ -12,9 +12,9 @@ struct SessionComposer: View {
     let onStop: @MainActor () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Message").font(.caption).foregroundStyle(.secondary)
-            TextField("Say hello", text: Binding(get: { draft }, set: { value in onDraftChanged(value) }), axis: .vertical)
+            TextField("Message Pi…", text: Binding(get: { draft }, set: { value in onDraftChanged(value) }), axis: .vertical)
                 .lineLimit(2...5).textFieldStyle(.roundedBorder).focused(focus)
                 .disabled(!canEdit).accessibilityLabel("Message").accessibilityIdentifier("messageField")
             HStack(spacing: 8) {
@@ -26,6 +26,6 @@ struct SessionComposer: View {
                     .disabled(!canSend).accessibilityIdentifier("sendButton")
             }
         }
-        .padding()
+        .padding(.horizontal, 16).padding(.vertical, 10)
     }
 }

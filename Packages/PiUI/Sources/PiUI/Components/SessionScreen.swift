@@ -20,6 +20,7 @@ public struct SessionPresentation: Equatable, Sendable {
 
 public struct SessionScreen: View {
     public let presentation: SessionPresentation
+    public let showsHeader: Bool
     public let onDraftChanged: @MainActor (String) -> Void
     public let onConnect: @MainActor () -> Void
     public let onDisconnect: @MainActor () -> Void
@@ -29,9 +30,10 @@ public struct SessionScreen: View {
     @State private var confirmDisconnect = false
     @FocusState private var messageFocused: Bool
 
-    public init(presentation: SessionPresentation, onDraftChanged: @escaping @MainActor (String) -> Void,
+    public init(presentation: SessionPresentation, showsHeader: Bool = true, onDraftChanged: @escaping @MainActor (String) -> Void,
                 onConnect: @escaping @MainActor () -> Void, onDisconnect: @escaping @MainActor () -> Void,
                 onSend: @escaping @MainActor () -> Void, onStop: @escaping @MainActor () -> Void) {
+        self.showsHeader = showsHeader
         self.presentation = presentation; self.onDraftChanged = onDraftChanged
         self.onConnect = onConnect; self.onDisconnect = onDisconnect
         self.onSend = onSend; self.onStop = onStop
@@ -39,12 +41,14 @@ public struct SessionScreen: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            SessionHeader(title: presentation.title, status: presentation.status,
-                          details: presentation.details, canConnect: presentation.canConnect) {
-                messageFocused = false
-                if presentation.canConnect { confirmConnect = true }
-                else if presentation.requiresDisconnectWarning { confirmDisconnect = true }
-                else { onDisconnect() }
+            if showsHeader {
+                SessionHeader(title: presentation.title, status: presentation.status,
+                              details: presentation.details, canConnect: presentation.canConnect) {
+                    messageFocused = false
+                    if presentation.canConnect { confirmConnect = true }
+                    else if presentation.requiresDisconnectWarning { confirmDisconnect = true }
+                    else { onDisconnect() }
+                }
             }
             if let error = presentation.error {
                 Text(verbatim: error)
@@ -54,7 +58,7 @@ public struct SessionScreen: View {
                     .padding(.horizontal).padding(.bottom, 12)
                     .accessibilityIdentifier("errorMessage")
             }
-            Divider()
+            if showsHeader { Divider() }
             SessionTranscript(messages: presentation.messages, placeholder: presentation.placeholder)
             Divider()
             SessionComposer(draft: presentation.draft, hint: presentation.hint,

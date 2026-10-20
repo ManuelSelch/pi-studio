@@ -13,6 +13,9 @@
 		B00000000000000000000007 /* PiSDK in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* PiSDK */; };
 		C00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */; };
 		D00000000000000000000001 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000003 /* FactoryKit */; };
+		E10000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift */; };
+		E20000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift */; };
+		E30000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,6 +40,9 @@
 		972B0B453087E5CF0068614C /* pi-studioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pi-studioTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		972B0B4F3087E5CF0068614C /* pi-studioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pi-studioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift; sourceTree = SOURCE_ROOT; };
+		E20000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift; sourceTree = SOURCE_ROOT; };
+		E30000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -112,6 +118,9 @@
 			isa = PBXGroup;
 			children = (
 				C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */,
+				E10000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift */,
+				E20000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift */,
+				E30000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -278,6 +287,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				C00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift in Sources */,
+				E10000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift in Sources */,
+				E20000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift in Sources */,
+				E30000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

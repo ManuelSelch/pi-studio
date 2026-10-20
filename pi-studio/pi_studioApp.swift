@@ -6,7 +6,7 @@ import PiUI
 struct pi_studioApp: App {
     @State private var dependencies: SessionDependencies
     @Environment(\.scenePhase) private var scenePhase
-    private var session: SessionController { dependencies.sessionController() }
+    private var projects: ProjectsController { dependencies.projectsController() }
 
     init() {
         let dependencies = SessionDependencies()
@@ -14,8 +14,9 @@ struct pi_studioApp: App {
         if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
             let rejected = ProcessInfo.processInfo.arguments.contains("--ui-send-rejected")
             let unknown = ProcessInfo.processInfo.arguments.contains("--ui-send-unknown")
-            dependencies.makeConnection.register {
-                { _ in UITestConnection(rejectSend: rejected, unknownSend: unknown) }
+            let rejectOpen = ProcessInfo.processInfo.arguments.contains("--ui-open-rejected")
+            dependencies.makeSessionConnection.register {
+                { _ in UITestConnection(rejectSend: rejected, unknownSend: unknown, rejectOpen: rejectOpen) }
             }
         }
         #endif
@@ -26,16 +27,16 @@ struct pi_studioApp: App {
         #if os(macOS)
         // One window/connection. Losing focus is not a disconnect on desktop.
         Window("Pi Studio", id: "session") {
-            SessionContainer(dependencies: dependencies)
+            ProjectsContainer(dependencies: dependencies)
                 .frame(minWidth: 480, minHeight: 500)
-                .onDisappear { Task { await session.disconnect() } }
+                .onDisappear { Task { await projects.disconnect() } }
         }
         .defaultSize(width: 700, height: 760)
         #else
         WindowGroup {
-            SessionContainer(dependencies: dependencies, title: "Pi Pocket")
+            ProjectsContainer(dependencies: dependencies)
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .background { Task { await session.disconnect() } }
+                    if phase == .background { Task { await projects.disconnect() } }
                 }
         }
         #endif

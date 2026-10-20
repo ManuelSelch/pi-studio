@@ -72,6 +72,27 @@ public struct SessionConfiguration: Sendable {
         }
     }
 
+    /// Adopt an explicitly opened SDK session without creating or closing a runtime.
+    /// The projects coordinator owns the connection; navigation never disconnects it.
+    public func attach(connection: any PiDemoConnection, session: DemoSession) {
+        observation?.cancel(); sessionObservation?.cancel()
+        self.connection = connection
+        let token = UUID()
+        store.dispatch(.attached(token, session))
+        observation = Task { [weak self] in
+            for await state in await connection.states() {
+                guard !Task.isCancelled, let self, self.state.generation == token else { return }
+                self.store.dispatch(.connectionChanged(token, state))
+            }
+        }
+        sessionObservation = Task { [weak self] in
+            for await projection in await connection.projections() {
+                guard !Task.isCancelled, let self, self.state.generation == token else { return }
+                self.store.dispatch(.projectionChanged(token, projection))
+            }
+        }
+    }
+
     public func send() async {
         guard state.canSend, let connection else { return }
         let token = state.generation

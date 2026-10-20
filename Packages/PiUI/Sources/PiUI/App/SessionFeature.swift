@@ -34,6 +34,7 @@ public struct SessionFeature: Feature {
             switch connection {
             case .disconnected: return "Disconnected"
             case .connecting: return "Connecting…"
+            case .connected: return "Connected"
             case .failed(let error): return error.isOutcomeUnknown ? "Outcome unknown" : "Connection failed"
             case .ready:
                 if isStopping || projection?.status == .aborting { return "Stopping…" }
@@ -54,6 +55,7 @@ public struct SessionFeature: Feature {
 
     public enum Action: Equatable, Sendable {
         case draftChanged(String)
+        case attached(UUID, DemoSession)
         case connectStarted(UUID)
         case connected(UUID, DemoSession)
         case connectionChanged(UUID, PiConnectionState)
@@ -71,6 +73,8 @@ public struct SessionFeature: Feature {
     @MainActor public func reduce(_ state: inout State, _ action: Action) {
         switch action {
         case .draftChanged(let draft): state.draft = draft
+        case .attached(let token, let session):
+            state = .init(); state.generation = token; state.connection = .ready(session)
         case .connectStarted(let token):
             guard state.canConnect else { return }
             state.generation = token; state.connection = .connecting

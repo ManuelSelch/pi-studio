@@ -6,6 +6,7 @@ import Flux
 public struct SessionContainer: View {
     private let controller: SessionController
     private let title: String
+    private let embedded: Bool
     @ObservedObject private var store: FluxStore<SessionFeature>
 
     public init(dependencies: SessionDependencies, title: String = "Pi Studio") {
@@ -13,14 +14,14 @@ public struct SessionContainer: View {
     }
 
     /// Explicit injection remains useful for focused previews and controller tests.
-    public init(controller: SessionController, title: String = "Pi Studio") {
-        self.controller = controller; self.title = title
+    public init(controller: SessionController, title: String = "Pi Studio", embedded: Bool = false) {
+        self.controller = controller; self.title = title; self.embedded = embedded
         _store = ObservedObject(wrappedValue: controller.store)
     }
 
     public var body: some View {
         SessionScreen(
-            presentation: presentation,
+            presentation: presentation, showsHeader: !embedded,
             onDraftChanged: controller.setDraft,
             onConnect: { Task { await controller.connect(takingControl: true) } },
             onDisconnect: { Task { await controller.disconnect() } },
@@ -37,13 +38,13 @@ public struct SessionContainer: View {
         value.details = "\(controller.configuration.endpoint.absoluteString) · \(controller.configuration.projectPath)"
         value.error = state.errorMessage
         value.draft = state.draft
-        value.hint = state.hint
+        value.hint = embedded ? (state.requiresDisconnectWarning ? "Partial text stays visible." : "Idle") : state.hint
         value.canConnect = state.canConnect
         value.canEditMessage = state.canEditMessage
         value.canSend = state.canSend
         value.canStop = state.canStop
         value.requiresDisconnectWarning = state.requiresDisconnectWarning
-        value.placeholder = state.connection == .connecting ? "Preparing the demo session…" : state.canEditMessage ? "Demo ready. Send a message to begin." : "Your demo conversation will appear here."
+        value.placeholder = embedded ? "Start a conversation." : state.connection == .connecting ? "Preparing the demo session…" : state.canEditMessage ? "Demo ready. Send a message to begin." : "Your demo conversation will appear here."
         value.messages = (state.projection?.messages ?? []).map { TranscriptMessage(id: $0.id, role: $0.role == "user" ? "You" : $0.role.capitalized, text: $0.text) }
         return value
     }

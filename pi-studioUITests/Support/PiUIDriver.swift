@@ -6,15 +6,18 @@ final class PiUIDriver {
     enum SendOutcome { case accepted, rejected, unknown }
     let session: UISessionDriver
     let chat: UIChatDriver
+    let projects: UIProjectsDriver
 
     private init(_ context: UIContext) {
         session = UISessionDriver(context)
         chat = UIChatDriver(context)
+        projects = UIProjectsDriver(context.app)
     }
 
-    static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted) -> PiUIDriver {
+    static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted, rejectOpen: Bool = false) -> PiUIDriver {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
+        if rejectOpen { app.launchArguments.append("--ui-open-rejected") }
         switch sendOutcome {
         case .accepted: break
         case .rejected: app.launchArguments.append("--ui-send-rejected")
@@ -70,14 +73,25 @@ final class UISessionDriver {
         cancel.tap()
     }
     func connect(file: StaticString = #filePath, line: UInt = #line) {
+        connectToServer(file: file, line: line)
+        let newChat = context.app.buttons["newSession-/home/pi"]
+        context.waitFor(newChat, file: file, line: line)
+        newChat.tap()
+        waitUntilReady(file: file, line: line)
+    }
+    fileprivate func connectToServer(file: StaticString, line: UInt) {
         requestConnect()
         let consent = context.alert.buttons["Connect and take control"]
         context.waitFor(consent, file: file, line: line)
         consent.tap()
-        waitUntilReady(file: file, line: line)
+        context.waitFor(context.app.staticTexts["Connected"], timeout: 5, file: file, line: line)
     }
     func requestDisconnect() { context.app.buttons["connectButton"].tap() }
-    func disconnect() { requestDisconnect() }
+    func disconnect() {
+        requestDisconnect()
+        let confirm = context.alert.buttons["Disconnect"]
+        if confirm.waitForExistence(timeout: 1) { confirm.tap() }
+    }
     func shouldShowDisconnectWarning(file: StaticString = #filePath, line: UInt = #line) {
         context.waitFor(context.alert, file: file, line: line)
         context.waitFor(context.alert.buttons["Disconnect"], file: file, line: line)
@@ -113,10 +127,12 @@ final class UIChatDriver {
     }
     func stop() { context.app.buttons["stopButton"].tap() }
     func shouldAllowSend(_ allowed: Bool, file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssertEqual(context.app.buttons["sendButton"].isEnabled, allowed, file: file, line: line)
+        let button = context.app.buttons["sendButton"]
+        XCTAssertEqual(button.exists && button.isEnabled, allowed, file: file, line: line)
     }
     func shouldAllowStop(_ allowed: Bool, file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssertEqual(context.app.buttons["stopButton"].isEnabled, allowed, file: file, line: line)
+        let button = context.app.buttons["stopButton"]
+        XCTAssertEqual(button.exists && button.isEnabled, allowed, file: file, line: line)
     }
     func waitForReply(_ number: Int, file: StaticString = #filePath, line: UInt = #line) {
         context.waitFor(reply(number), file: file, line: line)
