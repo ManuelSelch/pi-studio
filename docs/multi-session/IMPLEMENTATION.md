@@ -147,7 +147,14 @@ Verification after the merge:
 | iOS UI | 22 executions, 0 failures — includes the existing multiline composer and settings suites plus workspace browsing |
 | macOS unit | pass |
 | macOS Release | builds |
-| macOS UI | still paused by user request; not claimed |
+| macOS UI | **Not usable in this environment**: the runner reports `Not authorized for performing UI testing actions` and an empty accessibility tree even though the app renders correctly (verified by capturing the window with `screencapture -l`). Mac composer behaviour is covered in-package instead (`MacComposerTypingTests`, `MacWorkspaceComposerTests`). |
+
+Composer fixes on top of the merge (`844c495`, `2f84e26`, `4488e93`, `b97d30c`):
+
+- A session that is not idle locks the composer; the Mac editor now dims, the row states the
+  reason, and a stale render can no longer revert typing.
+- A window that opens behind another app receives no keystrokes, so the editor claims the caret
+  when its window becomes key, and the UI test driver requests activation after launch.
 
 Deliberate limits carried forward: per-session request/error state and populated `unread`
 arrive with slice 4, the iPhone overview with slice 3, and no launch persistence.
