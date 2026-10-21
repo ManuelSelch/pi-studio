@@ -72,9 +72,16 @@ Preserve the original MVP/settings plan in the root REQUIREMENTS.md and the Pock
 
 Delivered so far: slices 1 and 2 (see [IMPLEMENTATION.md](./IMPLEMENTATION.md) for evidence and
 deliberate limits). Slice 2's SDK prerequisites are merged into pi-chat `main` (`8364263`).
+
 Merging this branch into Pi Studio `main` needs the reconciliation planned in
-[MERGE_PLAN.md](./MERGE_PLAN.md). R7's per-session request/error state and R12's unread population arrive
-with slice 4; the iPhone session overview is slice 3.
+[MERGE_PLAN.md](./MERGE_PLAN.md). Confirmed there: `Session` (conversation: transcript, send/stop
+admission) and `Workspace` (navigation and transport: browsing, opening, tabs, selection,
+connection) stay separate feature slices, joined by one injected `SessionTransport`; the per-tab
+draft belongs to the workspace store; the workspace slice follows the `Session`/`Settings` layout
+(`App`, `Domain`, `Middleware`, `UI`, container at the slice root).
+
+R7's per-session request/error state and R12's unread population arrive with slice 4; the iPhone
+session overview is slice 3.
 
 ### 1. Project Browser and Compact Workspace Shell
 Description: Reconcile the Pocket browsing feature with the completed main middleware baseline before production edits. Deliver one end-to-end browsing/open/create flow in the shared workspace, with Quick Chats first, compact Mac split-view shell and iPhone navigation, settings access and explicit connection consent. Preserve current plain-text Send/Stop within a single selected conversation while multi-session SDK work is pending; do not advertise independent tabs yet. Verify catalogue updates, no automatic demo creation, project search, history reuse, open failure, endpoint policy and both native builds, with package/integration tests and allowed iOS UI checks. Retain existing shell regression coverage subject to the Mac automation pause.
