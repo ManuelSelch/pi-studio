@@ -6,7 +6,7 @@ import PiUI
 struct pi_studioApp: App {
     @State private var dependencies: SessionDependencies
     @Environment(\.scenePhase) private var scenePhase
-    private var session: SessionController { dependencies.sessionController() }
+    private var workspace: ProjectsController { dependencies.projectsController() }
 
     init() {
         let dependencies = SessionDependencies()
@@ -27,9 +27,10 @@ struct pi_studioApp: App {
             dependencies.endpointSettingsService.register { service }
             let rejected = ProcessInfo.processInfo.arguments.contains("--ui-send-rejected")
             let unknown = ProcessInfo.processInfo.arguments.contains("--ui-send-unknown")
-            dependencies.makeConnection.register {
-                { _ in UITestConnection(rejectSend: rejected, unknownSend: unknown) }
-            }
+            let rejectOpen = ProcessInfo.processInfo.arguments.contains("--ui-open-rejected")
+            let connection = UITestConnection(rejectSend: rejected, unknownSend: unknown, rejectOpen: rejectOpen)
+            dependencies.makeConnection.register { { _ in connection } }
+            dependencies.makeSessionConnection.register { { _ in connection } }
         }
         #endif
         _dependencies = State(initialValue: dependencies)
@@ -37,18 +38,18 @@ struct pi_studioApp: App {
 
     var body: some Scene {
         #if os(macOS)
-        // One window/connection. Losing focus is not a disconnect on desktop.
-        Window("Pi Studio", id: "session") {
-            SessionContainer(dependencies: dependencies)
-                .frame(minWidth: 480, minHeight: 500)
-                .onDisappear { Task { await session.disconnect() } }
+        // One window and one shared connection. Losing focus is not a disconnect.
+        Window("Pi Studio", id: "workspace") {
+            WorkspaceContainer(dependencies: dependencies)
+                .frame(minWidth: 620, minHeight: 500)
+                .onDisappear { Task { await workspace.disconnect() } }
         }
-        .defaultSize(width: 700, height: 760)
+        .defaultSize(width: 980, height: 760)
         #else
         WindowGroup {
-            SessionContainer(dependencies: dependencies, title: "Pi Pocket")
+            WorkspaceContainer(dependencies: dependencies)
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .background { Task { await session.disconnect() } }
+                    if phase == .background { Task { await workspace.disconnect() } }
                 }
         }
         #endif

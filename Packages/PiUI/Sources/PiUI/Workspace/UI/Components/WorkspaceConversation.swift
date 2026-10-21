@@ -11,11 +11,16 @@ struct WorkspaceConversation: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(selection.title).font(.headline).lineLimit(1)
-                    .accessibilityIdentifier("sessionTitle")
-                Text(selection.context).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    .accessibilityIdentifier("sessionContext")
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(selection.title).font(.headline).lineLimit(1)
+                        .accessibilityIdentifier("sessionTitle")
+                    Text(selection.context).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        .accessibilityIdentifier("sessionContext")
+                }
+                Spacer(minLength: 4)
+                Text(session.status).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    .accessibilityIdentifier("sessionStatus")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16).padding(.vertical, 8)

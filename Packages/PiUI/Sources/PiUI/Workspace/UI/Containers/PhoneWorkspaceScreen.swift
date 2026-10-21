@@ -32,6 +32,7 @@ struct PhoneWorkspaceScreen: View {
             WorkspaceConversation(selection: selection, session: session,
                                   onDraftChanged: actions.draftChanged,
                                   onSend: actions.send, onStop: actions.stop)
+                .phoneConnectionToolbar(connection: actions.connection, settings: actions.settings)
         } else {
             WorkspaceEmptyState(status: presentation.status, error: presentation.error,
                                 canConnect: presentation.canConnect, isBusy: presentation.isBusy,
@@ -45,6 +46,28 @@ private extension View {
     @ViewBuilder func phoneTitleDisplayMode() -> some View {
         #if os(iOS)
         navigationBarTitleDisplayMode(.inline)
+        #else
+        self
+        #endif
+    }
+
+    /// A pushed conversation must still reach connection settings on iPhone, where
+    /// the sidebar footer is off screen.
+    @ViewBuilder func phoneConnectionToolbar(connection: @escaping @MainActor () -> Void,
+                                            settings: @escaping @MainActor () -> Void) -> some View {
+        #if os(iOS)
+        toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: settings) { Image(systemName: "gearshape") }
+                    .accessibilityLabel("Connection settings")
+                    .accessibilityIdentifier("settingsButton")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: connection) { Image(systemName: "bolt.slash") }
+                    .accessibilityLabel("Disconnect")
+                    .accessibilityIdentifier("connectButton")
+            }
+        }
         #else
         self
         #endif

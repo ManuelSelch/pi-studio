@@ -2,39 +2,99 @@
 import Foundation
 import PiSDK
 
-/// Debug-only native UI test double. Never selected by normal app launches;
-/// deliberately uses public SDK projections rather than a second wire protocol.
-actor UITestConnection: PiDemoConnection {
+/// Debug-only isolated UI fixture. Normal launches always use the real SDK.
+actor UITestConnection: PiSessionConnection {
     private var state: PiConnectionState = .disconnected
     private var projection: DemoSessionProjection?
     private var closed = false
     private var turn = 0
+    private var created = 0
+    private var catalogueReady = false
     private var streaming: Task<Void, Never>?
     private let rejectSend: Bool
     private let unknownSend: Bool
-    private let (stateStream, stateUpdates) = AsyncStream<PiConnectionState>.makeStream(bufferingPolicy: .bufferingNewest(1))
-    private let (sessionStream, sessionUpdates) = AsyncStream<DemoSessionProjection>.makeStream(bufferingPolicy: .bufferingNewest(1))
+    private let rejectOpen: Bool
+    private var stateObservers: [UUID: AsyncStream<PiConnectionState>.Continuation] = [:]
+    private var projectionObservers: [UUID: AsyncStream<DemoSessionProjection>.Continuation] = [:]
+    private var catalogueObservers: [UUID: AsyncStream<PiCatalogue>.Continuation] = [:]
+    private var runtimes: [PiRuntimeSummary] = [.init(sessionId: "ui-running", title: "Pocket navigation", projectPath: "/repo", projectName: "pi-studio", status: "running")]
 
-    init(rejectSend: Bool = false, unknownSend: Bool = false) {
-        self.rejectSend = rejectSend; self.unknownSend = unknownSend
+    init(rejectSend: Bool = false, unknownSend: Bool = false, rejectOpen: Bool = false) {
+        self.rejectSend = rejectSend; self.unknownSend = unknownSend; self.rejectOpen = rejectOpen
     }
-    func states() async -> AsyncStream<PiConnectionState> { stateUpdates.yield(state); return stateStream }
+    func states() async -> AsyncStream<PiConnectionState> {
+        let id = UUID(); let (stream, updates) = AsyncStream<PiConnectionState>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        updates.yield(state); stateObservers[id] = updates
+        updates.onTermination = { [weak self] _ in Task { await self?.removeState(id) } }; return stream
+    }
+    private func removeState(_ id: UUID) { stateObservers.removeValue(forKey: id) }
     func projections() async -> AsyncStream<DemoSessionProjection> {
-        if let projection { sessionUpdates.yield(projection) }
-        return sessionStream
+        let id = UUID(); let (stream, updates) = AsyncStream<DemoSessionProjection>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        if let projection { updates.yield(projection) }; projectionObservers[id] = updates
+        updates.onTermination = { [weak self] _ in Task { await self?.removeProjection(id) } }; return stream
     }
-    func connectDemo(projectPath: String, takingControl: Bool) async throws -> DemoSession {
+    private func removeProjection(_ id: UUID) { projectionObservers.removeValue(forKey: id) }
+    func catalogues() async -> AsyncStream<PiCatalogue> {
+        let id = UUID(); let (stream, updates) = AsyncStream<PiCatalogue>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        updates.yield(catalogue); catalogueObservers[id] = updates
+        updates.onTermination = { [weak self] _ in Task { await self?.removeCatalogue(id) } }; return stream
+    }
+    private func removeCatalogue(_ id: UUID) { catalogueObservers.removeValue(forKey: id) }
+    private var catalogue: PiCatalogue {
+        .init(projects: catalogueReady ? [
+            .init(path: "/home/pi", name: "Quick Chats", quickChats: true,
+                  sessions: [.init(path: "/history/quick", title: "Saved quick chat")]),
+            .init(path: "/repo", name: "pi-studio", worktree: .init(branch: "feat/pocket")),
+        ] : [], sessions: runtimes)
+    }
+    private func publishCatalogue() { for observer in catalogueObservers.values { observer.yield(catalogue) } }
+    private func publishState(_ value: PiConnectionState) {
+        state = value; for observer in stateObservers.values { observer.yield(value) }
+    }
+    func connect(takingControl: Bool) async throws {
         try await Task.sleep(for: .milliseconds(100))
         guard !closed, takingControl else { throw PiError.disconnected }
-        let session = DemoSession(sessionId: "ui-demo", projectPath: projectPath)
-        projection = .init(session: session)
-        state = .ready(session); stateUpdates.yield(state)
+        publishState(.connected)
+        Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(150))
+            await self?.finishCatalogue()
+        }
+    }
+    private func finishCatalogue() {
+        guard !closed else { return }; catalogueReady = true; publishCatalogue()
+    }
+    func connectDemo(projectPath: String, takingControl: Bool) async throws -> DemoSession {
+        try await connect(takingControl: takingControl)
+        return try await createSession(projectPath: projectPath)
+    }
+    func createSession(projectPath: String) async throws -> DemoSession {
+        guard !closed else { throw PiError.disconnected }
+        created += 1
+        let id = "ui-new-\(created)"
+        runtimes.append(.init(sessionId: id, title: "New chat", projectPath: projectPath, projectName: projectPath == "/home/pi" ? "Quick Chats" : "pi-studio"))
+        publishCatalogue()
+        return select(id, projectPath)
+    }
+    func openSession(sessionPath: String) async throws -> DemoSession {
+        try await Task.sleep(for: .milliseconds(100))
+        guard !closed else { throw PiError.disconnected }
+        if rejectOpen { throw PiError.rejected(code: "notFound", message: "History unavailable") }
+        return select("ui-saved", "/home/pi", messages: [.init(id: "saved-answer", role: "assistant", text: "A saved answer from Quick Chats.")])
+    }
+    func attachSession(sessionId: String) async throws -> DemoSession {
+        guard !closed else { throw PiError.disconnected }
+        return select(sessionId, "/repo", status: .running, messages: [.init(id: "running-answer", role: "assistant", text: "Checking project navigation…", isPartial: true)])
+    }
+    private func select(_ id: String, _ path: String, status: DemoRunStatus = .idle, messages: [DemoMessage] = []) -> DemoSession {
+        let session = DemoSession(sessionId: id, projectPath: path)
+        projection = .init(session: session, messages: messages, status: status)
+        publishState(.ready(session)); publish(status)
         return session
     }
     private func publish(_ status: DemoRunStatus, messages: [DemoMessage]? = nil) {
         guard let current = projection, !closed else { return }
         projection = .init(session: current.session, messages: messages ?? current.messages, status: status)
-        sessionUpdates.yield(projection!)
+        for observer in projectionObservers.values { observer.yield(projection!) }
     }
     func send(_ text: String) async throws {
         try await Task.sleep(for: .milliseconds(100))
@@ -42,8 +102,7 @@ actor UITestConnection: PiDemoConnection {
         if rejectSend { throw PiError.rejected(code: "sessionBusy", message: "Send rejected by the test runtime.") }
         if unknownSend {
             let error = PiError.requestExpired(outcomeUnknown: true)
-            state = .failed(error); stateUpdates.yield(state)
-            throw error
+            publishState(.failed(error)); throw error
         }
         turn += 1
         let currentTurn = turn
@@ -76,9 +135,12 @@ actor UITestConnection: PiDemoConnection {
         publish(.idle)
     }
     func disconnect() async {
+        guard !closed else { return }
         closed = true; streaming?.cancel(); streaming = nil
-        state = .disconnected; stateUpdates.yield(state)
-        stateUpdates.finish(); sessionUpdates.finish()
+        publishState(.disconnected)
+        for observer in stateObservers.values { observer.finish() }; stateObservers = [:]
+        for observer in projectionObservers.values { observer.finish() }; projectionObservers = [:]
+        for observer in catalogueObservers.values { observer.finish() }; catalogueObservers = [:]
     }
 }
 #endif
