@@ -1,15 +1,13 @@
 import SwiftUI
+import Flux
 import FactoryKit
 import PiUI
 
 @main
 struct pi_studioApp: App {
-    @State private var dependencies: SessionDependencies
     @Environment(\.scenePhase) private var scenePhase
-    private var workspace: WorkspaceController { dependencies.workspaceController() }
-
+    
     init() {
-        let dependencies = SessionDependencies()
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
             let arguments = ProcessInfo.processInfo.arguments
@@ -17,39 +15,37 @@ struct pi_studioApp: App {
             let suite = suiteIndex.flatMap { index in
                 arguments.indices.contains(index + 1) ? arguments[index + 1] : nil
             }
-            let suiteName = suite?.hasPrefix("PiStudio.UITests.") == true
-                ? suite! : "PiStudio.UITests." + UUID().uuidString
+            let suiteName = suite?.hasPrefix("PiStudio.UITests.") == true ? suite! : "PiStudio.UITests." + UUID().uuidString
             let defaults = UserDefaults(suiteName: suiteName)!
             if arguments.contains("--ui-reset-settings") {
                 defaults.removePersistentDomain(forName: suiteName)
             }
             let service = UserDefaultsEndpointSettingsService(defaults: defaults)
-            dependencies.endpointSettingsService.register { service }
+            Container.shared.endpointSettingsService.onDebug(factory: { service })
+            
+            
             let rejected = ProcessInfo.processInfo.arguments.contains("--ui-send-rejected")
             let unknown = ProcessInfo.processInfo.arguments.contains("--ui-send-unknown")
-            let rejectOpen = ProcessInfo.processInfo.arguments.contains("--ui-open-rejected")
-            let connection = UITestConnection(rejectSend: rejected, unknownSend: unknown, rejectOpen: rejectOpen)
-            dependencies.makeConnection.register { { _ in connection } }
-            dependencies.makeSessionConnection.register { { _ in connection } }
+            let delayed = arguments.contains("--ui-send-delayed")
+            Container.shared.makeConnection.onDebug(factory: { { _ in UITestConnection(rejectSend: rejected, unknownSend: unknown, delayedAdmission: delayed)} })
         }
         #endif
-        _dependencies = State(initialValue: dependencies)
     }
 
     var body: some Scene {
         #if os(macOS)
-        // One window and one shared connection. Losing focus is not a disconnect.
-        Window("Pi Studio", id: "workspace") {
-            WorkspaceContainer(dependencies: dependencies)
-                .frame(minWidth: 620, minHeight: 500)
-                .onDisappear { Task { await workspace.disconnect() } }
+        // One window/connection. Losing focus is not a disconnect on desktop.
+        Window("Pi Studio", id: "session") {
+            SessionContainer()
+                .frame(minWidth: 480, minHeight: 500)
+                .onDisappear { Container.shared.sessionStore().dispatch(.disconnectRequested()) }
         }
-        .defaultSize(width: 980, height: 760)
+        .defaultSize(width: 700, height: 760)
         #else
         WindowGroup {
-            WorkspaceContainer(dependencies: dependencies)
+            SessionContainer()
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .background { Task { await workspace.disconnect() } }
+                    if phase == .background { Container.shared.sessionStore().dispatch(.disconnectRequested()) }
                 }
         }
         #endif

@@ -13,7 +13,10 @@
 		B00000000000000000000007 /* PiSDK in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* PiSDK */; };
 		C00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */; };
 		D00000000000000000000001 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000003 /* FactoryKit */; };
+		D00000000000000000000004 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000003 /* FactoryKit */; };
 		E00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift */; };
+		F00000000000000000000001 /* Flux in Frameworks */ = {isa = PBXBuildFile; productRef = F00000000000000000000003 /* Flux */; };
+		F00000000000000000000004 /* Flux in Frameworks */ = {isa = PBXBuildFile; productRef = F00000000000000000000003 /* Flux */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,6 +68,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000000000000000000001 /* PiUI in Frameworks */,
+				F00000000000000000000001 /* Flux in Frameworks */,
 				D00000000000000000000001 /* FactoryKit in Frameworks */,
 				A00000000000000000000001 /* PiSDK in Frameworks */,
 			);
@@ -75,6 +79,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000000000000000000004 /* PiUI in Frameworks */,
+				F00000000000000000000004 /* Flux in Frameworks */,
+				D00000000000000000000004 /* FactoryKit in Frameworks */,
 				B00000000000000000000007 /* PiSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -140,6 +146,7 @@
 			name = "pi-studio";
 			packageProductDependencies = (
 				B00000000000000000000003 /* PiUI */,
+				F00000000000000000000003 /* Flux */,
 				A00000000000000000000003 /* PiSDK */,
 				D00000000000000000000003 /* FactoryKit */,
 			);
@@ -165,7 +172,9 @@
 			);
 			name = "pi-studioTests";
 			packageProductDependencies = (
+				D00000000000000000000003 /* FactoryKit */,
 				A00000000000000000000003 /* PiSDK */,
+				F00000000000000000000003 /* Flux */,
 				B00000000000000000000003 /* PiUI */,
 			);
 			productName = "pi-studioTests";
@@ -231,6 +240,7 @@
 				D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */,
 				B00000000000000000000002 /* XCLocalSwiftPackageReference "Packages/PiUI" */,
 				A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk" */,
+				F00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/Flux" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 972B0B393087E5CD0068614C /* Products */;
@@ -644,6 +654,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/PiUI;
 		};
+		F00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/Flux" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .dependencies/Flux;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -672,6 +686,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */;
 			productName = FactoryKit;
+		};
+		F00000000000000000000003 /* Flux */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/Flux" */;
+			productName = Flux;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

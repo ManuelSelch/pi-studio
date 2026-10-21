@@ -1,4 +1,7 @@
 import XCTest
+#if os(macOS)
+import AppKit
+#endif
 
 /// UI implementation of the semantic DSL. Never reads controller/store state.
 @MainActor
@@ -19,7 +22,7 @@ final class PiUIDriver {
     }
 
     static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted,
-                       rejectOpen: Bool = false) -> PiUIDriver {
+                       rejectOpen: Bool = false, delayedAdmission: Bool = false) -> PiUIDriver {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--ui-settings-suite", "PiStudio.UITests." + UUID().uuidString, "--ui-reset-settings"]
         if rejectOpen { app.launchArguments.append("--ui-open-rejected") }
@@ -28,6 +31,7 @@ final class PiUIDriver {
         case .rejected: app.launchArguments.append("--ui-send-rejected")
         case .unknown: app.launchArguments.append("--ui-send-unknown")
         }
+        if delayedAdmission { app.launchArguments.append("--ui-send-delayed") }
         #if os(iOS)
         // Appearance tests rotate the simulator; functional scenarios own orientation.
         XCUIDevice.shared.orientation = .portrait
@@ -82,11 +86,19 @@ final class UISessionDriver {
     private let context: UIContext
     fileprivate init(_ context: UIContext) { self.context = context }
 
-    func requestConnect() { context.app.buttons["connectButton"].firstMatch.tap() }
+    func requestConnect() { context.app.buttons["connectButton"].tap() }
     func cancelConnect(file: StaticString = #filePath, line: UInt = #line) {
         let cancel = context.alert.buttons["Cancel"]
         context.waitFor(cancel, file: file, line: line)
         cancel.tap()
+    }
+    /// Connect and list projects without opening a session: browsing creates nothing.
+    func connectToServer(file: StaticString = #filePath, line: UInt = #line) {
+        requestConnect()
+        let consent = context.alert.buttons["Connect and take control"]
+        context.waitFor(consent, file: file, line: line)
+        consent.tap()
+        context.waitFor(context.app.staticTexts["Connected"], timeout: 5, file: file, line: line)
     }
     func connect(file: StaticString = #filePath, line: UInt = #line) {
         connectToServer(file: file, line: line)
@@ -95,19 +107,12 @@ final class UISessionDriver {
         newChat.tap()
         waitUntilReady(file: file, line: line)
     }
-    /// Connect and list projects without opening a session.
-    func connectToServer(file: StaticString = #filePath, line: UInt = #line) {
-        requestConnect()
-        let consent = context.alert.buttons["Connect and take control"]
-        context.waitFor(consent, file: file, line: line)
-        consent.tap()
-        context.waitFor(context.app.staticTexts["Connected"], timeout: 5, file: file, line: line)
-    }
     func requestDisconnect() { context.app.buttons["connectButton"].firstMatch.tap() }
+    /// Disconnect is confirmed only when work would be lost, so accept both shapes.
     func disconnect() {
         requestDisconnect()
         let confirm = context.alert.buttons["Disconnect"]
-        if confirm.waitForExistence(timeout: 1) { confirm.tap() }
+        if confirm.waitForExistence(timeout: 2) { confirm.tap() }
     }
     func shouldShowDisconnectWarning(file: StaticString = #filePath, line: UInt = #line) {
         context.waitFor(context.alert, file: file, line: line)
@@ -163,6 +168,11 @@ final class UISettingsDriver {
     func shouldBeClosed(file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertTrue(field.waitForNonExistence(timeout: 4), file: file, line: line)
     }
+    func sessionDetailsShouldContain(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+        let details = context.app.staticTexts["connectionDetails"].firstMatch
+        context.waitFor(details, file: file, line: line)
+        XCTAssertTrue(context.renderedText(details).contains(text), file: file, line: line)
+    }
 }
 
 @MainActor
@@ -171,20 +181,91 @@ final class UIChatDriver {
     fileprivate init(_ context: UIContext) { self.context = context }
     private func reply(_ number: Int) -> XCUIElement { context.app.staticTexts["message-assistant-\(number)"] }
 
-    func sendPrompt(_ text: String) {
+    func enterDraft(_ text: String) {
         let field = context.messageField
         field.tap(); field.typeText(text)
-        context.app.buttons["sendButton"].tap()
     }
-    func stop() { context.app.buttons["stopButton"].tap() }
+    func submitDraft() { context.app.buttons["sendButton"].tap() }
+    func sendPrompt(_ text: String) {
+        enterDraft(text)
+        submitDraft()
+    }
+    func stop() {
+        #if os(macOS)
+        context.app.typeKey(XCUIKeyboardKey.escape.rawValue, modifierFlags: [])
+        #else
+        context.app.buttons["stopButton"].tap()
+        #endif
+    }
     func shouldAllowSend(_ allowed: Bool, file: StaticString = #filePath, line: UInt = #line) {
         let button = context.app.buttons["sendButton"]
         XCTAssertEqual(button.exists && button.isEnabled, allowed, file: file, line: line)
     }
     func shouldAllowStop(_ allowed: Bool, file: StaticString = #filePath, line: UInt = #line) {
+        #if os(macOS)
+        XCTAssertFalse(context.app.buttons["stopButton"].exists, file: file, line: line)
+        #else
         let button = context.app.buttons["stopButton"]
         XCTAssertEqual(button.exists && button.isEnabled, allowed, file: file, line: line)
+        #endif
     }
+    func pressReturn() {
+        #if os(macOS)
+        context.app.typeKey(XCUIKeyboardKey.return.rawValue, modifierFlags: [])
+        #else
+        context.messageField.typeText("\n")
+        #endif
+    }
+    func pressShiftReturn() {
+        #if os(macOS)
+        context.app.typeKey(XCUIKeyboardKey.return.rawValue, modifierFlags: .shift)
+        #else
+        // XCTest typeText covers newline insertion; physical Shift+Return is a manual check.
+        context.messageField.typeText("\n")
+        #endif
+    }
+    func pressSoftwareReturn(file: StaticString = #filePath, line: UInt = #line) {
+        #if os(iOS)
+        let key = context.app.keyboards.buttons["Return"].firstMatch
+        context.waitFor(key, file: file, line: line)
+        key.tap()
+        #endif
+    }
+    func sendIconShouldBeAccessible(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(context.app.buttons["sendButton"].label, "Send", file: file, line: line)
+    }
+    func userMessageShouldBe(_ number: Int, _ text: String,
+                             file: StaticString = #filePath, line: UInt = #line) {
+        let message = context.app.staticTexts["message-user-\(number)"]
+        context.waitFor(message, file: file, line: line)
+        XCTAssertEqual(context.renderedText(message), text, file: file, line: line)
+    }
+    func shouldHaveNoReply(_ number: Int = 1, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertFalse(reply(number).exists, file: file, line: line)
+    }
+    #if os(macOS)
+    func typeAtCaret(_ text: String) { context.app.typeText(text) }
+    func moveCaretToStart() { context.messageField.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: .command) }
+    func selectAll() { context.messageField.typeKey("a", modifierFlags: .command) }
+    func undo() { context.messageField.typeKey("z", modifierFlags: .command) }
+    func pasteDraft(_ text: String) {
+        let original: [NSPasteboardItem] = NSPasteboard.general.pasteboardItems?.map { item in
+            let copy = NSPasteboardItem()
+            for type in item.types {
+                if let data = item.data(forType: type) { copy.setData(data, forType: type) }
+            }
+            return copy
+        } ?? []
+        defer {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.writeObjects(original)
+        }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        context.messageField.tap()
+        context.messageField.typeKey("v", modifierFlags: .command)
+    }
+    #endif
     func waitForReply(_ number: Int, file: StaticString = #filePath, line: UInt = #line) {
         context.waitFor(reply(number), file: file, line: line)
     }

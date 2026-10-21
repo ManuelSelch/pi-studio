@@ -119,7 +119,7 @@ import Testing
             try await app.server.waitForHeldAttach()
             try await app.tabs.select("Working")
             await app.server.releaseAttach()
-            await app.tabs.finishSelecting()
+            try await app.tabs.settle()
             // The held answer for the older choice is discarded, not rendered.
             app.tabs.shouldSelect("Working")
             app.tabs.observedRuntimeShouldBe("running")

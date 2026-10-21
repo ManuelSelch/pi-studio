@@ -62,7 +62,7 @@ public struct WorkspaceActions {
     public var settings: @MainActor () -> Void
     public var back: @MainActor () -> Void
     public var draftChanged: @MainActor (String) -> Void
-    public var send: @MainActor () -> Void
+    public var send: @MainActor (String) -> Void
     public var stop: @MainActor () -> Void
     public var selectTab: @MainActor (String) -> Void
     public var closeTab: @MainActor (String) -> Void
@@ -75,7 +75,7 @@ public struct WorkspaceActions {
                 settings: @escaping @MainActor () -> Void,
                 back: @escaping @MainActor () -> Void,
                 draftChanged: @escaping @MainActor (String) -> Void,
-                send: @escaping @MainActor () -> Void,
+                send: @escaping @MainActor (String) -> Void,
                 stop: @escaping @MainActor () -> Void,
                 selectTab: @escaping @MainActor (String) -> Void,
                 closeTab: @escaping @MainActor (String) -> Void,

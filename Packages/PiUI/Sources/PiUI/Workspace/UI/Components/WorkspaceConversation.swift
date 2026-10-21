@@ -6,7 +6,7 @@ struct WorkspaceConversation: View {
     let selection: WorkspaceSelection
     let session: SessionPresentation
     let onDraftChanged: @MainActor (String) -> Void
-    let onSend: @MainActor () -> Void
+    let onSend: @MainActor (String) -> Void
     let onStop: @MainActor () -> Void
     let onFollowTailChanged: @MainActor (Bool) -> Void
     let onScrollAnchorChanged: @MainActor (String?) -> Void

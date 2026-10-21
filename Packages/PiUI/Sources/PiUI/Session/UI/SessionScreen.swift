@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 /// Plain presentation values: no Flux, router, SDK types or service lookups.
 public struct SessionPresentation: Equatable, Sendable {
@@ -6,17 +9,18 @@ public struct SessionPresentation: Equatable, Sendable {
     public var status = "Disconnected"
     public var details = ""
     public var error: String?
+    /// The selected tab's draft: the workspace owns it, the composer only edits it.
     public var draft = ""
-    public var hint = ""
-    public var placeholder = "Your demo conversation will appear here."
-    public var messages: [TranscriptMessage] = []
-    /// Auto-scroll policy and last reading position for the selected session.
+    /// Auto-scroll policy and reading position of the selected tab.
     public var followTail = true
     public var scrollAnchor: String?
+    public var placeholder = "Your demo conversation will appear here."
+    public var messages: [TranscriptMessage] = []
     public var canConnect = true
     public var canEditMessage = false
     public var canSend = false
     public var canStop = false
+    public var isStopping = false
     public var requiresDisconnectWarning = false
     public init() {}
 }
@@ -26,30 +30,33 @@ public struct SessionScreen: View {
     public let onDraftChanged: @MainActor (String) -> Void
     public let onConnect: @MainActor () -> Void
     public let onDisconnect: @MainActor () -> Void
-    public let onSend: @MainActor () -> Void
+    public let onSend: @MainActor (String) -> Void
     public let onStop: @MainActor () -> Void
     public let onSettings: @MainActor () -> Void
     public let onFollowTailChanged: @MainActor (Bool) -> Void
     public let onScrollAnchorChanged: @MainActor (String?) -> Void
-    /// A workspace shell supplies its own toolbar and connection controls, so the
-    /// standalone header is omitted there while the conversation stays identical.
+    /// A workspace shell supplies its own navigation and connection controls, so the standalone
+    /// header is omitted there while the conversation stays identical.
     private let showsHeader: Bool
     private let maxContentWidth: CGFloat
     @State private var confirmConnect = false
     @State private var confirmDisconnect = false
     @FocusState private var messageFocused: Bool
 
-    public init(presentation: SessionPresentation, onDraftChanged: @escaping @MainActor (String) -> Void,
+    public init(presentation: SessionPresentation,
+                onDraftChanged: @escaping @MainActor (String) -> Void,
                 onConnect: @escaping @MainActor () -> Void, onDisconnect: @escaping @MainActor () -> Void,
-                onSend: @escaping @MainActor () -> Void, onStop: @escaping @MainActor () -> Void,
+                onSend: @escaping @MainActor (String) -> Void, onStop: @escaping @MainActor () -> Void,
                 onSettings: @escaping @MainActor () -> Void = {},
                 onFollowTailChanged: @escaping @MainActor (Bool) -> Void = { _ in },
                 onScrollAnchorChanged: @escaping @MainActor (String?) -> Void = { _ in },
                 showsHeader: Bool = true, maxContentWidth: CGFloat = 620) {
-        self.presentation = presentation; self.onDraftChanged = onDraftChanged
+        self.presentation = presentation
+        self.onDraftChanged = onDraftChanged
         self.onConnect = onConnect; self.onDisconnect = onDisconnect
         self.onSend = onSend; self.onStop = onStop; self.onSettings = onSettings
-        self.onFollowTailChanged = onFollowTailChanged; self.onScrollAnchorChanged = onScrollAnchorChanged
+        self.onFollowTailChanged = onFollowTailChanged
+        self.onScrollAnchorChanged = onScrollAnchorChanged
         self.showsHeader = showsHeader; self.maxContentWidth = maxContentWidth
     }
 
@@ -79,12 +86,23 @@ public struct SessionScreen: View {
                               onFollowTailChanged: onFollowTailChanged,
                               onAnchorChanged: onScrollAnchorChanged)
             Divider()
-            SessionComposer(draft: presentation.draft, hint: presentation.hint,
+            SessionComposer(draft: presentation.draft,
                             canEdit: presentation.canEditMessage, canSend: presentation.canSend,
-                            canStop: presentation.canStop, focus: $messageFocused,
+                            canStop: presentation.canStop, isStopping: presentation.isStopping, focus: $messageFocused,
                             onDraftChanged: onDraftChanged,
-                            onSend: { messageFocused = false; onSend() }, onStop: onStop)
+                            onSend: { text in messageFocused = false; onSend(text) }, onStop: onStop)
         }
+        #if os(macOS)
+        .onExitCommand {
+            // Fallback for focus elsewhere on the conversation. A sheet owns its own
+            // Escape handling; the container also withholds canStop while settings is open.
+            let event = NSApp.currentEvent
+            let modifiers = event?.modifierFlags.intersection([.shift, .command, .option, .control]) ?? []
+            let composing = (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() == true
+            if !confirmConnect && !confirmDisconnect && presentation.canStop,
+               !composing, event?.isARepeat != true, modifiers.isEmpty { onStop() }
+        }
+        #endif
         .frame(maxWidth: maxContentWidth, maxHeight: .infinity)
         .background(contentBackground)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -120,5 +138,5 @@ public struct SessionScreen: View {
 }
 
 #Preview {
-    SessionScreen(presentation: .init(), onDraftChanged: { _ in }, onConnect: {}, onDisconnect: {}, onSend: {}, onStop: {})
+    SessionScreen(presentation: .init(), onDraftChanged: { _ in }, onConnect: {}, onDisconnect: {}, onSend: { _ in }, onStop: {})
 }

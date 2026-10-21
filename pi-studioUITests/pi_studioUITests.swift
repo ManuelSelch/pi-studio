@@ -13,7 +13,7 @@ final class pi_studioUITests: XCTestCase {
         app.session.shouldBeDisconnected()
     }
 
-    @MainActor func testTwoTurnsStreamingAndStopKeepPartialText() throws {
+    @MainActor func testTwoTurnsStreamingStopAndDisconnectRetention() throws {
         let app = PiUIDriver.launch(for: self)
         app.session.connect()
         app.chat.sendPrompt("Say hello")
@@ -28,19 +28,44 @@ final class pi_studioUITests: XCTestCase {
         app.session.waitUntilStopping()
         app.session.waitUntilReady()
         let partial = app.chat.captureReply(2)
-        XCTAssertFalse(partial.isEmpty)
+        app.session.disconnect()
+        app.session.shouldBeDisconnected()
+        app.chat.replyShouldBe(2, partial)
     }
 
-    @MainActor func testActiveDisconnectWarnsFromTheSidebar() throws {
+    @MainActor func testLocalDraftClearsAfterEachIdenticalSubmissionAndDoesNotReplayClear() throws {
+        let app = PiUIDriver.launch(for: self)
+        app.session.connect()
+        app.chat.sendPrompt("Same draft")
+        app.chat.waitForReply(1)
+        app.session.waitUntilReady()
+        app.chat.draftShouldBe("")
+        app.chat.enterDraft("Same draft")
+        app.chat.draftShouldBe("Same draft")
+        app.chat.submitDraft()
+        app.chat.waitForReply(2)
+        app.session.waitUntilReady()
+        app.chat.draftShouldBe("")
+    }
+
+    @MainActor func testWhitespaceLocalDraftCannotSubmit() throws {
+        let app = PiUIDriver.launch(for: self)
+        app.session.connect()
+        app.chat.enterDraft("   ")
+        app.chat.shouldAllowSend(false)
+        app.chat.draftShouldBe("   ")
+    }
+
+    @MainActor func testActiveDisconnectWarnsWithoutDiscardingTranscript() throws {
         let app = PiUIDriver.launch(for: self)
         app.session.connect()
         app.chat.sendPrompt("Long answer")
         app.chat.waitForReply(1)
-        app.projects.back()
         app.session.requestDisconnect()
         app.session.shouldShowDisconnectWarning()
         app.session.confirmDisconnect()
         app.session.shouldBeDisconnected()
+        app.chat.shouldContainReply(1)
     }
 
     @MainActor func testUnknownSendOutcomeRetainsDraftAndDisablesResend() throws {

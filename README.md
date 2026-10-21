@@ -6,9 +6,11 @@ select **My Mac** for a native desktop app, not Catalyst. The mobile product is
 still a Simulator/local-server demo, not a remotely deployed phone controller.
 
 One screen shows connection state, explicit Connect/Disconnect, a plain-text
-transcript, message field, Send, Stop and errors. No connection opens on launch.
-The approved layouts are preserved in [mockups/session](mockups/session/DESIGN.md)
-and [mockups/settings](mockups/settings/DESIGN.md).
+transcript, multiline message field, icon-only ↑ Send and errors. macOS Esc stops
+an active run; iOS replaces Send with a stop icon while running. No connection
+opens on launch. The approved layouts are preserved in
+[mockups/session](mockups/session/DESIGN.md), [mockups/settings](mockups/settings/DESIGN.md)
+and [mockups/multiline-composer](mockups/multiline-composer/DESIGN.md).
 
 ## App icons
 
@@ -30,29 +32,43 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   platforms. It depends on local PiSDK and [Flux](https://github.com/ManuelSelch/Flux)
   checkouts (Flux 2.0 API, including FluxTestStore, with the iOS 16 minimum fixed locally),
   and [FactoryKit](https://github.com/hmlongco/Factory) from **2.5.3**, allowing compatible 2.x updates.
-- [SessionDependencies](Packages/PiUI/Sources/PiUI/App/SessionDependencies.swift) is
-  an app-owned FactoryKit container, not a global singleton. It registers session
-  configuration, the SDK connection builder and one cached main-actor controller.
-  The shell and session container resolve the same controller; previews/tests use
-  separate scopes. Install overrides before resolving the controller. Native UI
+- [Dependency registrations](Packages/PiUI/Sources/PiUI/Session/App/SessionDependencies.swift)
+  extend FactoryKit's Container. The app uses Container.shared; tests/previews own
+  independent containers. Registrations include session configuration, the SDK
+  connection builder and cached main-actor session/settings stores.
+  Each store owns a fresh middleware instance. The shell and session container resolve
+  the same store; previews/tests use separate scopes. Install overrides before resolution. Native UI
   tests register their debug connection through the same dependency graph.
-- [SessionFeature](Packages/PiUI/Sources/PiUI/App/SessionFeature.swift) holds app-owned
+- [SessionFeature](Packages/PiUI/Sources/PiUI/Session/App/SessionFeature.swift) holds app-owned
   interaction state and typed reducer actions. FluxStore is the sole observable
-  source of that state; drafts and action/error flags are not a second model.
-- [SessionController](Packages/PiUI/Sources/PiUI/App/SessionController.swift) owns
-  awaitable SDK effects, observation tasks and disposal, feeding Flux actions.
-  Long-lived SDK observation is explicitly cancelled rather than hidden inside
-  middleware-owned background tasks. Generation tokens reject obsolete results.
-- [Containers](Packages/PiUI/Sources/PiUI/SessionContainer.swift) bridge Flux, injected
-  dependencies and callbacks to presentation. Future navigation/router wiring
+  source of session interaction state. Editable message text stays local to the
+  composer; only submitted snapshots and consumable matching-clear instructions
+  cross the store boundary. Typing dispatches no session actions.
+- [SessionMiddleware](Packages/PiUI/Sources/PiUI/Session/Middleware/SessionMiddleware.swift)
+  owns SDK effects, observation tasks and disposal. Containers only dispatch
+  `connectRequested`, `sendRequested(text:)`, `stopRequested`, `disconnectRequested`
+  and `clearDraftConsumed`. The reducer validates readiness/content and synchronously
+  reserves accepted requests; middleware submits the exact action snapshot. Request IDs
+  prevent duplicate SDK calls and generation tokens reject obsolete results.
+  Middleware-owned tasks capture only the weak-backed store handle across SDK
+  suspension, so releasing the store cancels work and disconnects the client.
+  Disconnect cancels and joins pending work/streams before `disconnectFinished`;
+  Connect stays disabled until disposal settles.
+  These lifecycle tasks are owned by middleware, not tracked by Flux `finish()`.
+  Tests await result actions/state and explicitly disconnect before draining.
+  This does not stop or close the server runtime.
+- [Containers](Packages/PiUI/Sources/PiUI/Session/SessionContainer.swift) bridge Flux, injected
+  dependencies and callbacks to presentation. ObservableObject stores use
+  `@InjectedObject`, not `@Injected`, so SwiftUI observes state publications. Future navigation/router wiring
   belongs here or in the host shell. The selected routing library is
   [Router](https://github.com/ManuelSelch/Router), but integration is deferred by
   agreement: version 1.0.10 unconditionally depends on UIKit-only SwiftEntryKit
   and UIHostingController and cannot build natively for macOS. No substitute
   router is introduced; settings uses native sheet presentation.
-- [Components](Packages/PiUI/Sources/PiUI/Components) import SwiftUI only and take
-  plain display values and callbacks. They do not read stores, resolve services,
-  use SDK models or perform network work. Local focus/alert state is UI-only.
+- [Components](Packages/PiUI/Sources/PiUI/Session/UI) take plain display values and
+  callbacks, using SwiftUI and narrowly scoped native editing/event adapters.
+  They do not read stores, resolve services, use SDK models or perform network
+  work. Local draft/focus/alert state is UI-only.
 - The [app shell](pi-studio/pi_studioApp.swift) owns lifetime and native windows.
   iOS backgrounding disposes local networking. macOS losing focus does not;
   closing its single window disposes the local connection.
@@ -74,7 +90,7 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   the app uses their working-tree contents, not the published Flux 2.0.0 tag.
   Keep both Package.resolved files checked in; only remote dependencies are pinned there.
 
-[SessionConfiguration](Packages/PiUI/Sources/PiUI/App/SessionController.swift)
+[SessionConfiguration](Packages/PiUI/Sources/PiUI/Session/App/SessionConfiguration.swift)
 defaults to `ws://127.0.0.1:8787/ws` and the dedicated **server-side** directory
 `/tmp/pi-studio-demo`. Create that directory and start the local v2 Pi Server
 before connecting. The app does not start/install the backend or store model
@@ -94,12 +110,15 @@ the server-side working directory remains development configuration.
   keep their endpoint snapshot and are not disconnected or restarted. The header
   distinguishes current and next endpoints when they differ.
 - [Settings](Packages/PiUI/Sources/PiUI/Settings) is a vertical Flux feature.
-  SettingsController depends on the small `EndpointSettingsService` protocol;
-  only `UserDefaultsEndpointSettingsService` touches UserDefaults. Tests inject
-  in-memory services or isolated suites, never personal defaults. The existing
-  FactoryKit app scope owns both cached controllers and the service.
+  SettingsMiddleware uses `@Injected` for the small `EndpointSettingsService`
+  protocol. Its factory binds FactoryKit's task-local container during construction
+  so independent scopes stay isolated. Only `UserDefaultsEndpointSettingsService` touches UserDefaults.
+  Tests inject in-memory services or isolated suites, never personal defaults.
+  The settings store loads a validated saved/default endpoint at construction.
+  Save is reserved by the reducer before middleware runs; request IDs reject
+  duplicate work. FactoryKit caches both stores and the service within the container.
 - Explicit configuration overrides still win; the app resolves the endpoint
-  anew on Connect, not just when its cached SessionController is created.
+  when Connect middleware begins, before any SDK suspension, not when the store is created.
   UserDefaults provides no durable-write acknowledgement. This adds no remote
   authentication, automatic reconnect or transport-security exceptions.
 
@@ -116,12 +135,18 @@ iPhone, loopback refers to the phone, not your Mac.
   and Pocket control is not required.
 - Each explicit connection creates one fresh demo session. Existing runtimes are
   never attached to, aborted or closed by the app.
-- Send permits one nonempty plain-text prompt while idle. Slash/bash commands,
+- The editor wraps and grows from two to five lines, then scrolls internally.
+  macOS Enter sends and Shift+Enter inserts a newline at the caret. iOS Return
+  inserts a newline; only the ↑ button submits. No routine composer hints are shown.
+- Send permits one non-whitespace plain-text prompt while idle and preserves exact
+  indentation, blank lines and surrounding whitespace. Slash/bash commands,
   steering and queued messages are deliberately unsupported. Drafts clear only
   after admission, remain on rejection/unknown outcome, and are never replayed.
 - SDK-owned complete projections deliver incremental text, ordered messages and
   finalized answers without duplicate drafts. Admission is not answer completion.
-- Stop retains partial text and shows Stopping until authoritative settlement.
+- macOS Esc (no separate Stop button) and the iOS running-state stop icon invoke
+  the same guarded cancellation effect. Stop retains partial text and shows
+  Stopping until authoritative settlement.
   A completed abort response means the server is idle; an accepted abort is not
   completion. Missing start/stop settlement has a bounded deadline.
 - Disconnect during active/pending work warns that server work may continue.
@@ -140,6 +165,8 @@ behind. Avoid repeated connections without cleanup.
 [.pi/pipeline.json](.pi/pipeline.json) configures once-per-worktree preparation and
 seven independent suites. Only fast `piui` tests opt into after-agent execution;
 UI automation is manual because it takes control of the Simulator/desktop.
+**Current user instruction: do not run macOS automation tests until authorized.**
+The macOS composer interaction scenarios are compiled, not executed.
 
 Equivalent commands after preparation:
 
@@ -176,7 +203,7 @@ DYLD missing-symbol crashes and misleading macOS compatibility dialogs. Use
 separate Simulator devices via `PI_STUDIO_TEST_DESTINATION` (or run serially);
 separate derived-data directories alone do not isolate Simulator installations.
 
-- PiUI: **26 named tests** (including parameterized URL cases), covering settings
+- PiUI: **42 named tests** (including parameterized URL cases), covering settings
   reducers, mock-service failure/retry, isolated UserDefaults persistence,
   next-connection snapshots during setup/streaming, and dependency scope
   identity/isolation, configuration/connection overrides, FluxTestStore reducer
@@ -184,21 +211,22 @@ separate derived-data directories alone do not isolate Simulator installations.
   setup/pending-send disconnect, connection errors and deallocation disposal.
 - The settings connection integration scenario and semantic driver also compile
   into both native unit-test targets; their source is shared, not copied.
-- Both platforms run seven functional UI tests (settings validation/cancel/save/
-  relaunch and next-connection behavior, consent, two turns/Stop, active disconnect,
-  rejected send, unknown outcome), plus launch/appearance
-  screenshot tests. Debug-only injected connections are never selected by normal
-  app launches; tests use public SDK projections, not a second wire protocol.
-- Debug/unit/UI and Release builds pass on both platforms with FactoryKit.
-  One macOS active-disconnect UI run failed after an automation interruption;
-  the full macOS UI suite passed on rerun without code changes.
+- iOS: 15 functional UI tests (including six multiline scenarios), plus four
+  launch/appearance cases. macOS has corresponding Return/Shift+Return,
+  paste/selection/undo, duplicate admission, Escape and retention scenarios,
+  compiled but not executed during the automation pause. Debug-only injected
+  connections are never selected by normal app launches; tests use public SDK
+  projections, not a second wire protocol.
+- For current verification and outstanding native macOS/IME/physical-keyboard
+  checks, see [implementation status](docs/multiline-composer/IMPLEMENTATION.md).
+  No macOS interaction verification is claimed while automation is paused.
 
 ### Semantic test DSL
 
 Integration and functional UI scenarios use lowerCamelCase feature drivers:
 `app.session.connect()`, `app.chat.sendPrompt(...)`, `app.settings.open()` and
 semantic assertions.
-Drivers hide controllers, SDK projections, selectors and synchronization;
+Drivers hide stores, middleware, SDK projections, selectors and synchronization;
 `app.server` separately controls integration fixtures. Both roots own cleanup.
 
 See [testing drivers](docs/testing-drivers.md) for architecture, examples and
@@ -218,7 +246,7 @@ This requires pi-chat's installed Node/tsx dependencies and built SDK dist
 (`npm ci` and `npm run build:sdk` there). Override `PI_CHAT_CHECKOUT` if needed.
 The script owns an ephemeral-loopback fake-runtime server with temporary metadata
 and empty history. It verifies streaming, a second turn, Stop/retained text and
-disconnect through SessionController, then verifies exactly one retained runtime
+disconnect through SessionMiddleware, then verifies exactly one retained runtime
 is explicitly closed and the test-owned server is stopped. It never points to the
 user's development server. Failure logs are retained in a temporary directory.
 

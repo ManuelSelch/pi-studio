@@ -1,35 +1,41 @@
 import Testing
 
+/// Endpoint policy: a saved endpoint applies to the next explicit Connect only, and never
+/// disturbs the connection or the conversation that is already open.
 @MainActor
 struct SettingsIntegrationTests {
-    @Test func cachedControllerUsesSavedEndpointOnNextConnectionOnly() async throws {
-        try await PiIntegrationDriver.run { app in
+    @Test func savedEndpointAppliesToTheNextConnectionOnly() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
             app.settings.open()
             app.settings.enterEndpoint("ws://first.test/ws")
             app.settings.save()
-            try await app.session.beginConnect()
-            app.session.endpointShouldBe("ws://first.test/ws")
+            try await app.settings.waitUntilSaved("ws://first.test/ws")
+            try await app.projects.connect()
+            try await app.tabs.openQuickChat()
             app.settings.open()
             app.settings.enterEndpoint("wss://second.test/custom")
             app.settings.save()
-            app.session.shouldBeConnecting()
-            app.session.endpointShouldBe("ws://first.test/ws")
+            try await app.settings.waitUntilSaved("wss://second.test/custom")
+            // The live connection and transcript are untouched until an explicit reconnect.
             await app.server.connectionEndpointsShouldBe(["ws://first.test/ws"])
-            try await app.server.acceptConnection()
-            app.session.shouldBeReady()
-            try await app.server.streamReply("Untouched streaming reply")
+            app.tabs.transcriptShouldBe(["Answer from new-1"])
+            await app.projects.disconnect()
+            try await app.server.waitForDisconnected()
+            try await app.projects.connect()
+            await app.server.connectionEndpointsShouldBe(["ws://first.test/ws", "wss://second.test/custom"])
+        }
+    }
+
+    @Test func invalidEndpointIsRejectedWithoutSaving() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
             app.settings.open()
-            app.settings.enterEndpoint("ws://third.test/ws")
+            app.settings.enterEndpoint("https://example.com/ws")
             app.settings.save()
-            app.session.statusShouldBe("Generating…")
-            app.chat.messagesShouldBe(["Untouched streaming reply"])
-            app.session.endpointShouldBe("ws://first.test/ws")
-            await app.server.connectionEndpointsShouldBe(["ws://first.test/ws"])
-            await app.session.disconnect()
-            try await app.session.connect()
-            app.session.endpointShouldBe("ws://third.test/ws")
-            await app.server.connectionEndpointsShouldBe(["ws://first.test/ws", "ws://third.test/ws"])
-            await app.server.projectPathShouldBe("/tmp/pi-studio-demo")
+            try await app.settings.waitUntilSettled()
+            app.settings.shouldShowError(containing: "ws://")
+            app.settings.shouldBePresented(true)
+            app.settings.cancel()
+            app.settings.shouldBePresented(false)
         }
     }
 }

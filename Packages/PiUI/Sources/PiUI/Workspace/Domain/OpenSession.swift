@@ -52,4 +52,9 @@ public struct OpenSession: Identifiable, Equatable, Sendable {
         id == identity.key || runtimeId == identity.runtimeId
             || (sessionPath != nil && sessionPath == identity.sessionPath)
     }
+
+    public var identity: OpenSessionIdentity {
+        OpenSessionIdentity(scope: scope, sessionPath: sessionPath,
+                            runtimeId: runtimeId, projectPath: projectPath)
+    }
 }

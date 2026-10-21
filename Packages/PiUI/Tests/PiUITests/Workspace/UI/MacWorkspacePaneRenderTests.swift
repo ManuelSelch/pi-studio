@@ -43,7 +43,7 @@ struct MacWorkspacePaneRenderTests {
         let pane = WorkspacePane(presentation: presentation(), session: session(),
                                  actions: WorkspaceActions(open: { _, _ in }, create: { _ in },
                                                            connection: {}, settings: {}, back: {},
-                                                           draftChanged: { _ in }, send: {}, stop: {},
+                                                           draftChanged: { _ in }, send: { _ in }, stop: {},
                                                            selectTab: { _ in }, closeTab: { _ in },
                                                            followTailChanged: { _ in },
                                                            scrollAnchorChanged: { _ in }))
@@ -57,8 +57,9 @@ struct MacWorkspacePaneRenderTests {
         let bitmap = try #require(hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds))
         hosting.cacheDisplay(in: hosting.bounds, to: bitmap)
         window.contentView = nil
-        return try #require(bitmap.representation(using: .png, properties: [:]),
-                            "Rendered pane must convert to a PNG")
+        let data = try #require(bitmap.representation(using: NSBitmapImageRep.FileType.png, properties: [:]),
+                                "Rendered pane must convert to a PNG")
+        return data
     }
 
     @Test func theConversationPaneRendersTabsWithStatusAndOneTranscript() throws {

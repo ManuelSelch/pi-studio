@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multiline composer review</title>
+<link rel="stylesheet" href="../session/styles.css">
+<style>
+.app { min-height: min(640px, 85dvh); }
+.actions { justify-content: flex-end; }
+#send { width: 44px; padding: 10px; display: grid; place-items: center; }
+#send svg { width: 21px; height: 21px; }
+textarea { resize: none; line-height: 22px; min-height: 68px; max-height: 134px; overflow-y: auto; }
+</style>
+<main class="app">
+<header><h1>Pi Studio</h1></header>
+<section class="connection"><div class="connection-row"><span id="status">Ready</span><button type="button">Disconnect</button></div><p class="endpoint">127.0.0.1:8787 · /tmp/pi-studio-demo</p></section>
+<section id="transcript" aria-label="Conversation"><p class="empty">Demo ready. Send a message to begin.</p></section>
+<form id="composer">
+<label for="message">Message</label>
+<textarea id="message" rows="2" placeholder="Say hello"></textarea>
+<p id="error" role="alert" hidden></p>
+<div class="actions"><button id="send" type="submit" aria-label="Send" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg></button></div>
+</form>
+</main>
+<aside class="review"><strong>Mockup only</strong> · approximates the native composer, no server.
+<label for="platform">Platform</label><select id="platform"><option value="mac">macOS</option><option value="ios">iOS</option></select>
+<label for="state">State</label><select id="state"><option value="ready">Ready</option><option value="pending">Pending admission</option><option value="running">Running</option><option value="stopping">Stopping</option><option value="error">Rejected send</option></select>
+<p>Revision 2: no hints, no Stop button, icon-only ↑ Send. On macOS, Enter sends, Shift+Enter inserts a newline, and Esc stops a running response. Use the Running state to try Esc. iOS touch-only stopping is awaiting a decision.</p></aside>
+<script type="module" src="./main.js"></script>
+</html>
