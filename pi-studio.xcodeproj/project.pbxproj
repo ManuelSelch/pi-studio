@@ -12,6 +12,7 @@
 		B00000000000000000000004 /* PiUI in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000003 /* PiUI */; };
 		B00000000000000000000007 /* PiSDK in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* PiSDK */; };
 		C00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */; };
+		C00000000000000000000007 /* Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000008 /* Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift */; };
 		D00000000000000000000001 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000003 /* FactoryKit */; };
 		D00000000000000000000004 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000003 /* FactoryKit */; };
 		E00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift */; };
@@ -41,6 +42,7 @@
 		972B0B453087E5CF0068614C /* pi-studioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pi-studioTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		972B0B4F3087E5CF0068614C /* pi-studioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pi-studioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift; sourceTree = SOURCE_ROOT; };
+		C00000000000000000000008 /* Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift; sourceTree = SOURCE_ROOT; };
 		E00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -120,6 +122,7 @@
 			isa = PBXGroup;
 			children = (
 				C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */,
+				C00000000000000000000008 /* Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift */,
 				E00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift */,
 			);
 			name = "Recovered References";
@@ -291,6 +294,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift in Sources */,
+				C00000000000000000000007 /* Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift in Sources */,
 				E00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

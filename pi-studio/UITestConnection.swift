@@ -14,13 +14,16 @@ actor UITestConnection: PiSessionConnection {
     private let rejectSend: Bool
     private let unknownSend: Bool
     private let rejectOpen: Bool
+    private let delayedAdmission: Bool
     private var stateObservers: [UUID: AsyncStream<PiConnectionState>.Continuation] = [:]
     private var projectionObservers: [UUID: AsyncStream<DemoSessionProjection>.Continuation] = [:]
     private var catalogueObservers: [UUID: AsyncStream<PiCatalogue>.Continuation] = [:]
     private var runtimes: [PiRuntimeSummary] = [.init(sessionId: "ui-running", title: "Pocket navigation", projectPath: "/repo", projectName: "pi-studio", status: "running")]
 
-    init(rejectSend: Bool = false, unknownSend: Bool = false, rejectOpen: Bool = false) {
+    init(rejectSend: Bool = false, unknownSend: Bool = false, rejectOpen: Bool = false,
+         delayedAdmission: Bool = false) {
         self.rejectSend = rejectSend; self.unknownSend = unknownSend; self.rejectOpen = rejectOpen
+        self.delayedAdmission = delayedAdmission
     }
     func states() async -> AsyncStream<PiConnectionState> {
         let id = UUID(); let (stream, updates) = AsyncStream<PiConnectionState>.makeStream(bufferingPolicy: .bufferingNewest(1))
@@ -105,7 +108,9 @@ actor UITestConnection: PiSessionConnection {
         for observer in projectionObservers.values { observer.yield(projection!) }
     }
     func send(_ text: String) async throws {
-        try await Task.sleep(for: .milliseconds(100))
+        // A delayed admission keeps the composer busy, so the UI can prove the draft survives
+        // edit-then-submit and only clears once the send is admitted.
+        try await Task.sleep(for: .milliseconds(delayedAdmission ? 2_000 : 100))
         guard !closed else { throw PiError.disconnected }
         if rejectSend { throw PiError.rejected(code: "sessionBusy", message: "Send rejected by the test runtime.") }
         if unknownSend {

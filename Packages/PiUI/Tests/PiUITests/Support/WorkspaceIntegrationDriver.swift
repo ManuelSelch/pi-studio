@@ -14,20 +14,24 @@ final class WorkspaceIntegrationDriver {
     let projects: WorkspaceProjectsDriver
     let tabs: WorkspaceTabsDriver
     let settings: WorkspaceSettingsDriver
+    let chat: WorkspaceConversationDriver
     let server: WorkspaceServerDriver
     private let context: WorkspaceContext
 
-    private init() {
-        let context = WorkspaceContext()
+    private init(endpoint: URL?) {
+        let context = WorkspaceContext(endpoint: endpoint)
         self.context = context
         projects = WorkspaceProjectsDriver(context)
         tabs = WorkspaceTabsDriver(context)
         settings = WorkspaceSettingsDriver(context)
+        chat = WorkspaceConversationDriver(context)
         server = WorkspaceServerDriver(context)
     }
 
-    static func run(_ scenario: (WorkspaceIntegrationDriver) async throws -> Void) async throws {
-        let app = WorkspaceIntegrationDriver()
+    /// A nil endpoint uses the isolated stub; an explicit one opts into a real transport.
+    static func run(endpoint: URL? = nil,
+                    _ scenario: (WorkspaceIntegrationDriver) async throws -> Void) async throws {
+        let app = WorkspaceIntegrationDriver(endpoint: endpoint)
         do {
             try await scenario(app)
             await app.context.dispose()
@@ -49,10 +53,18 @@ fileprivate final class WorkspaceContext {
 
     let endpointLog = EndpointLog()
 
-    init() {
-        container.endpointSettingsService.register { @MainActor [endpoint] in endpoint }
-        container.makeSessionConnection.register { [stub, endpointLog] in
-            { url in endpointLog.values.withLock { $0.append(url.absoluteString) }; return stub }
+    init(endpoint: URL? = nil) {
+        container.endpointSettingsService.register { @MainActor [settings = self] in settings.endpoint }
+        if let endpoint {
+            endpointLog.values.withLock { $0.append(endpoint.absoluteString) }
+            container.makeSessionConnection.register { { url in
+                self.endpointLog.values.withLock { $0.append(url.absoluteString) }
+                return PiClient(endpoint: url)
+            } }
+        } else {
+            container.makeSessionConnection.register { [stub] in
+                { url in self.endpointLog.values.withLock { $0.append(url.absoluteString) }; return stub }
+            }
         }
     }
 
@@ -62,6 +74,9 @@ fileprivate final class WorkspaceContext {
 
     func dispose() async {
         workspace.dispatch(.disconnectRequested())
+        for _ in 0..<200 where workspace.state.connection != .disconnected {
+            try? await Task.sleep(for: .milliseconds(5))
+        }
         await stub.release()
     }
 
@@ -121,6 +136,12 @@ final class WorkspaceProjectsDriver {
     func openRunningSession() async throws {
         context.workspace.dispatch(.openRequested(target: .runtime("running"), title: "Working"))
         try await tabs.settle()
+    }
+    /// Create a session inside a known project path, for real-transport acceptance.
+    func createSession(projectPath: String, title: String = "New chat",
+                       sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        context.workspace.dispatch(.createRequested(projectPath: projectPath, title: title))
+        try await tabs.settle(sourceLocation: sourceLocation)
     }
     /// Dispatch an open without waiting for it, to assert admission rules.
     func beginOpen(_ target: ProjectSessionTarget = .history("/history/saved"), title: String = "Saved") {
@@ -194,6 +215,7 @@ final class WorkspaceTabsDriver {
             }
             return workspace.observedRuntimeId == tab.runtimeId
                 && self.context.session.state.observedSessionId == tab.runtimeId
+                && self.context.session.state.projection?.session.sessionId == tab.runtimeId
         }
     }
     func select(_ title: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
@@ -513,5 +535,60 @@ fileprivate actor WorkspaceConnectionStub: PiSessionConnection {
         publishCatalogue()
         publish(.replaced(previous: DemoSession(sessionId: previous, projectPath: "/repo"),
                           current: DemoSession(sessionId: replacement, projectPath: "/repo")))
+    }
+}
+
+/// Conversation gestures on the selected tab, for scenarios that also navigate.
+@MainActor
+final class WorkspaceConversationDriver {
+    private let context: WorkspaceContext
+    fileprivate init(_ context: WorkspaceContext) { self.context = context }
+
+    var state: SessionFeature.State { context.session.state }
+    func sendPrompt(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        context.session.dispatch(.sendRequested(text: text))
+        try await context.wait("admitted send", sourceLocation: sourceLocation) { !self.context.session.state.isSending }
+        #expect(context.session.state.errorMessage == nil, sourceLocation: sourceLocation)
+    }
+    func stop() { context.session.dispatch(.stopRequested()) }
+    func waitUntilReady(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await context.wait("idle conversation", sourceLocation: sourceLocation) { self.context.session.state.canEditMessage }
+    }
+    func shouldShowError(containing text: String, sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.session.state.errorMessage?.contains(text) == true, sourceLocation: sourceLocation)
+    }
+    func clearInstructionShouldBe(_ text: String?, sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.session.state.clearDraftMatching == text, sourceLocation: sourceLocation)
+    }
+    func messagesShouldBe(_ texts: [String], sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.session.state.projection?.messages.map(\.text) == texts, sourceLocation: sourceLocation)
+    }
+    func shouldHaveMessageCount(_ count: Int, sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.session.state.projection?.messages.count == count, sourceLocation: sourceLocation)
+    }
+    func waitForPartialReply(messageCount: Int, sourceLocation: SourceLocation = #_sourceLocation) async throws -> String {
+        try await context.wait("partial reply \(messageCount)", sourceLocation: sourceLocation) {
+            let state = self.context.session.state
+            return state.canStop && state.projection?.messages.count == messageCount
+                && state.projection?.messages.last?.role == "assistant"
+                && state.projection?.messages.last?.isPartial == true
+                && state.projection?.messages.last?.text.isEmpty == false
+        }
+        return context.session.state.projection!.messages.last!.text
+    }
+    func captureLastReply(sourceLocation: SourceLocation = #_sourceLocation) throws -> String {
+        let text = try #require(context.session.state.projection?.messages.last?.text, sourceLocation: sourceLocation)
+        try #require(!text.isEmpty, sourceLocation: sourceLocation)
+        return text
+    }
+    func lastReplyShouldDiffer(from partial: String, sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.session.state.projection?.messages.last?.text != partial, sourceLocation: sourceLocation)
+    }
+    func captureTranscript() -> [DemoMessage] { context.session.state.projection?.messages ?? [] }
+    func transcriptShouldBe(_ messages: [DemoMessage], sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.session.state.projection?.messages == messages, sourceLocation: sourceLocation)
+    }
+    func shouldBeDisconnected(sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.session.state.connection == .disconnected, sourceLocation: sourceLocation)
     }
 }

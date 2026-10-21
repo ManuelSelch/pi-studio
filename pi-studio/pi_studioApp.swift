@@ -24,10 +24,13 @@ struct pi_studioApp: App {
             Container.shared.endpointSettingsService.onDebug(factory: { service })
             
             
-            let rejected = ProcessInfo.processInfo.arguments.contains("--ui-send-rejected")
-            let unknown = ProcessInfo.processInfo.arguments.contains("--ui-send-unknown")
+            let rejected = arguments.contains("--ui-send-rejected")
+            let unknown = arguments.contains("--ui-send-unknown")
             let delayed = arguments.contains("--ui-send-delayed")
-            Container.shared.makeConnection.onDebug(factory: { { _ in UITestConnection(rejectSend: rejected, unknownSend: unknown, delayedAdmission: delayed)} })
+            let rejectOpen = arguments.contains("--ui-open-rejected")
+            let connection = UITestConnection(rejectSend: rejected, unknownSend: unknown,
+                                              rejectOpen: rejectOpen, delayedAdmission: delayed)
+            Container.shared.makeSessionConnection.onDebug(factory: { { _ in connection } })
         }
         #endif
     }
@@ -35,17 +38,18 @@ struct pi_studioApp: App {
     var body: some Scene {
         #if os(macOS)
         // One window/connection. Losing focus is not a disconnect on desktop.
-        Window("Pi Studio", id: "session") {
-            SessionContainer()
-                .frame(minWidth: 480, minHeight: 500)
-                .onDisappear { Container.shared.sessionStore().dispatch(.disconnectRequested()) }
+        Window("Pi Studio", id: "workspace") {
+            WorkspaceContainer()
+                .frame(minWidth: 620, minHeight: 500)
+                .onDisappear { Container.shared.workspaceStore().dispatch(.disconnectRequested()) }
         }
-        .defaultSize(width: 700, height: 760)
+        .defaultSize(width: 980, height: 760)
         #else
         WindowGroup {
-            SessionContainer()
+            WorkspaceContainer()
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .background { Container.shared.sessionStore().dispatch(.disconnectRequested()) }
+                    // Backgrounding disposes local networking; server work keeps running.
+                    if phase == .background { Container.shared.workspaceStore().dispatch(.disconnectRequested()) }
                 }
         }
         #endif
