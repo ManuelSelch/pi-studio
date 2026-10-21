@@ -69,6 +69,9 @@ Preserve the original MVP/settings plan in the root REQUIREMENTS.md and the Pock
 - Proposed SwiftUI primitives/component names are implementation guidance, not an authorization to add platform frameworks, replace the deferred Router choice or refactor unrelated features.
 
 ## Implementation Plan
+
+Delivered so far: slice 1 (see [IMPLEMENTATION.md](./IMPLEMENTATION.md) for evidence and deliberate limits).
+
 ### 1. Project Browser and Compact Workspace Shell
 Description: Reconcile the Pocket browsing feature with the completed main middleware baseline before production edits. Deliver one end-to-end browsing/open/create flow in the shared workspace, with Quick Chats first, compact Mac split-view shell and iPhone navigation, settings access and explicit connection consent. Preserve current plain-text Send/Stop within a single selected conversation while multi-session SDK work is pending; do not advertise independent tabs yet. Verify catalogue updates, no automatic demo creation, project search, history reuse, open failure, endpoint policy and both native builds, with package/integration tests and allowed iOS UI checks. Retain existing shell regression coverage subject to the Mac automation pause.
 
