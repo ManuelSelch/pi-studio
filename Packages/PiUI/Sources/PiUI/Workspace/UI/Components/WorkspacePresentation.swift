@@ -3,12 +3,20 @@ import Foundation
 /// Plain values for the workspace shell: no Flux, SDK types or service lookups.
 public struct WorkspaceSelection: Equatable, Sendable {
     public var title: String
-    public var target: ProjectSessionTarget
+    /// Runtime and saved-path identity of the selected tab.
+    public var runtimeId: String
+    public var sessionPath: String?
     /// Project and optional branch shown as the conversation context.
     public var context: String
 
-    public init(title: String, target: ProjectSessionTarget, context: String) {
-        self.title = title; self.target = target; self.context = context
+    public init(title: String, runtimeId: String, sessionPath: String? = nil, context: String) {
+        self.title = title; self.runtimeId = runtimeId; self.sessionPath = sessionPath; self.context = context
+    }
+
+    /// A row is selected when either identity matches: the same history and the runtime
+    /// attached to it must not both look selected, nor neither.
+    public func represents(_ row: ProjectSessionRow) -> Bool {
+        row.runtimeId == runtimeId || (sessionPath != nil && row.sessionPath == sessionPath)
     }
 }
 

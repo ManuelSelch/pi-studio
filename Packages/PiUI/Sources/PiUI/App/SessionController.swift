@@ -122,6 +122,15 @@ public struct SessionConfiguration: Sendable {
         }
     }
 
+    /// Stop showing a session without touching the server or the transport. Used when
+    /// the workspace switches tabs, closes the last tab or returns to project browsing.
+    public func detach() {
+        observation?.cancel(); observation = nil
+        sessionObservation?.cancel(); sessionObservation = nil
+        connection = nil
+        store.dispatch(.detached(UUID()))
+    }
+
     public func disconnect() async {
         observation?.cancel(); observation = nil
         sessionObservation?.cancel(); sessionObservation = nil

@@ -187,5 +187,5 @@ struct WorkspaceSidebar: View {
 
     private var hasProjects: Bool { !visibleProjects.isEmpty }
 
-    private func isSelected(_ value: ProjectSessionRow) -> Bool { value.target == presentation.selection?.target }
+    private func isSelected(_ value: ProjectSessionRow) -> Bool { presentation.selection?.represents(value) == true }
 }

@@ -64,7 +64,7 @@ public struct WorkspaceContainer: View {
             connection: requestConnectionChange,
             settings: settings.open,
             back: controller.back,
-            draftChanged: controller.session.setDraft,
+            draftChanged: controller.setDraft,
             send: { Task { await controller.session.send() } },
             stop: { Task { await controller.session.stop() } })
     }
@@ -78,15 +78,16 @@ public struct WorkspaceContainer: View {
     private var presentation: WorkspacePresentation {
         let projects = store.state
         var value = WorkspacePresentation()
-        value.status = projects.selected == nil ? projects.status : sessionStore.state.statusText
+        value.status = projects.selectedSessionId == nil ? projects.status : sessionStore.state.statusText
         value.canConnect = projects.canConnect
         value.isBusy = projects.isOpening
         value.canOpen = projects.canOpen && controller.canNavigate
         value.requiresDisconnectWarning = controller.requiresDisconnectWarning
-        value.error = projects.selected == nil ? projects.error : nil
+        value.error = projects.selectedSessionId == nil ? projects.error : nil
         value.groups = ProjectListModel.groups(projects.catalogue)
-        value.selection = projects.selected.map {
-            WorkspaceSelection(title: projects.title, target: .runtime($0.sessionId), context: $0.projectPath)
+        value.selection = projects.selectedSession.map {
+            WorkspaceSelection(title: $0.title, runtimeId: $0.runtimeId,
+                               sessionPath: $0.sessionPath, context: $0.projectPath)
         }
         return value
     }
@@ -94,9 +95,9 @@ public struct WorkspaceContainer: View {
     private var sessionPresentation: SessionPresentation {
         let state = sessionStore.state
         var value = SessionPresentation()
-        value.title = store.state.title
+        value.title = store.state.selectedSession?.title ?? "Pi Studio"
         value.status = state.statusText
-        value.details = store.state.selected?.projectPath ?? ""
+        value.details = store.state.selectedSession?.projectPath ?? ""
         value.error = state.errorMessage
         value.draft = state.draft
         value.hint = state.hint

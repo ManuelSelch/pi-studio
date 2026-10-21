@@ -3,7 +3,7 @@ import Testing
 @Suite @MainActor struct WorkspaceControllerTests {
     @Test func connectListsWithoutCreatingAndQuickChatCreationIsExplicit() async throws {
         try await WorkspaceIntegrationDriver.run { app in
-            await app.projects.connect()
+            try await app.projects.connect()
             app.projects.shouldBeBrowsing()
             await app.server.shouldHaveCreates(0)
             await app.projects.newQuickChat()
@@ -15,7 +15,7 @@ import Testing
 
     @Test func historyAndRuntimeOpenThroughDifferentIdentities() async throws {
         try await WorkspaceIntegrationDriver.run { app in
-            await app.projects.connect()
+            try await app.projects.connect()
             await app.projects.openHistory()
             await app.server.openedHistoryShouldBe("/history/saved")
             app.projects.back()
@@ -26,7 +26,7 @@ import Testing
 
     @Test func failedOpenStaysInBrowserWithoutCreatingFallback() async throws {
         try await WorkspaceIntegrationDriver.run { app in
-            await app.projects.connect()
+            try await app.projects.connect()
             await app.server.rejectOpens()
             await app.projects.openHistory()
             app.projects.shouldBeBrowsing()
@@ -37,7 +37,7 @@ import Testing
 
     @Test func lateCatalogueIsDisplayedAndDuplicateSelectionIsBlocked() async throws {
         try await WorkspaceIntegrationDriver.run { app in
-            await app.projects.connect()
+            try await app.projects.connect()
             await app.server.publishLateCatalogue()
             try await app.projects.waitForLateProject()
             await app.server.holdOpen()
@@ -53,7 +53,7 @@ import Testing
 
     @Test func backDoesNotDisconnectAndDraftsDoNotLeakAcrossSessions() async throws {
         try await WorkspaceIntegrationDriver.run { app in
-            await app.projects.connect()
+            try await app.projects.connect()
             await app.projects.newQuickChat()
             app.chat.enterDraft("Keep here")
             app.projects.back()
@@ -68,7 +68,7 @@ import Testing
 
     @Test func unknownOpenOutcomeBlocksRetryUntilExplicitReconnect() async throws {
         try await WorkspaceIntegrationDriver.run { app in
-            await app.projects.connect()
+            try await app.projects.connect()
             await app.server.loseOpenReceipt()
             await app.projects.openHistory()
             app.projects.shouldShowError(containing: "unknown")

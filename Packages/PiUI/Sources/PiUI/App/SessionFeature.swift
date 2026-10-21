@@ -67,6 +67,8 @@ public struct SessionFeature: Feature {
         case stopStarted
         case stopFinished(UUID, error: PiError?)
         case disconnected(UUID)
+        /// The workspace stopped showing this session: local view state only.
+        case detached(UUID)
     }
 
     public init() {}
@@ -126,6 +128,9 @@ public struct SessionFeature: Feature {
             }
             state.generation = token; state.connection = .disconnected
             state.isSending = false; state.isStopping = false
+        case .detached(let token):
+            // No error text: nothing failed, the user simply stopped showing it.
+            state = .init(); state.generation = token
         }
     }
 }
