@@ -28,11 +28,10 @@ struct SessionFeatureTests {
         store.dispatch(.connectStarted(token)) { $0.generation = token; $0.connection = .connecting }
         store.dispatch(.connected(token, session)) { $0.connection = .ready(session) }
         store.dispatch(.projectionChanged(token, .init(session: session))) { $0.projection = .init(session: session) }
-        store.dispatch(.draftChanged("Hello")) { $0.draft = "Hello" }
         #expect(store.state.canSend)
         store.dispatch(.sendStarted) { $0.isSending = true }
         #expect(!store.state.canSend)
-        store.dispatch(.sendFinished(token, submitted: "Hello", error: nil)) { $0.isSending = false; $0.draft = "" }
+        store.dispatch(.sendFinished(token, submitted: "Hello", error: nil)) { $0.isSending = false; $0.clearDraftMatching = "Hello" }
         await store.finish()
     }
 
@@ -46,21 +45,31 @@ struct SessionFeatureTests {
             $0.generation = next; $0.connection = .disconnected
             $0.actionError = "Disconnected during setup. A demo runtime may have been created on the server."
         }
+        store.dispatch(.sendFinished(token, submitted: "Old", error: nil)) { _ in }
         store.dispatch(.failed(token, .disconnected)) { _ in }
         store.dispatch(.connected(token, .init(sessionId: "old", projectPath: "/tmp/old"))) { _ in }
         await store.finish()
     }
 
-    @Test func changedDraftIsNotClearedByEarlierSend() async {
+    @Test func consecutiveIdenticalSubmissionsIssueConsumableClearInstructions() async {
         let session = DemoSession(sessionId: "demo", projectPath: "/tmp/demo")
         var initial = SessionFeature.State()
         initial.connection = .ready(session); initial.projection = .init(session: session)
-        initial.draft = "First"
         let store = TestStore<SessionFeature>(state: initial)
         defer { store.tearDown() }
         store.dispatch(.sendStarted) { $0.isSending = true }
-        store.dispatch(.draftChanged("Next")) { $0.draft = "Next" }
-        store.dispatch(.sendFinished(initial.generation, submitted: "First", error: nil)) { $0.isSending = false }
+        store.dispatch(.sendFinished(initial.generation, submitted: "First", error: nil)) {
+            $0.isSending = false; $0.clearDraftMatching = "First"
+        }
+        store.dispatch(.clearDraftConsumed) { $0.clearDraftMatching = nil }
+        store.dispatch(.sendStarted) { $0.isSending = true }
+        store.dispatch(.sendFinished(initial.generation, submitted: "First", error: nil)) {
+            $0.isSending = false; $0.clearDraftMatching = "First"
+        }
+        store.dispatch(.sendStarted) { $0.isSending = true; $0.clearDraftMatching = nil }
+        store.dispatch(.sendFinished(initial.generation, submitted: "First", error: .disconnected)) {
+            $0.isSending = false; $0.actionError = PiError.disconnected.localizedDescription
+        }
         await store.finish()
     }
 }

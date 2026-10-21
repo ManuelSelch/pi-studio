@@ -24,10 +24,10 @@ public struct SessionContainer: View {
     public var body: some View {
         SessionScreen(
             presentation: presentation,
-            onDraftChanged: controller.setDraft,
+            onClearDraftConsumed: controller.consumeClearDraft,
             onConnect: { Task { await controller.connect(takingControl: true) } },
             onDisconnect: { Task { await controller.disconnect() } },
-            onSend: { Task { await controller.send() } },
+            onSend: { text in Task { await controller.send(text) } },
             onStop: { Task { await controller.stop() } },
             onSettings: settings.open
         )
@@ -51,7 +51,7 @@ public struct SessionContainer: View {
             value.details += "\nNext connection: \(savedEndpoint)"
         }
         value.error = state.errorMessage
-        value.draft = state.draft
+        value.clearDraftMatching = state.clearDraftMatching
         value.hint = state.hint
         value.canConnect = state.canConnect
         value.canEditMessage = state.canEditMessage

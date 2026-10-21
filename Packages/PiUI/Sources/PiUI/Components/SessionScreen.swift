@@ -6,7 +6,7 @@ public struct SessionPresentation: Equatable, Sendable {
     public var status = "Disconnected"
     public var details = ""
     public var error: String?
-    public var draft = ""
+    public var clearDraftMatching: String?
     public var hint = ""
     public var placeholder = "Your demo conversation will appear here."
     public var messages: [TranscriptMessage] = []
@@ -20,21 +20,21 @@ public struct SessionPresentation: Equatable, Sendable {
 
 public struct SessionScreen: View {
     public let presentation: SessionPresentation
-    public let onDraftChanged: @MainActor (String) -> Void
+    public let onClearDraftConsumed: @MainActor () -> Void
     public let onConnect: @MainActor () -> Void
     public let onDisconnect: @MainActor () -> Void
-    public let onSend: @MainActor () -> Void
+    public let onSend: @MainActor (String) -> Void
     public let onStop: @MainActor () -> Void
     public let onSettings: @MainActor () -> Void
     @State private var confirmConnect = false
     @State private var confirmDisconnect = false
     @FocusState private var messageFocused: Bool
 
-    public init(presentation: SessionPresentation, onDraftChanged: @escaping @MainActor (String) -> Void,
+    public init(presentation: SessionPresentation, onClearDraftConsumed: @escaping @MainActor () -> Void,
                 onConnect: @escaping @MainActor () -> Void, onDisconnect: @escaping @MainActor () -> Void,
-                onSend: @escaping @MainActor () -> Void, onStop: @escaping @MainActor () -> Void,
+                onSend: @escaping @MainActor (String) -> Void, onStop: @escaping @MainActor () -> Void,
                 onSettings: @escaping @MainActor () -> Void = {}) {
-        self.presentation = presentation; self.onDraftChanged = onDraftChanged
+        self.presentation = presentation; self.onClearDraftConsumed = onClearDraftConsumed
         self.onConnect = onConnect; self.onDisconnect = onDisconnect
         self.onSend = onSend; self.onStop = onStop; self.onSettings = onSettings
     }
@@ -60,11 +60,11 @@ public struct SessionScreen: View {
             Divider()
             SessionTranscript(messages: presentation.messages, placeholder: presentation.placeholder)
             Divider()
-            SessionComposer(draft: presentation.draft, hint: presentation.hint,
+            SessionComposer(clearDraftMatching: presentation.clearDraftMatching, hint: presentation.hint,
                             canEdit: presentation.canEditMessage, canSend: presentation.canSend,
                             canStop: presentation.canStop, focus: $messageFocused,
-                            onDraftChanged: onDraftChanged,
-                            onSend: { messageFocused = false; onSend() }, onStop: onStop)
+                            onClearDraftConsumed: onClearDraftConsumed,
+                            onSend: { text in messageFocused = false; onSend(text) }, onStop: onStop)
         }
         .frame(maxWidth: 620, maxHeight: .infinity)
         .background(contentBackground)
@@ -101,5 +101,5 @@ public struct SessionScreen: View {
 }
 
 #Preview {
-    SessionScreen(presentation: .init(), onDraftChanged: { _ in }, onConnect: {}, onDisconnect: {}, onSend: {}, onStop: {})
+    SessionScreen(presentation: .init(), onClearDraftConsumed: {}, onConnect: {}, onDisconnect: {}, onSend: { _ in }, onStop: {})
 }

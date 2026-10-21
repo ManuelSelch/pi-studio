@@ -29,15 +29,20 @@ try await PiIntegrationDriver.run { app in
     try await app.session.connect()
     try await app.chat.sendPrompt("Say hello")
     await app.server.receivedPromptsShouldBe(["Say hello"])
-    app.chat.draftShouldBe("")
+    app.chat.clearInstructionShouldBe("Say hello")
 }
 ```
 
 `sendPrompt` awaits admission, **not response completion**. The stub-backed helper
 accepts that admission automatically. To inspect a pending admission or inject
-failure, use `enterDraft` / `beginSend`, then `server.acceptSend`,
+failure, use `beginSend(text)`, then `server.acceptSend`,
 `rejectSend` or `loseSendReceipt`. Connection tests similarly use
 `beginConnect` and explicit fixture acceptance/rejection.
+
+The editable draft belongs to the composer, not Flux. Integration tests submit
+explicit string snapshots and assert `clearInstructionShouldBe` / consume the
+instruction; only native UI tests use `enterDraft` and `draftShouldBe` to inspect
+actual editing. Typing has no controller callback or store action.
 
 `run` disconnects and joins pending tasks on both success and thrown failure.
 Projection waits have a four-second deadline, identify the awaited condition and

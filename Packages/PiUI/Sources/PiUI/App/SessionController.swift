@@ -39,7 +39,7 @@ public struct SessionConfiguration: Sendable {
         store = FluxStore(state: .init())
     }
 
-    public func setDraft(_ value: String) { store.dispatch(.draftChanged(value)) }
+    public func consumeClearDraft() { store.dispatch(.clearDraftConsumed) }
 
     public func connect(takingControl: Bool) async {
         guard takingControl, state.canConnect else { return }
@@ -76,10 +76,10 @@ public struct SessionConfiguration: Sendable {
         }
     }
 
-    public func send() async {
-        guard state.canSend, let connection else { return }
+    public func send(_ submitted: String) async {
+        guard state.canSend, !submitted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let connection else { return }
         let token = state.generation
-        let submitted = state.draft
         store.dispatch(.sendStarted)
         do {
             try await connection.send(submitted)

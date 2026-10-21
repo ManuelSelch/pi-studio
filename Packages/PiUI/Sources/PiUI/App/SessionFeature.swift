@@ -8,7 +8,7 @@ public struct SessionFeature: Feature {
         public internal(set) var connection: PiConnectionState = .disconnected
         public internal(set) var connectionEndpoint: URL?
         public internal(set) var projection: DemoSessionProjection?
-        public internal(set) var draft = ""
+        public internal(set) var clearDraftMatching: String?
         public internal(set) var isSending = false
         public internal(set) var isStopping = false
         public internal(set) var actionError: String?
@@ -23,7 +23,7 @@ public struct SessionFeature: Feature {
             guard case .ready = connection else { return false }
             return projection?.status == .idle && !isSending && !isStopping
         }
-        public var canSend: Bool { canEditMessage && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        public var canSend: Bool { canEditMessage }
         public var canStop: Bool {
             guard case .ready = connection else { return false }
             return projection?.status == .running && !isSending && !isStopping
@@ -55,7 +55,7 @@ public struct SessionFeature: Feature {
     }
 
     public enum Action: Equatable, Sendable {
-        case draftChanged(String)
+        case clearDraftConsumed
         case connectStarted(UUID, endpoint: URL? = nil)
         case connected(UUID, DemoSession)
         case connectionChanged(UUID, PiConnectionState)
@@ -72,12 +72,12 @@ public struct SessionFeature: Feature {
 
     @MainActor public func reduce(_ state: inout State, _ action: Action) {
         switch action {
-        case .draftChanged(let draft): state.draft = draft
+        case .clearDraftConsumed: state.clearDraftMatching = nil
         case .connectStarted(let token, let endpoint):
             guard state.canConnect else { return }
             state.connectionEndpoint = endpoint
             state.generation = token; state.connection = .connecting
-            state.projection = nil; state.actionError = nil
+            state.projection = nil; state.actionError = nil; state.clearDraftMatching = nil
             state.isSending = false; state.isStopping = false
         case .connected(let token, let session):
             guard state.generation == token else { return }
@@ -93,13 +93,13 @@ public struct SessionFeature: Feature {
             state.connection = .failed(error)
         case .sendStarted:
             guard state.canSend else { return }
-            state.isSending = true; state.actionError = nil
+            state.isSending = true; state.actionError = nil; state.clearDraftMatching = nil
         case .sendFinished(let token, let submitted, let error):
             guard state.generation == token else { return }
             if let error {
                 state.actionError = error.localizedDescription
                 if error.isOutcomeUnknown { state.connection = .failed(error) }
-            } else if state.draft == submitted { state.draft = "" }
+            } else { state.clearDraftMatching = submitted }
             state.isSending = false
         case .stopStarted:
             guard state.canStop else { return }
@@ -119,7 +119,7 @@ public struct SessionFeature: Feature {
             } else if state.connection == .connecting {
                 state.actionError = "Disconnected during setup. A demo runtime may have been created on the server."
             }
-            state.generation = token; state.connection = .disconnected
+            state.generation = token; state.connection = .disconnected; state.clearDraftMatching = nil
             state.isSending = false; state.isStopping = false
         }
     }

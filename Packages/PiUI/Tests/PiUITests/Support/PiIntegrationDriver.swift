@@ -179,32 +179,31 @@ final class IntegrationChatDriver {
     private let context: IntegrationContext
     fileprivate init(_ context: IntegrationContext) { self.context = context }
 
-    func enterDraft(_ text: String) { context.model.setDraft(text) }
     func sendPrompt(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
-        enterDraft(text)
         try #require(context.model.state.canSend, "Prompt requires an idle, ready session", sourceLocation: sourceLocation)
         if let stub = context.stub {
-            try await beginSend(sourceLocation: sourceLocation)
+            try await beginSend(text, sourceLocation: sourceLocation)
             await stub.settleSend()
             await context.sending?.value; context.sending = nil
         } else {
-            await context.model.send()
+            await context.model.send(text)
         }
         #expect(context.model.state.errorMessage == nil, sourceLocation: sourceLocation)
     }
-    func beginSend(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+    func beginSend(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
         let stub = try #require(context.stub, sourceLocation: sourceLocation)
         try #require(context.sending == nil, sourceLocation: sourceLocation)
         let previous = await stub.sendCount
         let model = context.model
-        context.sending = Task { await model.send() }
+        context.sending = Task { await model.send(text) }
         try await context.wait("send admission request", sourceLocation: sourceLocation) { await stub.sendCount > previous }
     }
-    func sendAgain() async { await context.model.send() }
+    func submit(_ text: String) async { await context.model.send(text) }
     func stop() async { await context.model.stop() }
-    func draftShouldBe(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) {
-        #expect(context.model.state.draft == text, sourceLocation: sourceLocation)
+    func clearInstructionShouldBe(_ text: String?, sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.model.state.clearDraftMatching == text, sourceLocation: sourceLocation)
     }
+    func consumeClearInstruction() { context.model.consumeClearDraft() }
     func shouldAllowSend(_ allowed: Bool, sourceLocation: SourceLocation = #_sourceLocation) {
         #expect(context.model.state.canSend == allowed, sourceLocation: sourceLocation)
     }

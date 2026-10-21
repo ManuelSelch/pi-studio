@@ -160,10 +160,14 @@ final class UIChatDriver {
     fileprivate init(_ context: UIContext) { self.context = context }
     private func reply(_ number: Int) -> XCUIElement { context.app.staticTexts["message-assistant-\(number)"] }
 
-    func sendPrompt(_ text: String) {
+    func enterDraft(_ text: String) {
         let field = context.messageField
         field.tap(); field.typeText(text)
-        context.app.buttons["sendButton"].tap()
+    }
+    func submitDraft() { context.app.buttons["sendButton"].tap() }
+    func sendPrompt(_ text: String) {
+        enterDraft(text)
+        submitDraft()
     }
     func stop() { context.app.buttons["stopButton"].tap() }
     func shouldAllowSend(_ allowed: Bool, file: StaticString = #filePath, line: UInt = #line) {

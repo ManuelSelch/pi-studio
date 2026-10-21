@@ -33,6 +33,29 @@ final class pi_studioUITests: XCTestCase {
         app.chat.replyShouldBe(2, partial)
     }
 
+    @MainActor func testLocalDraftClearsAfterEachIdenticalSubmissionAndDoesNotReplayClear() throws {
+        let app = PiUIDriver.launch(for: self)
+        app.session.connect()
+        app.chat.sendPrompt("Same draft")
+        app.chat.waitForReply(1)
+        app.session.waitUntilReady()
+        app.chat.draftShouldBe("")
+        app.chat.enterDraft("Same draft")
+        app.chat.draftShouldBe("Same draft")
+        app.chat.submitDraft()
+        app.chat.waitForReply(2)
+        app.session.waitUntilReady()
+        app.chat.draftShouldBe("")
+    }
+
+    @MainActor func testWhitespaceLocalDraftCannotSubmit() throws {
+        let app = PiUIDriver.launch(for: self)
+        app.session.connect()
+        app.chat.enterDraft("   ")
+        app.chat.shouldAllowSend(false)
+        app.chat.draftShouldBe("   ")
+    }
+
     @MainActor func testActiveDisconnectWarnsWithoutDiscardingTranscript() throws {
         let app = PiUIDriver.launch(for: self)
         app.session.connect()
