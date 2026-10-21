@@ -51,7 +51,9 @@ struct SessionLifecycleTests {
             app.session.statusShouldBe("Ready")
             app.chat.messagesShouldBe(["Partial"])
             app.session.detach()
-            #expect(app.state.projection == nil)
+            // The last-known conversation survives a detach.
+            app.chat.messagesShouldBe(["Partial"])
+            app.session.shouldBeDisconnected()
             await app.server.shouldRemainConnected()
         }
     }

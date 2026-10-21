@@ -87,7 +87,14 @@ public struct SessionFeature: Feature {
             state.isSending = false; state.isStopping = false
             state.sendRequest = nil; state.stopRequest = nil
         case .detachRequested:
-            state = .init()
+            // Stop observing without discarding what was on screen: a disconnect disposes local
+            // networking only, so the last-known conversation and draft stay visible.
+            state.observedSessionId = nil
+            state.generation = UUID()
+            state.connection = .disconnected
+            state.actionError = nil
+            state.isSending = false; state.isStopping = false
+            state.sendRequest = nil; state.stopRequest = nil
         case .attached(let token, let session):
             guard state.generation == token else { return }
             state.connection = .ready(session)

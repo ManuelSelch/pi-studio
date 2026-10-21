@@ -69,7 +69,9 @@ struct SessionMiddlewareTests {
         fixture.store.dispatch(.detachRequested())
         try await Task.sleep(for: .milliseconds(50))
         #expect(fixture.store.state.observedSessionId == nil)
-        #expect(fixture.store.state.projection == nil)
+        // The transcript stays visible; only the observation and pending work are dropped.
+        #expect(fixture.store.state.projection?.session.sessionId == "wanted")
+        #expect(!fixture.store.state.isStopping)
         // The workspace owns the connection: detaching a view never disposes it.
         #expect(await !fixture.connection.closed)
     }

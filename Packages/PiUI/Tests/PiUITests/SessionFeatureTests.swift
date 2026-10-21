@@ -62,12 +62,15 @@ struct SessionFeatureTests {
         #expect(store.state == current)
     }
 
-    @Test func detachingResetsTheConversationWithoutTouchingTheTransport() {
+    @Test func detachingKeepsTheLastKnownTranscriptWithoutObserving() {
         let store = fixture("first").store
+        let shown = store.state.projection
         store.dispatch(.detachRequested())
         #expect(store.state.observedSessionId == nil)
-        #expect(store.state.projection == nil)
         #expect(store.state.connection == .disconnected)
+        // A disconnect disposes local networking only: what was on screen stays on screen.
+        #expect(store.state.projection == shown)
+        #expect(!store.state.isSending)
         let detached = store.state
         store.dispatch(.sendFinished(UUID(), submitted: "Old", error: nil))
         store.dispatch(.projectionChanged(UUID(), .init(session: DemoSession(sessionId: "first", projectPath: "/tmp/demo"))))
