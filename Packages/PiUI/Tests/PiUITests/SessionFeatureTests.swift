@@ -36,6 +36,24 @@ struct SessionFeatureTests {
         await store.finish()
     }
 
+    @Test func attachingAnOpenedSessionResetsToReadyWithoutConnecting() async {
+        var initial = SessionFeature.State()
+        initial.connection = .failed(.disconnected)
+        initial.actionError = "stale failure"
+        initial.draft = "left in another session"
+        let token = UUID()
+        let opened = DemoSession(sessionId: "opened", projectPath: "/repo")
+        let store = TestStore<SessionFeature>(state: initial)
+        defer { store.tearDown() }
+        store.dispatch(.attached(token, opened)) {
+            $0 = SessionFeature.State(); $0.generation = token; $0.connection = .ready(opened)
+        }
+        #expect(store.state.errorMessage == nil)
+        #expect(!store.state.canConnect)
+        #expect(store.state.draft.isEmpty)
+        await store.finish()
+    }
+
     @Test func staleCallbacksCannotOverwriteDisconnectedState() async {
         let token = UUID()
         let store = TestStore<SessionFeature>(state: .init())

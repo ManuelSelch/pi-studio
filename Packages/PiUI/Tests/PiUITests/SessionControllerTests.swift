@@ -111,6 +111,18 @@ struct SessionControllerTests {
         }
     }
 
+    @Test func openedSessionIsAdoptedOnTheExistingConnection() async throws {
+        try await PiIntegrationDriver.run { app in
+            try await app.session.connect()
+            try await app.session.adoptOpenedSession()
+            app.session.shouldBeReady()
+            await app.server.shouldHaveConnectionCount(1)
+            await app.server.shouldRemainConnected()
+            try await app.chat.sendPrompt("Say hello")
+            await app.server.receivedPromptsShouldBe(["Say hello"])
+        }
+    }
+
     @Test func noConnectionWithoutExplicitConsent() async throws {
         try await PiIntegrationDriver.run { app in
             await app.session.connectWithoutConsent()

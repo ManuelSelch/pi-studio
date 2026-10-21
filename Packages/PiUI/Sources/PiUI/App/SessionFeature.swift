@@ -56,6 +56,7 @@ public struct SessionFeature: Feature {
 
     public enum Action: Equatable, Sendable {
         case draftChanged(String)
+        case attached(UUID, DemoSession)
         case connectStarted(UUID, endpoint: URL? = nil)
         case connected(UUID, DemoSession)
         case connectionChanged(UUID, PiConnectionState)
@@ -73,6 +74,10 @@ public struct SessionFeature: Feature {
     @MainActor public func reduce(_ state: inout State, _ action: Action) {
         switch action {
         case .draftChanged(let draft): state.draft = draft
+        case .attached(let token, let session):
+            // Navigation adopted an already-open SDK session. The workspace owns
+            // the connection, so this only resets the conversation view state.
+            state = .init(); state.generation = token; state.connection = .ready(session)
         case .connectStarted(let token, let endpoint):
             guard state.canConnect else { return }
             state.connectionEndpoint = endpoint

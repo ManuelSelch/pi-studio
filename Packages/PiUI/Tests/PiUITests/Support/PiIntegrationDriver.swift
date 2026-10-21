@@ -132,6 +132,14 @@ final class IntegrationSessionDriver {
 
     func connectAgain() async { await context.model.connect(takingControl: true) }
     func connectWithoutConsent() async { await context.model.connect(takingControl: false) }
+
+    /// Adopt an already opened session on the existing connection, as browsing does.
+    func adoptOpenedSession(_ session: DemoSession = DemoSession(sessionId: "opened", projectPath: "/repo"),
+                            sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        let stub = try #require(context.stub, sourceLocation: sourceLocation)
+        context.model.attach(connection: stub, session: session)
+        try await context.wait("adopted session ready", sourceLocation: sourceLocation) { self.context.model.state.canEditMessage }
+    }
     func disconnect() async { await context.dispose() }
 
     func releaseController(sourceLocation: SourceLocation = #_sourceLocation) async throws {
@@ -297,6 +305,9 @@ final class IntegrationServerDriver {
     func shouldBeDisposed(sourceLocation: SourceLocation = #_sourceLocation) async {
         #expect(await stub.closed, sourceLocation: sourceLocation)
     }
+    func shouldRemainConnected(sourceLocation: SourceLocation = #_sourceLocation) async {
+        #expect(await !stub.closed, sourceLocation: sourceLocation)
+    }
 }
 
 fileprivate actor DemoConnectionStub: PiDemoConnection {
@@ -308,9 +319,22 @@ fileprivate actor DemoConnectionStub: PiDemoConnection {
     var sendCount = 0
     var receivedPrompts: [String] = []
     var current: DemoSessionProjection?
-    var (updates, continuation) = AsyncStream<DemoSessionProjection>.makeStream(bufferingPolicy: .bufferingNewest(1))
-    func projections() async -> AsyncStream<DemoSessionProjection> { if let current { continuation.yield(current) }; return updates }
-    func setProjection(_ value: DemoSessionProjection) { current = value; continuation.yield(value) }
+    private var projectionObservers: [UUID: AsyncStream<DemoSessionProjection>.Continuation] = [:]
+    /// Mirrors PiClient: each call subscribes a fresh stream, so navigation can
+    /// adopt a connection whose earlier projection stream was already consumed.
+    func projections() async -> AsyncStream<DemoSessionProjection> {
+        let id = UUID()
+        let (stream, continuation) = AsyncStream<DemoSessionProjection>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        if let current { continuation.yield(current) }
+        projectionObservers[id] = continuation
+        continuation.onTermination = { [weak self] _ in Task { await self?.removeProjectionObserver(id) } }
+        return stream
+    }
+    private func removeProjectionObserver(_ id: UUID) { projectionObservers.removeValue(forKey: id) }
+    func setProjection(_ value: DemoSessionProjection) {
+        current = value
+        for observer in projectionObservers.values { observer.yield(value) }
+    }
     func send(_ text: String) async throws {
         sendCount += 1
         receivedPrompts.append(text)
@@ -330,7 +354,7 @@ fileprivate actor DemoConnectionStub: PiDemoConnection {
     func states() async -> AsyncStream<PiConnectionState> { AsyncStream { $0.finish() } }
     func connectDemo(projectPath: String, takingControl: Bool) async throws -> DemoSession {
         if closed {
-            (updates, continuation) = AsyncStream<DemoSessionProjection>.makeStream(bufferingPolicy: .bufferingNewest(1))
+            finishProjections()
             closed = false
         }
         count += 1
@@ -347,6 +371,10 @@ fileprivate actor DemoConnectionStub: PiDemoConnection {
     func disconnect() async {
         closed = true; wait?.resume(throwing: PiError.disconnected); wait = nil
         sendWait?.resume(throwing: PiError.transport(message: "Disconnected", outcomeUnknown: true)); sendWait = nil
-        continuation.finish()
+        finishProjections()
+    }
+    private func finishProjections() {
+        for observer in projectionObservers.values { observer.finish() }
+        projectionObservers.removeAll()
     }
 }
