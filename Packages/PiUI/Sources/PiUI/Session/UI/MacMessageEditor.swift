@@ -144,6 +144,25 @@ struct MacMessageEditor: NSViewRepresentable {
     private var interpretingEvent: NSEvent?
     private var startedWithMarkedText = false
 
+    /// A window that opened behind another app receives no keystrokes. Claim the caret as soon
+    /// as the window becomes key, unless the user is already editing somewhere else in it.
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didBecomeKeyNotification, object: nil)
+        guard let window else { return }
+        NotificationCenter.default.addObserver(self, selector: #selector(windowDidBecomeKey),
+                                               name: NSWindow.didBecomeKeyNotification, object: window)
+    }
+
+    @objc private func windowDidBecomeKey() {
+        guard isEditable, let window else { return }
+        let responder = window.firstResponder
+        guard responder == nil || responder === self || responder === window else { return }
+        window.makeFirstResponder(self)
+    }
+
+    deinit { NotificationCenter.default.removeObserver(self) }
+
     override func becomeFirstResponder() -> Bool {
         let accepted = super.becomeFirstResponder()
         if accepted { onFocusChanged?() }
