@@ -40,13 +40,12 @@ public final class SessionMiddleware: Middleware {
             guard takingControl, state.generation == token, state.connection == .connecting,
                   store.getState()?.generation == token, connectionGeneration != token else { return nil }
             beginConnect(token, store: store)
-        case .sendRequested(let request):
+        case .sendRequested(let request, let submitted):
             guard state.sendRequest == request, store.getState()?.sendRequest == request,
                   store.getState()?.generation == state.generation, sendRequest != request,
                   connectionGeneration == state.generation, let connection else { return nil }
             sendRequest = request
             let token = state.generation
-            let submitted = state.draft
             sending = Task {
                 guard !Task.isCancelled, store.getState()?.generation == token,
                       store.getState()?.sendRequest == request else { return }

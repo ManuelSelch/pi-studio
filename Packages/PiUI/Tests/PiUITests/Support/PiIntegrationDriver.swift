@@ -179,45 +179,44 @@ final class IntegrationChatDriver {
     private let context: IntegrationContext
     fileprivate init(_ context: IntegrationContext) { self.context = context }
 
-    func enterDraft(_ text: String) { context.model.dispatch(.draftChanged(text)) }
     func sendPrompt(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
-        enterDraft(text)
         try #require(context.model.state.canSend, "Prompt requires an idle, ready session", sourceLocation: sourceLocation)
         if let stub = context.stub {
-            try await beginSend(sourceLocation: sourceLocation)
+            try await beginSend(text, sourceLocation: sourceLocation)
             await stub.settleSend()
         } else {
-            context.model.dispatch(.sendRequested())
+            context.model.dispatch(.sendRequested(text: text))
         }
         try await context.wait("send admission", sourceLocation: sourceLocation) { !self.context.model.state.isSending }
         #expect(context.model.state.errorMessage == nil, sourceLocation: sourceLocation)
     }
-    func beginSend(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+    func beginSend(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
         let stub = try #require(context.stub, sourceLocation: sourceLocation)
         try #require(context.model.state.canSend, sourceLocation: sourceLocation)
         let previous = await stub.sendCount
-        context.model.dispatch(.sendRequested())
+        context.model.dispatch(.sendRequested(text: text))
         try await context.wait("send admission request", sourceLocation: sourceLocation) { await stub.sendCount > previous }
     }
-    func beginSendThenEditDraft(_ draft: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+    func beginSendThenSubmit(_ text: String, duplicate: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
         let stub = try #require(context.stub, sourceLocation: sourceLocation)
         let previous = await stub.sendCount
-        context.model.dispatch(.sendRequested())
-        context.model.dispatch(.draftChanged(draft))
+        context.model.dispatch(.sendRequested(text: text))
+        context.model.dispatch(.sendRequested(text: duplicate))
         try await context.wait("send admission request", sourceLocation: sourceLocation) { await stub.sendCount > previous }
     }
     func stopTwice() async {
         context.model.dispatch(.stopRequested())
         await stop()
     }
-    func sendAgain() async { context.model.dispatch(.sendRequested()) }
+    func submit(_ text: String) async { context.model.dispatch(.sendRequested(text: text)) }
     func stop() async {
         context.model.dispatch(.stopRequested())
         try? await context.wait("stop admission", sourceLocation: #_sourceLocation) { !self.context.model.state.isStopping }
     }
-    func draftShouldBe(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) {
-        #expect(context.model.state.draft == text, sourceLocation: sourceLocation)
+    func clearInstructionShouldBe(_ text: String?, sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.model.state.clearDraftMatching == text, sourceLocation: sourceLocation)
     }
+    func consumeClearInstruction() { context.model.dispatch(.clearDraftConsumed) }
     func shouldAllowSend(_ allowed: Bool, sourceLocation: SourceLocation = #_sourceLocation) {
         #expect(context.model.state.canSend == allowed, sourceLocation: sourceLocation)
     }

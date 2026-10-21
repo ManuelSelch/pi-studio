@@ -27,8 +27,9 @@ struct pi_studioApp: App {
             dependencies.endpointSettingsService.register { service }
             let rejected = ProcessInfo.processInfo.arguments.contains("--ui-send-rejected")
             let unknown = ProcessInfo.processInfo.arguments.contains("--ui-send-unknown")
+            let delayed = arguments.contains("--ui-send-delayed")
             dependencies.makeConnection.register {
-                { _ in UITestConnection(rejectSend: rejected, unknownSend: unknown) }
+                { _ in UITestConnection(rejectSend: rejected, unknownSend: unknown, delayedAdmission: delayed) }
             }
         }
         #endif

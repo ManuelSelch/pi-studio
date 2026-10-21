@@ -29,14 +29,19 @@ try await PiIntegrationDriver.run { app in
     try await app.session.connect()
     try await app.chat.sendPrompt("Say hello")
     await app.server.receivedPromptsShouldBe(["Say hello"])
-    app.chat.draftShouldBe("")
+    app.chat.clearInstructionShouldBe("Say hello")
+    app.chat.consumeClearInstruction()
+    app.chat.clearInstructionShouldBe(nil)
 }
 ```
 
 `sendPrompt` awaits admission, **not response completion**. The stub-backed helper
 accepts that admission automatically. To inspect a pending admission or inject
-failure, use `enterDraft` / `beginSend`, then `server.acceptSend`,
-`rejectSend` or `loseSendReceipt`. Connection tests similarly use
+failure, use `beginSend(text)`, then `server.acceptSend`, `rejectSend` or
+`loseSendReceipt`. `submit(text)` exercises rejected/unavailable submissions.
+Message typing is UI-local; integration tests assert snapshot/clear contracts,
+not a simulated Flux draft. UI tests retain `enterDraft` and `draftShouldBe`.
+Connection tests similarly use
 `beginConnect` and explicit fixture acceptance/rejection.
 
 `run` dispatches disconnect and awaits disposal settlement on both success and thrown failure.
@@ -64,6 +69,13 @@ app.chat.waitForReply(1)
 app.session.waitUntilReady()
 app.chat.replyShouldBe(1, "Hello from the demo. This reply is streaming a little at a time.")
 ```
+
+`app.chat.stop()` sends a real Escape key on macOS and taps the running-state
+stop icon on iOS. Return, Shift+Return, caret/selection/undo and paste helpers own
+native events; paste restores the prior clipboard. macOS scenarios are compile-only
+while automation is paused. iOS `pressSoftwareReturn` taps the software Return key;
+`typeText` newline events do not prove physical hardware-keyboard behavior.
+`delayedAdmission` uses only the injected debug fixture, never a live server.
 
 The root registers app termination with XCTest teardown and selects portrait on
 iOS. Named send-outcome options hide debug launch arguments. The context hides

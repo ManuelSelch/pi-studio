@@ -12,11 +12,13 @@ actor UITestConnection: PiDemoConnection {
     private var streaming: Task<Void, Never>?
     private let rejectSend: Bool
     private let unknownSend: Bool
+    private let delayedAdmission: Bool
     private let (stateStream, stateUpdates) = AsyncStream<PiConnectionState>.makeStream(bufferingPolicy: .bufferingNewest(1))
     private let (sessionStream, sessionUpdates) = AsyncStream<DemoSessionProjection>.makeStream(bufferingPolicy: .bufferingNewest(1))
 
-    init(rejectSend: Bool = false, unknownSend: Bool = false) {
+    init(rejectSend: Bool = false, unknownSend: Bool = false, delayedAdmission: Bool = false) {
         self.rejectSend = rejectSend; self.unknownSend = unknownSend
+        self.delayedAdmission = delayedAdmission
     }
     func states() async -> AsyncStream<PiConnectionState> { stateUpdates.yield(state); return stateStream }
     func projections() async -> AsyncStream<DemoSessionProjection> {
@@ -37,7 +39,7 @@ actor UITestConnection: PiDemoConnection {
         sessionUpdates.yield(projection!)
     }
     func send(_ text: String) async throws {
-        try await Task.sleep(for: .milliseconds(100))
+        try await Task.sleep(for: .milliseconds(delayedAdmission ? 2_000 : 100))
         guard !closed else { throw PiError.disconnected }
         if rejectSend { throw PiError.rejected(code: "sessionBusy", message: "Send rejected by the test runtime.") }
         if unknownSend {

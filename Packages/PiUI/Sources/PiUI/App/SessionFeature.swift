@@ -8,7 +8,7 @@ public struct SessionFeature: Feature {
         public internal(set) var connection: PiConnectionState = .disconnected
         public internal(set) var connectionEndpoint: URL?
         public internal(set) var projection: DemoSessionProjection?
-        public internal(set) var draft = ""
+        public internal(set) var clearDraftMatching: String?
         public internal(set) var isSending = false
         public internal(set) var isStopping = false
         public internal(set) var isDisconnecting = false
@@ -27,7 +27,7 @@ public struct SessionFeature: Feature {
             guard case .ready = connection else { return false }
             return projection?.status == .idle && !isSending && !isStopping
         }
-        public var canSend: Bool { canEditMessage && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        public var canSend: Bool { canEditMessage }
         public var canStop: Bool {
             guard case .ready = connection else { return false }
             return projection?.status == .running && !isSending && !isStopping
@@ -52,17 +52,12 @@ public struct SessionFeature: Feature {
             if case .failed(let error) = connection { return error.localizedDescription }
             return actionError ?? projection?.error
         }
-        public var hint: String {
-            if case .connecting = connection { return "Initializing and creating the demo…" }
-            if requiresDisconnectWarning { return "Partial text stays visible." }
-            return canConnect ? "Connect to start a fresh demo." : "One message at a time."
-        }
     }
 
     public enum Action: Equatable, Sendable {
-        case draftChanged(String)
+        case clearDraftConsumed
         case connectRequested(UUID = UUID(), takingControl: Bool)
-        case sendRequested(UUID = UUID())
+        case sendRequested(UUID = UUID(), text: String)
         case stopRequested(UUID = UUID())
         case disconnectRequested(UUID = UUID())
         case connectionEndpointSelected(UUID, URL)
@@ -79,12 +74,12 @@ public struct SessionFeature: Feature {
 
     @MainActor public func reduce(_ state: inout State, _ action: Action) {
         switch action {
-        case .draftChanged(let draft): state.draft = draft
+        case .clearDraftConsumed: state.clearDraftMatching = nil
         case .connectRequested(let token, let takingControl):
             guard takingControl, state.canConnect else { return }
             state.connectionEndpoint = nil
             state.generation = token; state.connection = .connecting
-            state.projection = nil; state.actionError = nil
+            state.projection = nil; state.actionError = nil; state.clearDraftMatching = nil
             state.isSending = false; state.isStopping = false
             state.sendRequest = nil; state.stopRequest = nil
         case .connectionEndpointSelected(let token, let endpoint):
@@ -102,16 +97,16 @@ public struct SessionFeature: Feature {
         case .failed(let token, let error):
             guard state.generation == token else { return }
             state.connection = .failed(error)
-        case .sendRequested(let request):
-            guard state.canSend else { return }
+        case .sendRequested(let request, let text):
+            guard state.canSend, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
             state.sendRequest = request
-            state.isSending = true; state.actionError = nil
+            state.isSending = true; state.actionError = nil; state.clearDraftMatching = nil
         case .sendFinished(let token, let submitted, let error):
             guard state.generation == token else { return }
             if let error {
                 state.actionError = error.localizedDescription
                 if error.isOutcomeUnknown { state.connection = .failed(error) }
-            } else if state.draft == submitted { state.draft = "" }
+            } else { state.clearDraftMatching = submitted }
             state.isSending = false; state.sendRequest = nil
         case .stopRequested(let request):
             guard state.canStop else { return }
@@ -133,7 +128,7 @@ public struct SessionFeature: Feature {
             } else if state.connection == .connecting {
                 state.actionError = "Disconnected during setup. A demo runtime may have been created on the server."
             }
-            state.generation = token; state.connection = .disconnected
+            state.generation = token; state.connection = .disconnected; state.clearDraftMatching = nil
             state.isSending = false; state.isStopping = false; state.isDisconnecting = true
             state.sendRequest = nil; state.stopRequest = nil
         case .disconnectFinished(let token):

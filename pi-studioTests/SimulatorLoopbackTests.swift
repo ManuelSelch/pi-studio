@@ -15,7 +15,7 @@ import Testing
         try await app.session.waitUntilReady()
         app.chat.messagesShouldBe(["Say hello", "Hello from the isolated Swift demo."])
         app.chat.lastReplyShouldDiffer(from: partial)
-        app.chat.draftShouldBe("")
+        app.chat.clearInstructionShouldBe("Say hello")
         try await app.chat.sendPrompt("Second turn")
         _ = try await app.chat.waitForPartialReply(messageCount: 4)
         await app.chat.stop()

@@ -75,12 +75,11 @@ struct SessionMiddlewareTests {
         await store.finish()
         let projection = DemoSessionProjection(session: session, status: stop ? .running : .idle)
         store.dispatch(.projectionChanged(token, projection)) { $0.projection = projection }
-        store.dispatch(.draftChanged("Never send")) { $0.draft = "Never send" }
         let request = UUID()
         if stop {
             store.dispatch(.stopRequested(request)) { $0.isStopping = true; $0.stopRequest = request }
         } else {
-            store.dispatch(.sendRequested(request)) { $0.isSending = true; $0.sendRequest = request }
+            store.dispatch(.sendRequested(request, text: "Never send")) { $0.isSending = true; $0.sendRequest = request }
         }
         let disconnected = UUID()
         store.dispatch(.disconnectRequested(disconnected)) {
@@ -94,24 +93,22 @@ struct SessionMiddlewareTests {
         #expect(await client.stopCount == 0)
     }
 
-    @Test func sendRequestReservesOriginalDraftAndBlocksDuplicateAdmission() async {
+    @Test func sendRequestReservesSnapshotAndBlocksDuplicateAdmission() async {
         let token = UUID()
         let session = DemoSession(sessionId: "middleware", projectPath: "/tmp/demo")
         var initial = SessionFeature.State()
         initial.generation = token
         initial.connection = .ready(session)
         initial.projection = .init(session: session)
-        initial.draft = "First"
         let store = TestStore<SessionFeature>(state: initial)
         defer { store.tearDown() }
         let request = UUID()
-        store.dispatch(.sendRequested(request)) {
+        store.dispatch(.sendRequested(request, text: "First")) {
             $0.isSending = true; $0.sendRequest = request
         }
-        store.dispatch(.sendRequested()) { _ in }
-        store.dispatch(.draftChanged("Next")) { $0.draft = "Next" }
+        store.dispatch(.sendRequested(text: "Next")) { _ in }
         store.dispatch(.sendFinished(token, submitted: "First", error: nil)) {
-            $0.isSending = false; $0.sendRequest = nil
+            $0.isSending = false; $0.sendRequest = nil; $0.clearDraftMatching = "First"
         }
         await store.finish()
     }
