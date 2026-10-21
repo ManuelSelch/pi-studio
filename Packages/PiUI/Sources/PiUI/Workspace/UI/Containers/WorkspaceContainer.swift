@@ -4,20 +4,20 @@ import Flux
 /// Bridges the workspace stores to one platform shell. Consent, settings
 /// presentation and navigation actions stay here; screens get plain values.
 public struct WorkspaceContainer: View {
-    private let controller: ProjectsController
+    private let controller: WorkspaceController
     private let settings: SettingsController
-    @ObservedObject private var store: FluxStore<ProjectsFeature>
+    @ObservedObject private var store: FluxStore<WorkspaceFeature>
     @ObservedObject private var sessionStore: FluxStore<SessionFeature>
     @ObservedObject private var settingsStore: FluxStore<SettingsFeature>
     @State private var confirmConnect = false
     @State private var confirmDisconnect = false
 
     public init(dependencies: SessionDependencies) {
-        self.init(controller: dependencies.projectsController(),
+        self.init(controller: dependencies.workspaceController(),
                   settings: dependencies.settingsController())
     }
 
-    public init(controller: ProjectsController, settings: SettingsController) {
+    public init(controller: WorkspaceController, settings: SettingsController) {
         self.controller = controller
         self.settings = settings
         _store = ObservedObject(wrappedValue: controller.store)

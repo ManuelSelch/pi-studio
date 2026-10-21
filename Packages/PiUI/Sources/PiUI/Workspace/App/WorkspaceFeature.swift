@@ -2,7 +2,7 @@ import Foundation
 import Flux
 import PiSDK
 
-public struct ProjectsFeature: Feature {
+public struct WorkspaceFeature: Feature {
     public struct State: Equatable, Sendable {
         public internal(set) var connection: PiConnectionState = .disconnected
         public internal(set) var catalogue = PiCatalogue()

@@ -6,7 +6,7 @@ import PiUI
 struct pi_studioApp: App {
     @State private var dependencies: SessionDependencies
     @Environment(\.scenePhase) private var scenePhase
-    private var workspace: ProjectsController { dependencies.projectsController() }
+    private var workspace: WorkspaceController { dependencies.workspaceController() }
 
     init() {
         let dependencies = SessionDependencies()

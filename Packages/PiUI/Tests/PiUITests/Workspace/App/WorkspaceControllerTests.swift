@@ -1,6 +1,6 @@
 import Testing
 
-@Suite @MainActor struct ProjectsControllerTests {
+@Suite @MainActor struct WorkspaceControllerTests {
     @Test func connectListsWithoutCreatingAndQuickChatCreationIsExplicit() async throws {
         try await WorkspaceIntegrationDriver.run { app in
             await app.projects.connect()

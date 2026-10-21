@@ -3,10 +3,10 @@ import Flux
 import PiSDK
 
 /// Owns browsing and explicit navigation, not protocol state or a new scheduler.
-@MainActor public final class ProjectsController {
-    public let store = FluxStore<ProjectsFeature>(state: .init())
+@MainActor public final class WorkspaceController {
+    public let store = FluxStore<WorkspaceFeature>(state: .init())
     public let session: SessionController
-    public var state: ProjectsFeature.State { store.state }
+    public var state: WorkspaceFeature.State { store.state }
     private let makeConnection: @Sendable (URL) -> any PiSessionConnection
     private var connection: (any PiSessionConnection)?
     private var observation: Task<Void, Never>?

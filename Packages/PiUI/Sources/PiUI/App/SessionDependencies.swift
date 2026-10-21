@@ -35,9 +35,9 @@ public final class SessionDependencies: ManagedContainer {
 
     /// One workspace coordinator owns browsing, the shared connection and session
     /// selection. Conversations adopt that connection instead of opening their own.
-    public var projectsController: Factory<ProjectsController> {
+    public var workspaceController: Factory<WorkspaceController> {
         self { @MainActor in
-            ProjectsController(session: self.sessionController(), makeConnection: self.makeSessionConnection())
+            WorkspaceController(session: self.sessionController(), makeConnection: self.makeSessionConnection())
         }.cached
     }
 
