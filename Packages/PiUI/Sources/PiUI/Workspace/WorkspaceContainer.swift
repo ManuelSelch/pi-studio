@@ -102,7 +102,7 @@ public struct WorkspaceContainer: View {
     }
 
     /// A locked composer always says why: running, stopping or not attached yet.
-    private func composerHint(_ state: SessionFeature.State) -> String {
+    func composerHint(_ state: SessionFeature.State) -> String {
         if state.isSending || state.projection?.status == .starting { return "Sending… Stop to edit." }
         if state.isStopping || state.projection?.status == .aborting { return "Stopping…" }
         if state.projection?.status == .running { return "Generating… Stop to edit." }
