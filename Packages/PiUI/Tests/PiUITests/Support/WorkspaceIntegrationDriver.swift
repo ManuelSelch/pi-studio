@@ -13,6 +13,7 @@ import Testing
 final class WorkspaceIntegrationDriver {
     let projects: WorkspaceProjectsDriver
     let tabs: WorkspaceTabsDriver
+    let overview: WorkspaceOverviewDriver
     let settings: WorkspaceSettingsDriver
     let chat: WorkspaceConversationDriver
     let server: WorkspaceServerDriver
@@ -23,6 +24,7 @@ final class WorkspaceIntegrationDriver {
         self.context = context
         projects = WorkspaceProjectsDriver(context)
         tabs = WorkspaceTabsDriver(context)
+        overview = WorkspaceOverviewDriver(context)
         settings = WorkspaceSettingsDriver(context)
         chat = WorkspaceConversationDriver(context)
         server = WorkspaceServerDriver(context)
@@ -299,6 +301,70 @@ final class WorkspaceTabsDriver {
         }
         return id
     }
+}
+
+/// Slice 3: the open-session overview the phone presents as a sheet and Mac as a popover.
+/// It reads the container's own mapping, so the rows under test are the rows both shells show.
+@MainActor
+final class WorkspaceOverviewDriver {
+    private let context: WorkspaceContext
+    fileprivate init(_ context: WorkspaceContext) { self.context = context }
+
+    func rows() -> [OpenSessionPresentation] { WorkspaceContainer.openSessions(context.workspace.state) }
+    /// Exactly what the overview's new-session action would target.
+    var newSessionPath: String? { WorkspaceContainer.newSessionPath(context.workspace.state.catalogue) }
+
+    func shouldShow(_ titles: [String], sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(rows().map(\.title) == titles, sourceLocation: sourceLocation)
+    }
+    func shouldShowProjects(_ paths: [String], sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(rows().map(\.context) == paths, sourceLocation: sourceLocation)
+    }
+    func shouldSelect(_ title: String?, sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(rows().first { $0.isSelected }?.title == title, sourceLocation: sourceLocation)
+        #expect(rows().filter(\.isSelected).count == (title == nil ? 0 : 1), sourceLocation: sourceLocation)
+    }
+    func activityShouldBe(_ activity: SessionActivity?, for title: String,
+                          sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(rows().first { $0.title == title }?.activity == activity, sourceLocation: sourceLocation)
+    }
+    func shouldBeEmpty(sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(rows().isEmpty, sourceLocation: sourceLocation)
+    }
+
+    /// Selecting and closing are the same operations the tab strip performs.
+    func select(_ title: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        guard let id = rows().first(where: { $0.title == title })?.id else {
+            Issue.record("No open session titled \(title)", sourceLocation: sourceLocation)
+            return
+        }
+        context.workspace.dispatch(.selectRequested(id: id))
+        try await settle(sourceLocation: sourceLocation)
+    }
+    func close(_ title: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        guard let id = rows().first(where: { $0.title == title })?.id else {
+            Issue.record("No open session titled \(title)", sourceLocation: sourceLocation)
+            return
+        }
+        context.workspace.dispatch(.closeSession(id))
+        try await settle(sourceLocation: sourceLocation)
+    }
+    /// The same settle the tab strip relies on: attachment and transcript follow the selection.
+    func settle(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await context.wait("overview settled", sourceLocation: sourceLocation) {
+            let workspace = self.context.workspace.state
+            guard !workspace.isOpening else { return false }
+            guard let session = workspace.selectedSession else {
+                return workspace.observedRuntimeId == nil
+                    && self.context.session.state.observedSessionId == nil
+            }
+            return workspace.observedRuntimeId == session.runtimeId
+                && self.context.session.state.observedSessionId == session.runtimeId
+                && self.context.session.state.projection?.session.sessionId == session.runtimeId
+        }
+    }
+    /// The overview's "Projects & history" row: leave the conversation without disconnecting.
+    func backToProjects() { context.workspace.dispatch(.back) }
 }
 
 @MainActor

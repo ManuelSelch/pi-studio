@@ -11,6 +11,7 @@ final class PiUIDriver {
     let chat: UIChatDriver
     let settings: UISettingsDriver
     let projects: UIProjectsDriver
+    let overview: UISessionOverviewDriver
     private let context: UIContext
 
     private init(_ context: UIContext) {
@@ -19,6 +20,7 @@ final class PiUIDriver {
         chat = UIChatDriver(context)
         settings = UISettingsDriver(context)
         projects = UIProjectsDriver(context.app)
+        overview = UISessionOverviewDriver(context.app)
     }
 
     static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted,

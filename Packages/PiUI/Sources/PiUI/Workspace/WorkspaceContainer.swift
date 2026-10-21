@@ -1,5 +1,6 @@
 import FactoryKit
 import Flux
+import PiSDK
 import SwiftUI
 
 /// Bridges the workspace, its conversation and the settings slice for one platform shell.
@@ -90,15 +91,29 @@ public struct WorkspaceContainer: View {
         value.requiresDisconnectWarning = requiresDisconnectWarning
         value.error = workspace.selectedSessionId == nil ? workspace.error : nil
         value.groups = ProjectListModel.groups(workspace.catalogue)
+        value.isConnected = workspace.isConnected
+        value.openSessions = Self.openSessions(workspace)
+        value.newSessionPath = Self.newSessionPath(workspace.catalogue)
         value.selection = workspace.selectedSession.map {
             WorkspaceSelection(title: $0.title, runtimeId: $0.runtimeId,
                                sessionPath: $0.sessionPath, context: $0.projectPath)
         }
-        value.tabs = workspace.openSessions.map {
-            SessionTabPresentation(id: $0.id, title: $0.title, activity: $0.activity,
-                                   isSelected: $0.id == workspace.selectedSessionId, unread: $0.unread)
-        }
         return value
+    }
+
+    /// Open sessions as both shells render them; the project keeps titles unambiguous.
+    static func openSessions(_ workspace: WorkspaceFeature.State) -> [OpenSessionPresentation] {
+        workspace.openSessions.map {
+            OpenSessionPresentation(id: $0.id, title: $0.title, activity: $0.activity,
+                                    isSelected: $0.id == workspace.selectedSessionId,
+                                    unread: $0.unread, context: $0.projectPath)
+        }
+    }
+
+    /// Quick Chats first, then the first project: the overview never picks a project by accident.
+    static func newSessionPath(_ catalogue: PiCatalogue) -> String? {
+        let groups = ProjectListModel.groups(catalogue)
+        return (groups.first { $0.quickChats } ?? groups.first)?.newSessionPath
     }
 
     /// A locked composer always says why: running, stopping or not attached yet.

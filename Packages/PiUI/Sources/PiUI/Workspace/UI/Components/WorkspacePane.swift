@@ -6,11 +6,16 @@ struct WorkspacePane: View {
     let presentation: WorkspacePresentation
     let session: SessionPresentation
     let actions: WorkspaceActions
+    @State private var showsOverview = false
 
     var body: some View {
         VStack(spacing: 0) {
-            if !presentation.tabs.isEmpty {
-                SessionTabStrip(tabs: presentation.tabs, onSelect: actions.selectTab, onClose: actions.closeTab)
+            if !presentation.openSessions.isEmpty {
+                HStack(spacing: 0) {
+                    SessionTabStrip(tabs: presentation.openSessions,
+                                    onSelect: actions.selectTab, onClose: actions.closeTab)
+                    overviewButton
+                }
             }
             if let selection = presentation.selection {
                 WorkspaceConversation(selection: selection, session: session,
@@ -28,6 +33,29 @@ struct WorkspacePane: View {
         // The pane paints its own surface: the tab strip and the conversation header
         // must not depend on whatever a parent happens to draw behind them.
         .background(surface)
+    }
+
+    /// The same overview the phone presents as a sheet. It shows no running count.
+    private var overviewButton: some View {
+        Button { showsOverview.toggle() } label: {
+            Image(systemName: "list.bullet").font(.system(size: 11, weight: .semibold))
+                .frame(width: 32, height: 40).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .background(.bar)
+        .accessibilityLabel("Open sessions")
+        .accessibilityIdentifier("sessionOverviewButton")
+        .popover(isPresented: $showsOverview, arrowEdge: .bottom) {
+            SessionOverview(sessions: presentation.openSessions,
+                            newSessionPath: presentation.newSessionPath,
+                            isBrowsing: presentation.selection == nil,
+                            onSelect: { actions.selectTab($0); showsOverview = false },
+                            onClose: actions.closeTab,
+                            onNewSession: { actions.create($0); showsOverview = false },
+                            onProjects: { actions.back(); showsOverview = false })
+                .frame(width: 300, height: 360)
+        }
     }
 
     private var surface: Color {

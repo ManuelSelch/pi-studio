@@ -113,6 +113,37 @@ Deliberate slice-2 limits:
 - Mac scroll-gesture behaviour is verified by build and manual/off-screen review only
   while app automation is paused.
 
+## Slice 3 — iPhone session overview
+
+Open sessions are switched through one **overview** value, presented as an iPhone sheet and
+reused as a Mac popover. The phone never renders a tab strip, and neither shell summarises how
+many sessions are running.
+
+- `Workspace/UI/Components/SessionOverview.swift`: `SessionOverview` (rows, empty state, close,
+  new session, projects) and `SessionOverviewSheet` (phone presentation with a Done control).
+- The open-session value carries its shell-neutral facts once. `SessionTabPresentation` became
+  `OpenSessionPresentation` with the session's `context`, so a tab and an overview row read the
+  same state; `WorkspacePresentation.openSessions` replaced `tabs`, and the presentation gained
+  `newSessionPath` and `isConnected`.
+- The container still owns the mapping (`WorkspaceContainer.openSessions`, `.newSessionPath`):
+  order, project context, selection, activity and unread are read once, and the overview's
+  new-session action targets Quick Chats first, then the first project — never a guess.
+- `PhoneWorkspaceScreen` presents the sheet from an iPhone-only toolbar entry (`sessionsButton`,
+  also reachable inside a conversation); selecting switches and dismisses, closing ends only the
+  local view, and "Projects & history" leaves the conversation without disconnecting.
+- `WorkspacePane` gains the same overview behind a `sessionOverviewButton` popover, so Mac and
+  iPhone share one implementation and one vocabulary.
+
+Closing the last view is deliberately reachable and safe: the overview shows an empty state, the
+workspace keeps browsing, and the connection and catalogue are untouched.
+
+Evidence: `Workspace/UI/SessionOverviewPresentationTests.swift` (mapping, Quick Chats first),
+`Workspace/App/SessionOverviewTests.swift` (three sessions, isolated drafts and transcripts,
+browsing without disconnect, closing the last view, new session in Quick Chats, no server
+mutation), and `PhoneSessionOverviewUITests` on a real Simulator (no tab strip, switching,
+returning to projects, row closure, empty state, semantic status, and a 44-point row check that
+found the rows rendering at 42.2 points — the row height is now 48).
+
 ## Reconciliation with `main` (Flux 2 middleware, slices, Container DI)
 
 `main` moved three times while slices 1–2 were in flight; the merge is recorded in
@@ -157,7 +188,7 @@ Composer fixes on top of the merge (`844c495`, `2f84e26`, `4488e93`, `b97d30c`):
   when its window becomes key, and the UI test driver requests activation after launch.
 
 Deliberate limits carried forward: per-session request/error state and populated `unread`
-arrive with slice 4, the iPhone overview with slice 3, and no launch persistence.
+arrive with slice 4, and there is no launch persistence yet.
 
 ## Notes and follow-ups
 

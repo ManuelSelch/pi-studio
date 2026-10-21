@@ -16,10 +16,10 @@ struct MacWorkspacePaneRenderTests {
         value.canOpen = true
         value.selection = WorkspaceSelection(title: "Working", runtimeId: "running",
                                              sessionPath: nil, context: "/repo")
-        value.tabs = [
-            SessionTabPresentation(id: "chat", title: "New chat", activity: nil),
-            SessionTabPresentation(id: "running", title: "Working", activity: .running, isSelected: true),
-            SessionTabPresentation(id: "blocked", title: "Needs a decision", activity: .needsYou, unread: true),
+        value.openSessions = [
+            OpenSessionPresentation(id: "chat", title: "New chat", activity: nil),
+            OpenSessionPresentation(id: "running", title: "Working", activity: .running, isSelected: true),
+            OpenSessionPresentation(id: "blocked", title: "Needs a decision", activity: .needsYou, unread: true),
         ]
         return value
     }

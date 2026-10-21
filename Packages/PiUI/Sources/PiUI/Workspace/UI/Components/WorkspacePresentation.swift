@@ -20,18 +20,21 @@ public struct WorkspaceSelection: Equatable, Sendable {
     }
 }
 
-/// One open session as a tab. Unread is independent of activity.
-public struct SessionTabPresentation: Identifiable, Equatable, Sendable {
+/// One open session. Mac renders it as a tab, the phone as an overview row, so it carries
+/// the project context as well. Unread is independent of activity.
+public struct OpenSessionPresentation: Identifiable, Equatable, Sendable {
     public let id: String
     public var title: String
     public var activity: SessionActivity?
     public var isSelected: Bool
     public var unread: Bool
+    /// Project path of the session, shown wherever a title alone is ambiguous.
+    public var context: String
 
     public init(id: String, title: String, activity: SessionActivity? = nil,
-                isSelected: Bool = false, unread: Bool = false) {
+                isSelected: Bool = false, unread: Bool = false, context: String = "") {
         self.id = id; self.title = title; self.activity = activity
-        self.isSelected = isSelected; self.unread = unread
+        self.isSelected = isSelected; self.unread = unread; self.context = context
     }
 }
 
@@ -44,9 +47,12 @@ public struct WorkspacePresentation: Equatable, Sendable {
     public var error: String?
     public var groups: [ProjectGroup] = []
     public var selection: WorkspaceSelection?
-    /// Ordered open sessions. Mac renders them as tabs; the phone uses them for its
-    /// overview and never shows a tab strip.
-    public var tabs: [SessionTabPresentation] = []
+    /// Ordered open sessions. Mac renders them as a tab strip, the phone as its overview;
+    /// the phone never shows a tab strip.
+    public var openSessions: [OpenSessionPresentation] = []
+    /// Project the overview's new-session action targets: Quick Chats first, like the sidebar.
+    public var newSessionPath: String?
+    public var isConnected = false
     public init() {}
 
     /// Quick Chats stays above Activity and project groups, matching Pi Chat.

@@ -3,7 +3,7 @@ import SwiftUI
 /// The horizontal open-session strip. One selected conversation is rendered below it;
 /// selecting an overflowed tab scrolls it into view.
 struct SessionTabStrip: View {
-    let tabs: [SessionTabPresentation]
+    let tabs: [OpenSessionPresentation]
     let onSelect: @MainActor (String) -> Void
     let onClose: @MainActor (String) -> Void
 
@@ -35,7 +35,7 @@ struct SessionTabStrip: View {
 /// One tab: status, label, optional unread marker and a per-session close control.
 /// Status is never colour-only, and closing only ends the local view.
 struct SessionTab: View {
-    let tab: SessionTabPresentation
+    let tab: OpenSessionPresentation
     let onSelect: @MainActor () -> Void
     let onClose: @MainActor () -> Void
 
