@@ -1,10 +1,11 @@
 # Multiline composer
-- Revision: 1
+- Revision: 2
 - Status: in review; not approved for production UI changes.
-- Scope: preserve the existing Message/editor/guidance/Stop/Send layout, adding one subdued accessible shortcut hint between editor and action row.
-- macOS: Enter sends; Shift+Enter inserts a newline. iOS: Enter inserts a newline; Send submits.
+- User requested no hints, Esc to stop the current run instead of a Stop button, and an up-arrow Send icon.
+- Layout: Message label, bounded multiline editor, trailing icon-only ↑ Send (accessible name Send). No keyboard or routine composer hints. Connection/error feedback stays visible elsewhere.
+- macOS: Enter sends; Shift+Enter inserts a newline; Esc stops only an eligible running response, not pending admission or stopping. Escape must not override IME composition or dialog cancellation. No visible Stop button.
+- iOS: Enter inserts a newline; icon button submits. Touch-only stopping remains an open question: propose replacing ↑ with a stop icon while running, pending user decision. Not simulated yet.
 - Editor: two visible lines minimum, five maximum, wrapping and internal scrolling thereafter.
-- Review states: ?platform=mac or ios; ?state=ready, pending or error. Paste/type and simulated sends are local only.
-- Browser approximation does not prove AppKit/UIKit caret, undo, IME, accessibility, focus or hardware/software keyboard behavior. These require native verification.
-- Existing connection/error guidance remains separate from the keyboard hint.
-- Open design question: approve the added hint line in its proposed position?
+- Review states: ?platform=mac or ios; ?state=ready, pending, running, stopping or error. Input/submission/stop are local simulations only.
+- Browser approximation does not prove native caret, undo, IME, focus or hardware/software keyboard behavior.
+- Revision 1 hint proposal rejected by user. Revision 2 awaits review and iOS stop decision.

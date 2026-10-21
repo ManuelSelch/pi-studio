@@ -4,18 +4,17 @@ const platform = document.querySelector('#platform');
 const state = document.querySelector('#state');
 const params = new URLSearchParams(location.search);
 platform.value = params.get('platform') === 'ios' ? 'ios' : 'mac';
-if (['ready', 'pending', 'error'].includes(params.get('state'))) state.value = params.get('state');
+if (['ready', 'pending', 'running', 'stopping', 'error'].includes(params.get('state'))) state.value = params.get('state');
 function update() {
-  field.disabled = state.value === 'pending';
+  field.disabled = ['pending', 'running', 'stopping'].includes(state.value);
   send.disabled = field.disabled || !field.value.trim();
   field.style.height = 'auto';
   field.style.height = Math.min(134, Math.max(68, field.scrollHeight + 2)) + 'px';
-  document.querySelector('#keyboard-hint').textContent = platform.value === 'mac'
-    ? 'Enter to send · Shift+Enter for a new line'
-    : 'Enter for a new line · Tap Send to submit';
-  document.querySelector('#status').textContent = state.value === 'pending' ? 'Generating…' : 'Ready';
-  document.querySelector('#hint').textContent = state.value === 'pending'
-    ? 'Partial text stays visible.' : state.value === 'error' ? 'Send rejected. Draft retained.' : 'One message at a time.';
+  document.querySelector('#status').textContent = state.value === 'stopping' ? 'Stopping…'
+    : ['pending', 'running'].includes(state.value) ? 'Generating…' : 'Ready';
+  const error = document.querySelector('#error');
+  error.hidden = state.value !== 'error';
+  error.textContent = 'Send rejected. Draft retained.';
 }
 field.addEventListener('input', update);
 platform.addEventListener('change', update);
@@ -32,7 +31,16 @@ document.querySelector('#composer').addEventListener('submit', event => {
   document.querySelector('.empty')?.remove();
   document.querySelector('#transcript').append(turn);
   field.value = '';
-  update(); field.focus();
+  state.value = 'running';
+  update();
+});
+document.querySelector('.app').addEventListener('keydown', event => {
+  if (platform.value === 'mac' && event.key === 'Escape' && !event.isComposing
+      && !event.repeat && state.value === 'running') {
+    event.preventDefault();
+    state.value = 'stopping';
+    update();
+  }
 });
 field.addEventListener('keydown', event => {
   if (platform.value === 'mac' && event.key === 'Enter' && !event.shiftKey
