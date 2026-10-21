@@ -1,15 +1,15 @@
 # Compact multi-session workspace
 
-- Revision: 1
+- Revision: 2
 - Status: in review; no implementation approval.
 - Goal: explore a simpler Mac and iPhone workspace with projects, saved history, multiple open conversations and independent background agents.
-- Confirmed direction: application-managed session tabs, not Finder-style native window tab groups.
+- Confirmed direction: application-managed session tabs on Mac, not Finder-style native window tab groups; tabs hidden on iOS. Quick Chats is permanently above Activity and project groups, matching pi-chat.
 
 ## Layout
 
 - Mac (`?layout=mac`): approximately 240px collapsible sidebar, single-row toolbar, horizontal session tabs, readable transcript and bottom composer. Projects/history and activity share the sidebar; open sessions are tabs, not duplicated in a separate open-session list. Project history rows may show an Open label.
-- iPhone (`?layout=ios`): 393px preview at desktop widths, bounded by available width; compact toolbar and horizontally scrolling tabs. Projects take over the pane. Session overview shows full titles, statuses and close controls. Small-screen targets aim for 44px; compact Mac targets are smaller.
-- System typography, light neutral surfaces, quiet green activity and amber approval indicators. Browser styling only approximates SwiftUI: native safe areas, keyboard, Dynamic Type, accessibility behavior and system chrome are not validated here.
+- iPhone (`?layout=ios`): 393px preview at desktop widths, bounded by available width; compact toolbar without a tab strip; switch open sessions through the overview button. Projects take over the pane. Session overview shows full titles, statuses and close controls. Small-screen targets aim for 44px; compact Mac targets are smaller.
+- System typography, light neutral surfaces, green idle, yellow running and red Needs you indicators. A red toolbar badge opens an approval popup; the attention review URL opens it directly. Connection-green is a separate connection indicator. Browser styling only approximates SwiftUI: native safe areas, keyboard, Dynamic Type, accessibility behavior and system chrome are not validated here.
 
 ## Interactions
 
@@ -27,15 +27,15 @@ Default is populated, with two running sessions (one without an open tab) and on
 - `?layout=mac` / `?layout=ios`
 - `?layout=ios&state=overview`: open-session overview
 - `?layout=ios&state=projects`: projects navigator
-- `?layout=mac&state=attention`: approval-needed conversation
+- `?layout=mac&state=attention`: approval-needed conversation with Needs you popup
 - `?layout=mac&state=empty`: no open or running sessions, history remains
 
 ## Review questions
 
 - Is the Mac sidebar/tab balance compact enough?
-- Is a scrolling tab strip plus full overview the right iPhone interaction?
+- Is the session overview sufficient for switching on iPhone without tabs?
 - Should closing a running tab leave the agent running as proposed?
 
 ## Approval
 
-Pending user review of revision 1. Production source and app dependencies are untouched.
+Pending user review of revision 2. Production source and app dependencies are untouched.
