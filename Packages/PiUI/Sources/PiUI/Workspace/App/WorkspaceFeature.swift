@@ -74,6 +74,7 @@ public struct WorkspaceFeature: Feature {
         case sessionReplaced(String, String)
         case sessionDraftChanged(String, String)
         case sessionFollowTailChanged(String, Bool)
+        case sessionScrollAnchorChanged(String, String?)
         case sessionUnreadChanged(String, Bool)
         case failed(UUID, PiError)
         case back
@@ -127,6 +128,9 @@ public struct WorkspaceFeature: Feature {
         case .sessionFollowTailChanged(let id, let follow):
             guard let index = state.openSessions.firstIndex(where: { $0.id == id }) else { return }
             state.openSessions[index].followTail = follow
+        case .sessionScrollAnchorChanged(let id, let anchor):
+            guard let index = state.openSessions.firstIndex(where: { $0.id == id }) else { return }
+            state.openSessions[index].scrollAnchor = anchor
         case .sessionUnreadChanged(let id, let unread):
             guard let index = state.openSessions.firstIndex(where: { $0.id == id }) else { return }
             state.openSessions[index].unread = unread

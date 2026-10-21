@@ -44,7 +44,9 @@ struct MacWorkspacePaneRenderTests {
                                  actions: WorkspaceActions(open: { _, _ in }, create: { _ in },
                                                            connection: {}, settings: {}, back: {},
                                                            draftChanged: { _ in }, send: {}, stop: {},
-                                                           selectTab: { _ in }, closeTab: { _ in }))
+                                                           selectTab: { _ in }, closeTab: { _ in },
+                                                           followTailChanged: { _ in },
+                                                           scrollAnchorChanged: { _ in }))
         let hosting = NSHostingView(rootView: pane)
         hosting.frame = NSRect(x: 0, y: 0, width: 760, height: 520)
         let window = NSWindow(contentRect: hosting.frame, styleMask: [.titled],

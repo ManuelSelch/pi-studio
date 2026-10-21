@@ -128,6 +128,19 @@ import PiUI
     func shouldHaveNoTabs(sourceLocation: SourceLocation = #_sourceLocation) {
         #expect(context.controller.state.openSessions.isEmpty, sourceLocation: sourceLocation)
     }
+    /// What the transcript reports when the user reads older content.
+    func reportReadingPosition(followTail: Bool, anchor: String?) {
+        context.controller.setFollowTail(followTail)
+        context.controller.setScrollAnchor(anchor)
+    }
+    func shouldFollowTail(_ follow: Bool, for title: String, sourceLocation: SourceLocation = #_sourceLocation) {
+        let tab = context.controller.state.openSessions.first { $0.title == title }
+        #expect(tab?.followTail == follow, sourceLocation: sourceLocation)
+    }
+    func anchorShouldBe(_ anchor: String?, for title: String, sourceLocation: SourceLocation = #_sourceLocation) {
+        let tab = context.controller.state.openSessions.first { $0.title == title }
+        #expect(tab?.scrollAnchor == anchor, sourceLocation: sourceLocation)
+    }
     func enterDraft(_ text: String) { context.controller.setDraft(text) }
     func draftShouldBe(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) {
         #expect(context.session.state.draft == text, sourceLocation: sourceLocation)
@@ -168,6 +181,19 @@ import PiUI
 @MainActor final class WorkspaceChatDriver {
     private let context: WorkspaceContext
     fileprivate init(_ context: WorkspaceContext) { self.context = context }
+    /// What the transcript reports when the user reads older content.
+    func reportReadingPosition(followTail: Bool, anchor: String?) {
+        context.controller.setFollowTail(followTail)
+        context.controller.setScrollAnchor(anchor)
+    }
+    func shouldFollowTail(_ follow: Bool, for title: String, sourceLocation: SourceLocation = #_sourceLocation) {
+        let tab = context.controller.state.openSessions.first { $0.title == title }
+        #expect(tab?.followTail == follow, sourceLocation: sourceLocation)
+    }
+    func anchorShouldBe(_ anchor: String?, for title: String, sourceLocation: SourceLocation = #_sourceLocation) {
+        let tab = context.controller.state.openSessions.first { $0.title == title }
+        #expect(tab?.scrollAnchor == anchor, sourceLocation: sourceLocation)
+    }
     func enterDraft(_ text: String) { context.controller.setDraft(text) }
     func draftShouldBe(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) {
         #expect(context.session.state.draft == text, sourceLocation: sourceLocation)

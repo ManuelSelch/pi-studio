@@ -8,6 +8,8 @@ struct WorkspaceConversation: View {
     let onDraftChanged: @MainActor (String) -> Void
     let onSend: @MainActor () -> Void
     let onStop: @MainActor () -> Void
+    let onFollowTailChanged: @MainActor (Bool) -> Void
+    let onScrollAnchorChanged: @MainActor (String?) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,6 +29,8 @@ struct WorkspaceConversation: View {
             Divider()
             SessionScreen(presentation: session, onDraftChanged: onDraftChanged,
                           onConnect: {}, onDisconnect: {}, onSend: onSend, onStop: onStop,
+                          onFollowTailChanged: onFollowTailChanged,
+                          onScrollAnchorChanged: onScrollAnchorChanged,
                           showsHeader: false, maxContentWidth: 760)
         }
     }

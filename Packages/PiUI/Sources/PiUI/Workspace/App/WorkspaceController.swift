@@ -101,11 +101,24 @@ import PiSDK
     // MARK: - Opening and switching
 
     public func open(_ target: ProjectSessionTarget, title: String) async {
+        // Already open: selecting the existing tab costs no server request and cannot
+        // fail as a duplicate open.
+        if let existing = existingTab(for: target) {
+            await selectSession(id: existing.id)
+            return
+        }
         await requestOpen(title: title, requested: target) { client in
             switch target {
             case .runtime(let id): try await client.attachSession(sessionId: id)
             case .history(let path): try await client.openSession(sessionPath: path)
             }
+        }
+    }
+
+    private func existingTab(for target: ProjectSessionTarget) -> OpenSession? {
+        switch target {
+        case .runtime(let id): state.openSessions.first { $0.runtimeId == id }
+        case .history(let path): state.openSessions.first { $0.sessionPath == path }
         }
     }
     public func createSession(projectPath: String) async {
@@ -153,6 +166,18 @@ import PiSDK
         startSelectionLoopIfNeeded()
     }
 
+    /// Transcript reading position for the selected tab. It is per-session local state,
+    /// so a background session never steals the scroll position of the visible one.
+    public func setFollowTail(_ follow: Bool) {
+        guard let id = state.selectedSessionId else { return }
+        store.dispatch(.sessionFollowTailChanged(id, follow))
+    }
+
+    public func setScrollAnchor(_ anchor: String?) {
+        guard let id = state.selectedSessionId else { return }
+        store.dispatch(.sessionScrollAnchorChanged(id, anchor))
+    }
+
     public func setDraft(_ value: String) {
         session.setDraft(value)
         if let key = state.selectedSessionId { store.dispatch(.sessionDraftChanged(key, value)) }
@@ -191,6 +216,7 @@ import PiSDK
         var tab = OpenSession(identity: identity, title: existing?.title ?? title, activity: activity(for: opened.sessionId))
         tab.draft = existing?.draft ?? ""
         tab.followTail = existing?.followTail ?? true
+        tab.scrollAnchor = existing?.scrollAnchor
         tab.unread = existing?.unread ?? false
         return tab
     }

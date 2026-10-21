@@ -15,7 +15,9 @@ struct WorkspacePane: View {
             if let selection = presentation.selection {
                 WorkspaceConversation(selection: selection, session: session,
                                       onDraftChanged: actions.draftChanged,
-                                      onSend: actions.send, onStop: actions.stop)
+                                      onSend: actions.send, onStop: actions.stop,
+                                      onFollowTailChanged: actions.followTailChanged,
+                                      onScrollAnchorChanged: actions.scrollAnchorChanged)
             } else {
                 WorkspaceEmptyState(status: presentation.status, error: presentation.error,
                                     canConnect: presentation.canConnect, isBusy: presentation.isBusy,

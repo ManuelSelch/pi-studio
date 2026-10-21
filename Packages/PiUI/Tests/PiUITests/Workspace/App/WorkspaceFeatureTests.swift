@@ -77,8 +77,11 @@ struct WorkspaceFeatureTests {
         #expect(store.state.openSessions.first { $0.id == second.id }?.draft == "")
         store.dispatch(.sessionDraftChanged(second.id, "Keep for two"))
         store.dispatch(.sessionFollowTailChanged(first.id, false))
+        store.dispatch(.sessionScrollAnchorChanged(first.id, "message-1"))
         #expect(store.state.openSessions.first { $0.id == first.id }?.followTail == false)
         #expect(store.state.openSessions.first { $0.id == second.id }?.followTail == true)
+        #expect(store.state.openSessions.first { $0.id == first.id }?.scrollAnchor == "message-1")
+        #expect(store.state.openSessions.first { $0.id == second.id }?.scrollAnchor == nil)
     }
 
     @Test func closingASelectedTabSelectsTheAdjacentTabAndDropsItsDraft() {

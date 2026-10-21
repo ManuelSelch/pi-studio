@@ -10,6 +10,9 @@ public struct SessionPresentation: Equatable, Sendable {
     public var hint = ""
     public var placeholder = "Your demo conversation will appear here."
     public var messages: [TranscriptMessage] = []
+    /// Auto-scroll policy and last reading position for the selected session.
+    public var followTail = true
+    public var scrollAnchor: String?
     public var canConnect = true
     public var canEditMessage = false
     public var canSend = false
@@ -26,6 +29,8 @@ public struct SessionScreen: View {
     public let onSend: @MainActor () -> Void
     public let onStop: @MainActor () -> Void
     public let onSettings: @MainActor () -> Void
+    public let onFollowTailChanged: @MainActor (Bool) -> Void
+    public let onScrollAnchorChanged: @MainActor (String?) -> Void
     /// A workspace shell supplies its own toolbar and connection controls, so the
     /// standalone header is omitted there while the conversation stays identical.
     private let showsHeader: Bool
@@ -38,10 +43,13 @@ public struct SessionScreen: View {
                 onConnect: @escaping @MainActor () -> Void, onDisconnect: @escaping @MainActor () -> Void,
                 onSend: @escaping @MainActor () -> Void, onStop: @escaping @MainActor () -> Void,
                 onSettings: @escaping @MainActor () -> Void = {},
+                onFollowTailChanged: @escaping @MainActor (Bool) -> Void = { _ in },
+                onScrollAnchorChanged: @escaping @MainActor (String?) -> Void = { _ in },
                 showsHeader: Bool = true, maxContentWidth: CGFloat = 620) {
         self.presentation = presentation; self.onDraftChanged = onDraftChanged
         self.onConnect = onConnect; self.onDisconnect = onDisconnect
         self.onSend = onSend; self.onStop = onStop; self.onSettings = onSettings
+        self.onFollowTailChanged = onFollowTailChanged; self.onScrollAnchorChanged = onScrollAnchorChanged
         self.showsHeader = showsHeader; self.maxContentWidth = maxContentWidth
     }
 
@@ -66,7 +74,10 @@ public struct SessionScreen: View {
                     .accessibilityIdentifier("errorMessage")
             }
             Divider()
-            SessionTranscript(messages: presentation.messages, placeholder: presentation.placeholder)
+            SessionTranscript(messages: presentation.messages, placeholder: presentation.placeholder,
+                              followTail: presentation.followTail, anchor: presentation.scrollAnchor,
+                              onFollowTailChanged: onFollowTailChanged,
+                              onAnchorChanged: onScrollAnchorChanged)
             Divider()
             SessionComposer(draft: presentation.draft, hint: presentation.hint,
                             canEdit: presentation.canEditMessage, canSend: presentation.canSend,

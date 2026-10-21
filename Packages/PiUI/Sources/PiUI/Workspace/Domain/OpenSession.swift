@@ -33,14 +33,17 @@ public struct OpenSession: Identifiable, Equatable, Sendable {
     /// Authoritative run status from the server inventory, not a local guess.
     public var activity: SessionActivity?
     public var draft: String
+    /// Auto-scroll only while the tail is followed; reading older text is never yanked.
     public var followTail: Bool
+    /// Message the transcript was last positioned at, so switching back restores it.
+    public var scrollAnchor: String?
     public var unread: Bool
 
     public init(identity: OpenSessionIdentity, title: String, activity: SessionActivity? = nil) {
         id = identity.key; scope = identity.scope; sessionPath = identity.sessionPath
         runtimeId = identity.runtimeId; projectPath = identity.projectPath
         self.title = title; self.activity = activity
-        draft = ""; followTail = true; unread = false
+        draft = ""; followTail = true; scrollAnchor = nil; unread = false
     }
 
     /// The same local session, even when one side names the saved path and the other a

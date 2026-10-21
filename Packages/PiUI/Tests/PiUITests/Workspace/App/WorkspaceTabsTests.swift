@@ -40,6 +40,41 @@ import Testing
         }
     }
 
+    @Test func eachTabKeepsItsOwnReadingPositionAndFollowPreference() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.connect()
+            try await app.tabs.openQuickChat()
+            // The user scrolled away from the tail in the first tab.
+            app.tabs.reportReadingPosition(followTail: false, anchor: "answer-new-1")
+            try await app.tabs.openRunningSession()
+            // The visible session follows its own tail; the background one keeps its place.
+            app.tabs.shouldFollowTail(true, for: "Working")
+            app.tabs.anchorShouldBe(nil, for: "Working")
+            try await app.tabs.select("New chat")
+            app.tabs.shouldFollowTail(false, for: "New chat")
+            app.tabs.anchorShouldBe("answer-new-1", for: "New chat")
+            try await app.tabs.select("Working")
+            app.tabs.shouldFollowTail(true, for: "Working")
+            // A switch never rewrites another session's reading position.
+            app.tabs.shouldFollowTail(false, for: "New chat")
+        }
+    }
+
+    @Test func reopeningAnOpenSessionSelectsItWithoutAskingTheServerAgain() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.connect()
+            try await app.tabs.openHistory()
+            try await app.tabs.openQuickChat()
+            try await app.tabs.openHistory()
+            app.tabs.shouldShow(["Saved", "New chat"])
+            app.tabs.shouldSelect("Saved")
+            // No duplicate open and no duplicate runtime; re-observing the existing
+            // runtime is the one request the switch itself needs.
+            await app.server.shouldHaveOpens(1)
+            await app.server.shouldHaveAttaches(1)
+        }
+    }
+
     @Test func closingATabSelectsTheNeighbourAndKeepsItsRuntimeRunning() async throws {
         try await WorkspaceIntegrationDriver.run { app in
             try await app.projects.connect()

@@ -68,7 +68,9 @@ public struct WorkspaceContainer: View {
             send: { Task { await controller.session.send() } },
             stop: { Task { await controller.session.stop() } },
             selectTab: { id in Task { await controller.selectSession(id: id) } },
-            closeTab: { id in Task { await controller.closeSession(id: id) } })
+            closeTab: { id in Task { await controller.closeSession(id: id) } },
+            followTailChanged: controller.setFollowTail,
+            scrollAnchorChanged: controller.setScrollAnchor)
     }
 
     private func requestConnectionChange() {
@@ -106,6 +108,8 @@ public struct WorkspaceContainer: View {
         value.details = store.state.selectedSession?.projectPath ?? ""
         value.error = state.errorMessage
         value.draft = state.draft
+        value.followTail = store.state.selectedSession?.followTail ?? true
+        value.scrollAnchor = store.state.selectedSession?.scrollAnchor
         value.hint = state.hint
         value.placeholder = "Start a conversation."
         value.canConnect = false

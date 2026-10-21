@@ -66,6 +66,8 @@ public struct WorkspaceActions {
     public var stop: @MainActor () -> Void
     public var selectTab: @MainActor (String) -> Void
     public var closeTab: @MainActor (String) -> Void
+    public var followTailChanged: @MainActor (Bool) -> Void
+    public var scrollAnchorChanged: @MainActor (String?) -> Void
 
     public init(open: @escaping @MainActor (ProjectSessionTarget, String) -> Void,
                 create: @escaping @MainActor (String) -> Void,
@@ -76,10 +78,13 @@ public struct WorkspaceActions {
                 send: @escaping @MainActor () -> Void,
                 stop: @escaping @MainActor () -> Void,
                 selectTab: @escaping @MainActor (String) -> Void,
-                closeTab: @escaping @MainActor (String) -> Void) {
+                closeTab: @escaping @MainActor (String) -> Void,
+                followTailChanged: @escaping @MainActor (Bool) -> Void,
+                scrollAnchorChanged: @escaping @MainActor (String?) -> Void) {
         self.open = open; self.create = create; self.connection = connection
         self.settings = settings; self.back = back
         self.draftChanged = draftChanged; self.send = send; self.stop = stop
         self.selectTab = selectTab; self.closeTab = closeTab
+        self.followTailChanged = followTailChanged; self.scrollAnchorChanged = scrollAnchorChanged
     }
 }
