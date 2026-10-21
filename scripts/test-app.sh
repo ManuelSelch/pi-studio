@@ -5,7 +5,10 @@ cd "$build_root"
 platform="${1:?Pass ios or macos}"
 suite="${2:?Pass unit, ui, or release}"
 case "$platform" in
-  ios) destination="${PI_STUDIO_TEST_DESTINATION:-platform=iOS Simulator,name=iPhone 17}" ;;
+  ios)
+    source "$project_root/scripts/simulator-destination.sh"
+    destination=$(select_simulator_destination)
+    ;;
   macos) destination='platform=macOS' ;;
   *) echo "Unknown platform: $platform" >&2; exit 2 ;;
 esac

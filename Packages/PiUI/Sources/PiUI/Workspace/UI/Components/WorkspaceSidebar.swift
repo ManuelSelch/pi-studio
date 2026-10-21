@@ -17,6 +17,15 @@ struct WorkspaceSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             searchField
+            if let error = presentation.error {
+                Text(verbatim: error)
+                    .font(.caption).foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
+                    .padding(.horizontal, 6)
+                    .accessibilityIdentifier("errorMessage")
+            }
             Divider()
             ScrollView {
                 LazyVStack(spacing: 2) {
@@ -34,7 +43,6 @@ struct WorkspaceSidebar: View {
             Divider()
             footer
         }
-        .accessibilityIdentifier("sessionSidebar")
     }
 
     // MARK: - Pieces
