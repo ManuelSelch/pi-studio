@@ -6,6 +6,19 @@ import Testing
 
 @MainActor
 struct SessionFeatureTests {
+    @Test func connectedWithoutSessionIsNotReadyForMessaging() async {
+        let initial = SessionFeature.State()
+        let store = TestStore<SessionFeature>(state: initial)
+        defer { store.tearDown() }
+        store.dispatch(.connectionChanged(initial.generation, .connected)) { $0.connection = .connected }
+        #expect(store.state.statusText == "Connected")
+        #expect(!store.state.canConnect)
+        #expect(!store.state.canEditMessage)
+        #expect(!store.state.canSend)
+        #expect(!store.state.canStop)
+        await store.finish()
+    }
+
     @Test func connectionAndDraftAdmissionAreReducedByFlux() async {
         let initial = SessionFeature.State()
         let token = UUID()

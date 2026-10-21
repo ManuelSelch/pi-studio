@@ -7,8 +7,8 @@ let package = Package(
     products: [.library(name: "PiUI", targets: ["PiUI"])],
     dependencies: [
         .package(path: "../../.dependencies/pi-sdk"),
-        .package(url: "https://github.com/hmlongco/Factory.git", exact: "2.5.3"),
-        .package(url: "https://github.com/ManuelSelch/Flux.git", revision: "00c8b43799d5acbca04127833daf28f1df2ce477"),
+        .package(url: "https://github.com/hmlongco/Factory.git", from: "2.5.3"),
+        .package(url: "https://github.com/ManuelSelch/Flux.git", from: "1.1.0"),
     ],
     targets: [
         .target(name: "PiUI", dependencies: [

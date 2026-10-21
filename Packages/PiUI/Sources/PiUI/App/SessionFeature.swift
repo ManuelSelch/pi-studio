@@ -35,6 +35,7 @@ public struct SessionFeature: Feature {
             switch connection {
             case .disconnected: return "Disconnected"
             case .connecting: return "Connecting…"
+            case .connected: return "Connected"
             case .failed(let error): return error.isOutcomeUnknown ? "Outcome unknown" : "Connection failed"
             case .ready:
                 if isStopping || projection?.status == .aborting { return "Stopping…" }

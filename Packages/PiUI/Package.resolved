@@ -1,5 +1,5 @@
 {
-  "originHash" : "5116beef18f564ccc26ed14c02a88e8cbd767aa4b5a004d39abcb3b69cd83685",
+  "originHash" : "904fae09dccf40a0dcaae9d587baeaaf1c572e9898ba46567da8acb3cfc9f58a",
   "pins" : [
     {
       "identity" : "factory",
@@ -15,7 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ManuelSelch/Flux.git",
       "state" : {
-        "revision" : "00c8b43799d5acbca04127833daf28f1df2ce477"
+        "revision" : "00c8b43799d5acbca04127833daf28f1df2ce477",
+        "version" : "1.1.0"
       }
     }
   ],

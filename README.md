@@ -28,8 +28,8 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
 
 - [PiUI](Packages/PiUI/Package.swift) is a local Swift package shared by both
   platforms. It depends on PiSDK and [Flux](https://github.com/ManuelSelch/Flux),
-  pinned to `00c8b43799d5acbca04127833daf28f1df2ce477` (including FluxTestStore),
-  and [FactoryKit](https://github.com/hmlongco/Factory) pinned to **2.5.3**.
+  from version **1.1.0**, allowing compatible 1.x updates (including FluxTestStore),
+  and [FactoryKit](https://github.com/hmlongco/Factory) from **2.5.3**, allowing compatible 2.x updates.
 - [SessionDependencies](Packages/PiUI/Sources/PiUI/App/SessionDependencies.swift) is
   an app-owned FactoryKit container, not a global singleton. It registers session
   configuration, the SDK connection builder and one cached main-actor controller.
