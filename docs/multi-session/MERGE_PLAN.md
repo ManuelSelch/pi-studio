@@ -32,26 +32,48 @@ Therefore the connection is published through one injected dependency:
 ```swift
 // Session/App/SessionTransport.swift
 @MainActor public final class SessionTransport {
-    public internal(set) var connection: (any PiDemoConnection)?   // set by WorkspaceMiddleware
-    public internal(set) var generation = UUID()                   // bumped on attach/detach
-    public internal(set) var sessionId: String?                    // the observed runtime
+    /// The one connection WorkspaceMiddleware creates and disposes. Nothing else writes it.
+    public internal(set) var connection: (any PiDemoConnection)?
 }
 ```
 
-- `WorkspaceMiddleware` writes it (on connect, on each serialized attach/switch, on disconnect)
-  and is the only thing that creates or disposes a connection.
-- `SessionMiddleware` reads it: on `attachRequested(sessionId:generation:)` it subscribes to
+- `WorkspaceMiddleware` writes it (on connect, on disconnect) and is the only thing that creates
+  or disposes a connection.
+- `SessionMiddleware` reads it: on `attachRequested(sessionId:)` it subscribes to
   `connection.states()/projections()`, **ignoring projections whose `session.sessionId` is not the
-  expected one** (this is what makes a superseded attach harmless), and its send/stop tasks call
-  `connection.send(_:)`/`stop()`.
+  requested one**, and its send/stop tasks call `connection.send(_:)`/`stop()`.
 - Injection uses the same pattern `main` already uses for `endpointSettingsService` in
   `SettingsMiddleware`: `@Injected(\.sessionTransport)`. No cycle: `sessionStore` resolves only
   the transport, `workspaceStore` resolves the transport and the settings store.
 - The container bridges the two user-facing signals that cannot be effects either way:
-  `WorkspaceContainer` dispatches `attachRequested` into the session store when the selected tab
-  changes, and routes the session store's `clearDraftMatching` into the workspace store
-  (`draftCleared(matching:)`) so the per-tab draft is only cleared once a send is admitted —
-  the same rule `main`'s composer follows today, just with the draft stored one level up.
+  `WorkspaceContainer` dispatches `attachRequested` into the session store when
+  `workspaceStore.state.observedRuntimeId` changes — the runtime the workspace middleware has
+  actually attached, so the subscription yields that session's snapshot immediately — and routes
+  the session store's `clearDraftMatching` into the workspace store (`draftCleared(matching:)`) so
+  the per-tab draft is only cleared once a send is admitted, the rule `main`'s composer follows
+  today with the draft stored one level up.
+
+### Why the transport carries no version or generation
+
+An earlier revision put a `generation` in the transport. It is not needed and has been removed;
+staleness is already covered four times over:
+
+1. **The SDK binds mutations to the runtime they were sent to.** `PiClient` guards every send and
+   stop with `mutationGeneration` + `isObserving(_:)`, so a late result cannot settle against a
+   later selection — that was slice 2's whole point, and re-versioning it in the app would be a
+   second copy of the same guard.
+2. **Identity, not version, distinguishes transcripts.** Filtering projections by the requested
+   `session.sessionId` is sufficient; a version would only restate it.
+3. **The codebase's reservation pattern.** `main` already rejects stale or duplicate commands with
+   request UUIDs minted by the action default (`UUID = UUID()`) and checked against reducer state
+   (`state.sendRequest == request && store.getState()?.sendRequest == request && handled != request`).
+   `attachRequested`/`detachRequested` follow the same shape.
+4. **Task cancellation.** Subscription tasks are cancelled on attach, detach and disconnect, as
+   `SessionMiddleware` does today.
+
+Store-wide invalidation (a reconnect making an entire store's work obsolete) still uses the
+`generation` inside `SessionFeature.State` / `WorkspaceFeature.State`, exactly as `main` and this
+branch already do. That is a per-store concern and unrelated to the transport.
 
 ## Slice responsibilities after the merge
 
