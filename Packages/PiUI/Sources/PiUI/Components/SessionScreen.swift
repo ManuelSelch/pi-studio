@@ -26,6 +26,10 @@ public struct SessionScreen: View {
     public let onSend: @MainActor () -> Void
     public let onStop: @MainActor () -> Void
     public let onSettings: @MainActor () -> Void
+    /// A workspace shell supplies its own toolbar and connection controls, so the
+    /// standalone header is omitted there while the conversation stays identical.
+    private let showsHeader: Bool
+    private let maxContentWidth: CGFloat
     @State private var confirmConnect = false
     @State private var confirmDisconnect = false
     @FocusState private var messageFocused: Bool
@@ -33,21 +37,25 @@ public struct SessionScreen: View {
     public init(presentation: SessionPresentation, onDraftChanged: @escaping @MainActor (String) -> Void,
                 onConnect: @escaping @MainActor () -> Void, onDisconnect: @escaping @MainActor () -> Void,
                 onSend: @escaping @MainActor () -> Void, onStop: @escaping @MainActor () -> Void,
-                onSettings: @escaping @MainActor () -> Void = {}) {
+                onSettings: @escaping @MainActor () -> Void = {},
+                showsHeader: Bool = true, maxContentWidth: CGFloat = 620) {
         self.presentation = presentation; self.onDraftChanged = onDraftChanged
         self.onConnect = onConnect; self.onDisconnect = onDisconnect
         self.onSend = onSend; self.onStop = onStop; self.onSettings = onSettings
+        self.showsHeader = showsHeader; self.maxContentWidth = maxContentWidth
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            SessionHeader(title: presentation.title, status: presentation.status,
-                          details: presentation.details, canConnect: presentation.canConnect,
-                          onSettings: { messageFocused = false; onSettings() }) {
-                messageFocused = false
-                if presentation.canConnect { confirmConnect = true }
-                else if presentation.requiresDisconnectWarning { confirmDisconnect = true }
-                else { onDisconnect() }
+            if showsHeader {
+                SessionHeader(title: presentation.title, status: presentation.status,
+                              details: presentation.details, canConnect: presentation.canConnect,
+                              onSettings: { messageFocused = false; onSettings() }) {
+                    messageFocused = false
+                    if presentation.canConnect { confirmConnect = true }
+                    else if presentation.requiresDisconnectWarning { confirmDisconnect = true }
+                    else { onDisconnect() }
+                }
             }
             if let error = presentation.error {
                 Text(verbatim: error)
@@ -66,7 +74,7 @@ public struct SessionScreen: View {
                             onDraftChanged: onDraftChanged,
                             onSend: { messageFocused = false; onSend() }, onStop: onStop)
         }
-        .frame(maxWidth: 620, maxHeight: .infinity)
+        .frame(maxWidth: maxContentWidth, maxHeight: .infinity)
         .background(contentBackground)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(outerBackground)
