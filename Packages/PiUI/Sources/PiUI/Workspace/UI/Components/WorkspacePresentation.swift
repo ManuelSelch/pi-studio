@@ -20,6 +20,21 @@ public struct WorkspaceSelection: Equatable, Sendable {
     }
 }
 
+/// One open session as a tab. Unread is independent of activity.
+public struct SessionTabPresentation: Identifiable, Equatable, Sendable {
+    public let id: String
+    public var title: String
+    public var activity: SessionActivity?
+    public var isSelected: Bool
+    public var unread: Bool
+
+    public init(id: String, title: String, activity: SessionActivity? = nil,
+                isSelected: Bool = false, unread: Bool = false) {
+        self.id = id; self.title = title; self.activity = activity
+        self.isSelected = isSelected; self.unread = unread
+    }
+}
+
 public struct WorkspacePresentation: Equatable, Sendable {
     public var status = "Disconnected"
     public var canConnect = true
@@ -29,6 +44,9 @@ public struct WorkspacePresentation: Equatable, Sendable {
     public var error: String?
     public var groups: [ProjectGroup] = []
     public var selection: WorkspaceSelection?
+    /// Ordered open sessions. Mac renders them as tabs; the phone uses them for its
+    /// overview and never shows a tab strip.
+    public var tabs: [SessionTabPresentation] = []
     public init() {}
 
     /// Quick Chats stays above Activity and project groups, matching Pi Chat.
@@ -46,6 +64,8 @@ public struct WorkspaceActions {
     public var draftChanged: @MainActor (String) -> Void
     public var send: @MainActor () -> Void
     public var stop: @MainActor () -> Void
+    public var selectTab: @MainActor (String) -> Void
+    public var closeTab: @MainActor (String) -> Void
 
     public init(open: @escaping @MainActor (ProjectSessionTarget, String) -> Void,
                 create: @escaping @MainActor (String) -> Void,
@@ -54,9 +74,12 @@ public struct WorkspaceActions {
                 back: @escaping @MainActor () -> Void,
                 draftChanged: @escaping @MainActor (String) -> Void,
                 send: @escaping @MainActor () -> Void,
-                stop: @escaping @MainActor () -> Void) {
+                stop: @escaping @MainActor () -> Void,
+                selectTab: @escaping @MainActor (String) -> Void,
+                closeTab: @escaping @MainActor (String) -> Void) {
         self.open = open; self.create = create; self.connection = connection
         self.settings = settings; self.back = back
         self.draftChanged = draftChanged; self.send = send; self.stop = stop
+        self.selectTab = selectTab; self.closeTab = closeTab
     }
 }

@@ -66,7 +66,9 @@ public struct WorkspaceContainer: View {
             back: controller.back,
             draftChanged: controller.setDraft,
             send: { Task { await controller.session.send() } },
-            stop: { Task { await controller.session.stop() } })
+            stop: { Task { await controller.session.stop() } },
+            selectTab: { id in Task { await controller.selectSession(id: id) } },
+            closeTab: { id in Task { await controller.closeSession(id: id) } })
     }
 
     private func requestConnectionChange() {
@@ -88,6 +90,10 @@ public struct WorkspaceContainer: View {
         value.selection = projects.selectedSession.map {
             WorkspaceSelection(title: $0.title, runtimeId: $0.runtimeId,
                                sessionPath: $0.sessionPath, context: $0.projectPath)
+        }
+        value.tabs = projects.openSessions.map {
+            SessionTabPresentation(id: $0.id, title: $0.title, activity: $0.activity,
+                                   isSelected: $0.id == projects.selectedSessionId, unread: $0.unread)
         }
         return value
     }
