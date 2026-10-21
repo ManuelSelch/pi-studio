@@ -35,6 +35,28 @@ Verification (all on this worktree's isolated DerivedData and simulator):
 - macOS UI automation stays paused by user request, so Mac tab/split-view behaviour is
   only build-verified so far.
 
+## Slice 2 prerequisite — Swift SDK switching safety (delivered)
+
+Branch `feat/sdk-switching` in the pi-chat repository (`packages/pi-sdk`, commit
+`c7ef9a0`) delivers R11 items a–c without per-session streaming:
+
+- Bounded keyed request correlation (max 8 in flight) replaces the single pending slot, so
+  a selection and a mutation can overlap without a false identity violation.
+- Selection is refused only while another selection is in flight; an admitted run's
+  settlement deadline no longer blocks switching.
+- `send`/`stop` and the run-settlement deadline are bound to the runtime they were issued
+  for, so a late result cannot settle against a later tab.
+- `PiSessionEvent.closed`/`.replaced` report identity changes of the observed runtime, and
+  a replacement swaps the open-session inventory entry atomically.
+
+Verified: 34 Swift SDK tests pass (5 new switching scenarios, each red before the change;
+including the loopback test with repository Node deps installed), 155 TypeScript SDK tests
+pass, and PiUI's 39 package tests plus both Pi Studio iOS builds pass against this branch.
+
+This worktree's `.dependencies/pi-sdk` symlink currently points at that branch; restore the
+released checkout with `bash scripts/prepare.sh`, or re-select the branch with
+`PI_SDK_PATH=~/.worktrees/pi-chat/feat-sdk-switching/packages/pi-sdk bash scripts/prepare.sh`.
+
 ## Notes and follow-ups
 
 - Deliberate slice-1 limits: no session tab strip, no Activity section, no Needs you
