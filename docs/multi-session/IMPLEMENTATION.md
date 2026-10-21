@@ -113,6 +113,45 @@ Deliberate slice-2 limits:
 - Mac scroll-gesture behaviour is verified by build and manual/off-screen review only
   while app automation is paused.
 
+## Reconciliation with `main` (Flux 2 middleware, slices, Container DI)
+
+`main` moved three times while slices 1–2 were in flight; the merge is recorded in
+[MERGE_PLAN.md](./MERGE_PLAN.md) and landed as `9a04e86` + `b1929b1` + `54b8c90`.
+
+What the reconciled code looks like now:
+
+- `Workspace/{WorkspaceContainer.swift, App/WorkspaceFeature.swift, Domain/OpenSession.swift,
+  Middleware/WorkspaceMiddleware.swift, UI/*}` and `Projects/{App,Domain}` follow the
+  `Session`/`Settings` slice layout.
+- `Session` and `Workspace` stay separate features joined by one injected `SessionTransport`
+  (`Session/App/SessionTransport.swift`). Flux 2 has no cross-store dispatch, so
+  `WorkspaceMiddleware` owns the connection, publishes it, and tells the conversation store
+  which runtime it attached; `SessionMiddleware` filters projections by that identity, which is
+  what makes a superseded attach harmless. Both middlewares take their dependencies by
+  constructor injection, because a property wrapper resolves outside the creating scope.
+- `SessionFeature`/`SessionMiddleware` keep the transcript, send/stop admission and prompt
+  errors; `WorkspaceFeature`/`WorkspaceMiddleware` own connection, catalogue, session events,
+  serialized selection and the open tabs. `SessionController`, the `SessionDependencies` class,
+  `SessionContainer` and `SessionConfiguration` are gone; their tests were ported.
+- Drafts, follow-tail and the reading anchor live per tab in the workspace store; the composer
+  edits the selected tab's text and only clears it once a send is admitted.
+- `detachRequested` keeps the last-known conversation: a disconnect disposes local networking
+  only (R14), which the retained-transcript UI tests assert.
+
+Verification after the merge:
+
+| Suite | Result |
+| --- | --- |
+| PiUI package | 72 tests pass (ported middleware/lifecycle/reducer tests + tab scenarios + off-screen Mac pane render) |
+| iOS unit | pass |
+| iOS UI | 22 executions, 0 failures — includes the existing multiline composer and settings suites plus workspace browsing |
+| macOS unit | pass |
+| macOS Release | builds |
+| macOS UI | still paused by user request; not claimed |
+
+Deliberate limits carried forward: per-session request/error state and populated `unread`
+arrive with slice 4, the iPhone overview with slice 3, and no launch persistence.
+
 ## Notes and follow-ups
 
 - Deliberate slice-1 limits: no session tab strip, no Activity section, no Needs you

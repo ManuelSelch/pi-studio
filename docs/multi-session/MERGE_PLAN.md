@@ -1,7 +1,16 @@
 # Pi Studio — merging `feat/layout` into `main`
 
-Planning document. Nothing here is executed yet; `feat/layout` and `main` are both untouched.
-Every claim below was measured: a trial merge (`git merge feat/layout --no-commit`, then
+**Executed.** The reconciliation landed on `feat/layout` as `9a04e86`, `b1929b1` and `54b8c90`
+and is merged into `main`. Deviations from the plan below, and why:
+
+- The attach bridge lives in `WorkspaceMiddleware`, not in the container view: a view-only bridge
+  could not be covered by package tests, and Flux 2 offers no cross-store dispatch.
+- Both middlewares take their dependencies by constructor injection. `@Injected` resolves lazily,
+  so it resolved outside the container scope the store was created in.
+- `detachRequested` retains the transcript (R14: a disconnect disposes local networking only),
+  which the existing UI tests required.
+
+Revision 3 of the plan follows; every claim was measured: a trial merge (`git merge feat/layout --no-commit`, then
 aborted) in `~/.worktrees/pi-studio/merge-layout-reconcile`, plus reference counting over both
 trees.
 
