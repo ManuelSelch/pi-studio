@@ -1,7 +1,7 @@
 # Compact multi-session workspace
 
 - Revision: 4
-- Status: in review; no implementation approval.
+- Status: revision 4 layout approved; planning requested, not production implementation.
 - Goal: explore a simpler Mac and iPhone workspace with projects, saved history, multiple open conversations and independent background agents.
 - Confirmed direction: application-managed session tabs on Mac, not Finder-style native window tab groups; tabs hidden on iOS. Quick Chats is permanently above Activity and project groups, matching pi-chat.
 
@@ -38,4 +38,4 @@ Default is populated, with two running sessions (one without an open tab) and on
 
 ## Approval
 
-Pending user review of revision 4. Production source and app dependencies are untouched.
+Revision 4 layout approved by the user: “looks good. Start planning the swiftui layout and components for this”. This approves the reviewed visual direction and authorizes planning only, not production implementation. Mockup files are preserved. Native planning lives in ../../docs/multi-session/REQUIREMENTS.md; production source and app dependencies are untouched by this design work.
