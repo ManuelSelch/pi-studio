@@ -47,11 +47,6 @@ public struct SessionFeature: Feature {
             if case .failed(let error) = connection { return error.localizedDescription }
             return actionError ?? projection?.error
         }
-        public var hint: String {
-            if case .connecting = connection { return "Initializing and creating the demo…" }
-            if requiresDisconnectWarning { return "Partial text stays visible." }
-            return canConnect ? "Connect to start a fresh demo." : "One message at a time."
-        }
     }
 
     public enum Action: Equatable, Sendable {

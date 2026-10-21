@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 /// Plain presentation values: no Flux, router, SDK types or service lookups.
 public struct SessionPresentation: Equatable, Sendable {
@@ -7,13 +10,13 @@ public struct SessionPresentation: Equatable, Sendable {
     public var details = ""
     public var error: String?
     public var clearDraftMatching: String?
-    public var hint = ""
     public var placeholder = "Your demo conversation will appear here."
     public var messages: [TranscriptMessage] = []
     public var canConnect = true
     public var canEditMessage = false
     public var canSend = false
     public var canStop = false
+    public var isStopping = false
     public var requiresDisconnectWarning = false
     public init() {}
 }
@@ -60,12 +63,23 @@ public struct SessionScreen: View {
             Divider()
             SessionTranscript(messages: presentation.messages, placeholder: presentation.placeholder)
             Divider()
-            SessionComposer(clearDraftMatching: presentation.clearDraftMatching, hint: presentation.hint,
+            SessionComposer(clearDraftMatching: presentation.clearDraftMatching,
                             canEdit: presentation.canEditMessage, canSend: presentation.canSend,
-                            canStop: presentation.canStop, focus: $messageFocused,
+                            canStop: presentation.canStop, isStopping: presentation.isStopping, focus: $messageFocused,
                             onClearDraftConsumed: onClearDraftConsumed,
-                            onSend: { text in messageFocused = false; onSend(text) }, onStop: onStop)
+                            onSend: onSend, onStop: onStop)
         }
+        #if os(macOS)
+        .onExitCommand {
+            // Fallback for focus elsewhere on the conversation. A sheet owns its own
+            // Escape handling; the container also withholds canStop while settings is open.
+            let event = NSApp.currentEvent
+            let modifiers = event?.modifierFlags.intersection([.shift, .command, .option, .control]) ?? []
+            let composing = (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() == true
+            if !confirmConnect && !confirmDisconnect && presentation.canStop,
+               !composing, event?.isARepeat != true, modifiers.isEmpty { onStop() }
+        }
+        #endif
         .frame(maxWidth: 620, maxHeight: .infinity)
         .background(contentBackground)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

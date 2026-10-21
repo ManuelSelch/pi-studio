@@ -68,6 +68,14 @@ app.session.waitUntilReady()
 app.chat.replyShouldBe(1, "Hello from the demo. This reply is streaming a little at a time.")
 ```
 
+`app.chat.stop()` sends a real Escape key on macOS and taps the running-state
+stop icon on iOS. `pressReturn`, `pressShiftReturn`, caret/selection/undo and paste
+helpers keep platform key events in the driver; paste restores the prior clipboard.
+macOS interaction scenarios are compile-only while user-requested automation is
+paused. iOS `pressSoftwareReturn` taps the actual software Return key;
+`typeText` newline events do not replace a physical hardware-keyboard check.
+`delayedAdmission` uses only the injected debug fixture, never a live server.
+
 The root registers app termination with XCTest teardown and selects portrait on
 iOS. Named send-outcome options hide debug launch arguments. The context hides
 macOS sheets versus iOS alerts and native static-text representation. Assertions

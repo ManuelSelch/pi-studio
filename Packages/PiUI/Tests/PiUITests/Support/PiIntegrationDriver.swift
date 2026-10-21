@@ -287,6 +287,9 @@ final class IntegrationServerDriver {
     func shouldHaveConnectionCount(_ count: Int, sourceLocation: SourceLocation = #_sourceLocation) async {
         #expect(await stub.count == count, sourceLocation: sourceLocation)
     }
+    func shouldHaveStopCount(_ count: Int, sourceLocation: SourceLocation = #_sourceLocation) async {
+        #expect(await stub.stopCount == count, sourceLocation: sourceLocation)
+    }
     func shouldHaveSendCount(_ count: Int, sourceLocation: SourceLocation = #_sourceLocation) async {
         #expect(await stub.sendCount == count, sourceLocation: sourceLocation)
     }
@@ -305,6 +308,7 @@ fileprivate actor DemoConnectionStub: PiDemoConnection {
     var wait: CheckedContinuation<DemoSession, Error>?
     var sendWait: CheckedContinuation<Void, Error>?
     var sendCount = 0
+    var stopCount = 0
     var receivedPrompts: [String] = []
     var current: DemoSessionProjection?
     var (updates, continuation) = AsyncStream<DemoSessionProjection>.makeStream(bufferingPolicy: .bufferingNewest(1))
@@ -321,6 +325,7 @@ fileprivate actor DemoConnectionStub: PiDemoConnection {
         sendWait = nil
     }
     func stop() async throws {
+        stopCount += 1
         if let current { setProjection(.init(session: current.session, messages: current.messages, status: .aborting)) }
     }
     func finishReply() {

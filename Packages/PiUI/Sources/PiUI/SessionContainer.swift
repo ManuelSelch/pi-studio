@@ -52,11 +52,11 @@ public struct SessionContainer: View {
         }
         value.error = state.errorMessage
         value.clearDraftMatching = state.clearDraftMatching
-        value.hint = state.hint
         value.canConnect = state.canConnect
         value.canEditMessage = state.canEditMessage
         value.canSend = state.canSend
-        value.canStop = state.canStop
+        value.canStop = state.canStop && !settingsStore.state.isPresented
+        value.isStopping = state.isStopping || state.projection?.status == .aborting
         value.requiresDisconnectWarning = state.requiresDisconnectWarning
         value.placeholder = state.connection == .connecting ? "Preparing the demo session…" : state.canEditMessage ? "Demo ready. Send a message to begin." : "Your demo conversation will appear here."
         value.messages = (state.projection?.messages ?? []).map { TranscriptMessage(id: $0.id, role: $0.role == "user" ? "You" : $0.role.capitalized, text: $0.text) }

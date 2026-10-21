@@ -6,9 +6,11 @@ select **My Mac** for a native desktop app, not Catalyst. The mobile product is
 still a Simulator/local-server demo, not a remotely deployed phone controller.
 
 One screen shows connection state, explicit Connect/Disconnect, a plain-text
-transcript, message field, Send, Stop and errors. No connection opens on launch.
-The approved layouts are preserved in [mockups/session](mockups/session/DESIGN.md)
-and [mockups/settings](mockups/settings/DESIGN.md).
+transcript, multiline message field, icon-only ↑ Send and errors. macOS Esc stops
+an active run; iOS replaces Send with a stop icon while running. No connection
+opens on launch. The approved layouts are preserved in
+[mockups/session](mockups/session/DESIGN.md), [mockups/settings](mockups/settings/DESIGN.md)
+and [mockups/multiline-composer](mockups/multiline-composer/DESIGN.md).
 
 ## App icons
 
@@ -38,7 +40,9 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   tests register their debug connection through the same dependency graph.
 - [SessionFeature](Packages/PiUI/Sources/PiUI/App/SessionFeature.swift) holds app-owned
   interaction state and typed reducer actions. FluxStore is the sole observable
-  source of that state; drafts and action/error flags are not a second model.
+  source of session interaction state. Editable message text stays local to the
+  composer; only submitted snapshots and consumable matching-clear instructions
+  cross the store boundary. Typing dispatches no session actions.
 - [SessionController](Packages/PiUI/Sources/PiUI/App/SessionController.swift) owns
   awaitable SDK effects, observation tasks and disposal, feeding Flux actions.
   Long-lived SDK observation is explicitly cancelled rather than hidden inside
@@ -50,9 +54,9 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   agreement: version 1.0.10 unconditionally depends on UIKit-only SwiftEntryKit
   and UIHostingController and cannot build natively for macOS. No substitute
   router is introduced; settings uses native sheet presentation.
-- [Components](Packages/PiUI/Sources/PiUI/Components) import SwiftUI only and take
-  plain display values and callbacks. They do not read stores, resolve services,
-  use SDK models or perform network work. Local focus/alert state is UI-only.
+- [Components](Packages/PiUI/Sources/PiUI/Components) take plain display values and
+  callbacks. They use SwiftUI and narrowly scoped native editing/event adapters. They do not read stores, resolve services,
+  use SDK models or perform network work. Local draft/focus/alert state is UI-only.
 - The [app shell](pi-studio/pi_studioApp.swift) owns lifetime and native windows.
   iOS backgrounding disposes local networking. macOS losing focus does not;
   closing its single window disposes the local connection.
@@ -113,12 +117,18 @@ iPhone, loopback refers to the phone, not your Mac.
   and Pocket control is not required.
 - Each explicit connection creates one fresh demo session. Existing runtimes are
   never attached to, aborted or closed by the app.
-- Send permits one nonempty plain-text prompt while idle. Slash/bash commands,
+- The editor wraps and grows from two to five lines, then scrolls internally.
+  macOS Enter sends and Shift+Enter inserts a newline at the caret. iOS Return
+  inserts a newline; only the ↑ button submits. No routine composer hints are shown.
+- Send permits one non-whitespace plain-text prompt while idle. Submitted text
+  preserves indentation, blank lines and surrounding whitespace. Slash/bash commands,
   steering and queued messages are deliberately unsupported. Drafts clear only
   after admission, remain on rejection/unknown outcome, and are never replayed.
 - SDK-owned complete projections deliver incremental text, ordered messages and
   finalized answers without duplicate drafts. Admission is not answer completion.
-- Stop retains partial text and shows Stopping until authoritative settlement.
+- macOS Esc (no separate Stop button) and the iOS running-state stop icon invoke
+  the same guarded cancellation effect. Stop retains partial text and shows
+  Stopping until authoritative settlement.
   A completed abort response means the server is idle; an accepted abort is not
   completion. Missing start/stop settlement has a bounded deadline.
 - Disconnect during active/pending work warns that server work may continue.
@@ -137,6 +147,8 @@ behind. Avoid repeated connections without cleanup.
 [.pi/pipeline.json](.pi/pipeline.json) configures once-per-worktree preparation and
 seven independent suites. Only fast `piui` tests opt into after-agent execution;
 UI automation is manual because it takes control of the Simulator/desktop.
+**Current user instruction: do not run macOS automation tests until authorized.**
+The macOS composer interaction scenarios are compiled, not executed.
 
 Equivalent commands after preparation:
 
@@ -173,7 +185,7 @@ DYLD missing-symbol crashes and misleading macOS compatibility dialogs. Use
 separate Simulator devices via `PI_STUDIO_TEST_DESTINATION` (or run serially);
 separate derived-data directories alone do not isolate Simulator installations.
 
-- PiUI: **26 named tests** (including parameterized URL cases), covering settings
+- PiUI: **33 named tests** (including parameterized URL cases), covering settings
   reducers, mock-service failure/retry, isolated UserDefaults persistence,
   next-connection snapshots during setup/streaming, and dependency scope
   identity/isolation, configuration/connection overrides, FluxTestStore reducer
@@ -181,14 +193,14 @@ separate derived-data directories alone do not isolate Simulator installations.
   setup/pending-send disconnect, connection errors and deallocation disposal.
 - The settings connection integration scenario and semantic driver also compile
   into both native unit-test targets; their source is shared, not copied.
-- Both platforms run seven functional UI tests (settings validation/cancel/save/
-  relaunch and next-connection behavior, consent, two turns/Stop, active disconnect,
-  rejected send, unknown outcome), plus launch/appearance
-  screenshot tests. Debug-only injected connections are never selected by normal
+- iOS: 15 functional UI tests (including six multiline composer scenarios), plus
+  four launch/appearance cases: **19 passing tests**. macOS has corresponding
+  Return/Shift+Return, paste/selection/undo, duplicate admission, Escape and
+  retention scenarios, compiled but not executed during the automation pause. Debug-only injected connections are never selected by normal
   app launches; tests use public SDK projections, not a second wire protocol.
-- Debug/unit/UI and Release builds pass on both platforms with FactoryKit.
-  One macOS active-disconnect UI run failed after an automation interruption;
-  the full macOS UI suite passed on rerun without code changes.
+- For current composer verification and outstanding native macOS/IME/physical
+  keyboard checks, see [implementation status](docs/multiline-composer/IMPLEMENTATION.md).
+  No macOS interaction verification is claimed while automation is paused.
 
 ### Semantic test DSL
 

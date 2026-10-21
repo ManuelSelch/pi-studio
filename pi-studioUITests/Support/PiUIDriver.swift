@@ -1,4 +1,7 @@
 import XCTest
+#if os(macOS)
+import AppKit
+#endif
 
 /// UI implementation of the semantic DSL. Never reads controller/store state.
 @MainActor
@@ -16,7 +19,7 @@ final class PiUIDriver {
         settings = UISettingsDriver(context)
     }
 
-    static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted) -> PiUIDriver {
+    static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted, delayedAdmission: Bool = false) -> PiUIDriver {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--ui-settings-suite", "PiStudio.UITests." + UUID().uuidString, "--ui-reset-settings"]
         switch sendOutcome {
@@ -24,6 +27,7 @@ final class PiUIDriver {
         case .rejected: app.launchArguments.append("--ui-send-rejected")
         case .unknown: app.launchArguments.append("--ui-send-unknown")
         }
+        if delayedAdmission { app.launchArguments.append("--ui-send-delayed") }
         #if os(iOS)
         // Appearance tests rotate the simulator; functional scenarios own orientation.
         XCUIDevice.shared.orientation = .portrait
@@ -169,13 +173,82 @@ final class UIChatDriver {
         enterDraft(text)
         submitDraft()
     }
-    func stop() { context.app.buttons["stopButton"].tap() }
+    func stop() {
+        #if os(macOS)
+        context.app.typeKey(XCUIKeyboardKey.escape.rawValue, modifierFlags: [])
+        #else
+        context.app.buttons["stopButton"].tap()
+        #endif
+    }
     func shouldAllowSend(_ allowed: Bool, file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssertEqual(context.app.buttons["sendButton"].isEnabled, allowed, file: file, line: line)
+        let button = context.app.buttons["sendButton"]
+        XCTAssertEqual(button.exists && button.isEnabled, allowed, file: file, line: line)
     }
     func shouldAllowStop(_ allowed: Bool, file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssertEqual(context.app.buttons["stopButton"].isEnabled, allowed, file: file, line: line)
+        #if os(macOS)
+        XCTAssertFalse(context.app.buttons["stopButton"].exists, file: file, line: line)
+        #else
+        let button = context.app.buttons["stopButton"]
+        XCTAssertEqual(button.exists && button.isEnabled, allowed, file: file, line: line)
+        #endif
     }
+    func pressReturn() {
+        #if os(macOS)
+        context.app.typeKey(XCUIKeyboardKey.return.rawValue, modifierFlags: [])
+        #else
+        context.messageField.typeText("\n")
+        #endif
+    }
+    func pressShiftReturn() {
+        #if os(macOS)
+        context.app.typeKey(XCUIKeyboardKey.return.rawValue, modifierFlags: .shift)
+        #else
+        // XCTest typeText covers newline insertion; physical Shift+Return is a manual check.
+        context.messageField.typeText("\n")
+        #endif
+    }
+    func pressSoftwareReturn(file: StaticString = #filePath, line: UInt = #line) {
+        #if os(iOS)
+        let key = context.app.keyboards.buttons["Return"].firstMatch
+        context.waitFor(key, file: file, line: line)
+        key.tap()
+        #endif
+    }
+    func sendIconShouldBeAccessible(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(context.app.buttons["sendButton"].label, "Send", file: file, line: line)
+    }
+    func userMessageShouldBe(_ number: Int, _ text: String,
+                             file: StaticString = #filePath, line: UInt = #line) {
+        let message = context.app.staticTexts["message-user-\(number)"]
+        context.waitFor(message, file: file, line: line)
+        XCTAssertEqual(context.renderedText(message), text, file: file, line: line)
+    }
+    func shouldHaveNoReply(_ number: Int = 1, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertFalse(reply(number).exists, file: file, line: line)
+    }
+    #if os(macOS)
+    func typeAtCaret(_ text: String) { context.app.typeText(text) }
+    func moveCaretToStart() { context.messageField.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: .command) }
+    func selectAll() { context.messageField.typeKey("a", modifierFlags: .command) }
+    func undo() { context.messageField.typeKey("z", modifierFlags: .command) }
+    func pasteDraft(_ text: String) {
+        let original: [NSPasteboardItem] = NSPasteboard.general.pasteboardItems?.map { item in
+            let copy = NSPasteboardItem()
+            for type in item.types {
+                if let data = item.data(forType: type) { copy.setData(data, forType: type) }
+            }
+            return copy
+        } ?? []
+        defer {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.writeObjects(original)
+        }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        context.messageField.tap()
+        context.messageField.typeKey("v", modifierFlags: .command)
+    }
+    #endif
     func waitForReply(_ number: Int, file: StaticString = #filePath, line: UInt = #line) {
         context.waitFor(reply(number), file: file, line: line)
     }
