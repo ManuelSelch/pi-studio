@@ -35,10 +35,12 @@ Verification (all on this worktree's isolated DerivedData and simulator):
 - macOS UI automation stays paused by user request, so Mac tab/split-view behaviour is
   only build-verified so far.
 
-## Slice 2 prerequisite — Swift SDK switching safety (delivered)
+## Slice 2 prerequisite — Swift SDK switching safety (merged)
 
-Branch `feat/sdk-switching` in the pi-chat repository (`packages/pi-sdk`, commit
-`c7ef9a0`) delivers R11 items a–c without per-session streaming:
+The pi-chat repository's `packages/pi-sdk` delivers R11 items a–c without per-session
+streaming. It is **merged into pi-chat `main`** (`8364263`, merge of `c7ef9a0` and
+`3ed2b73`; 35 Swift and 155 TypeScript tests pass on the merged tree), so this branch and
+Pi Studio `main` both build against the released checkout with no `PI_SDK_PATH` override:
 
 - Bounded keyed request correlation (max 8 in flight) replaces the single pending slot, so
   a selection and a mutation can overlap without a false identity violation.
@@ -53,13 +55,12 @@ Verified: 34 Swift SDK tests pass (5 new switching scenarios, each red before th
 including the loopback test with repository Node deps installed), 155 TypeScript SDK tests
 pass, and PiUI's 39 package tests plus both Pi Studio iOS builds pass against this branch.
 
-This worktree's `.dependencies/pi-sdk` symlink currently points at that branch; restore the
-released checkout with `bash scripts/prepare.sh`, or re-select the branch with
-`PI_SDK_PATH=~/.worktrees/pi-chat/feat-sdk-switching/packages/pi-sdk bash scripts/prepare.sh`.
+Landing order and the reconciliation work needed before this branch can merge are planned in
+[MERGE_PLAN.md](./MERGE_PLAN.md).
 
 ## Slice 2 — Independent sessions and Mac tabs
 
-SDK prerequisites landed first on pi-chat branch `feat/sdk-switching`:
+SDK prerequisites came first (pi-chat, merged into its `main` as `8364263`):
 
 - `c7ef9a0` — bounded keyed request correlation, selection never blocked by an admitted
   run, send/stop bound to their session, `PiSessionEvent.closed`/`.replaced`.

@@ -71,8 +71,9 @@ Preserve the original MVP/settings plan in the root REQUIREMENTS.md and the Pock
 ## Implementation Plan
 
 Delivered so far: slices 1 and 2 (see [IMPLEMENTATION.md](./IMPLEMENTATION.md) for evidence and
-deliberate limits). Slice 2's SDK prerequisites landed on pi-chat branch `feat/sdk-switching`
-(`c7ef9a0`, `3ed2b73`). R7's per-session request/error state and R12's unread population arrive
+deliberate limits). Slice 2's SDK prerequisites are merged into pi-chat `main` (`8364263`).
+Merging this branch into Pi Studio `main` needs the reconciliation planned in
+[MERGE_PLAN.md](./MERGE_PLAN.md). R7's per-session request/error state and R12's unread population arrive
 with slice 4; the iPhone session overview is slice 3.
 
 ### 1. Project Browser and Compact Workspace Shell
