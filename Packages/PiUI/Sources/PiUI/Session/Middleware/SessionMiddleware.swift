@@ -35,6 +35,7 @@ public final class SessionMiddleware: Middleware {
 
     public func handle(_ state: SessionFeature.State, _ action: SessionFeature.Action) async -> SessionFeature.Action? {
         guard let store else { return nil }
+        
         switch action {
         case .connectRequested(let token, let takingControl):
             guard takingControl, state.generation == token, state.connection == .connecting,
@@ -86,7 +87,8 @@ public final class SessionMiddleware: Middleware {
         default:
             break
         }
-        return nil
+        
+        return .none
     }
 
     private func beginConnect(_ token: UUID, store: StoreHandle<SessionFeature>) {

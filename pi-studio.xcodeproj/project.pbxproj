@@ -653,7 +653,7 @@
 		};
 		F00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/Flux" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ".dependencies/Flux";
+			relativePath = .dependencies/Flux;
 		};
 /* End XCLocalSwiftPackageReference section */
 

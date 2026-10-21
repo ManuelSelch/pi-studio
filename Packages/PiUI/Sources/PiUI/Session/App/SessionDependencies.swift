@@ -6,23 +6,14 @@ import PiSDK
 /// One dependency scope per app lifetime (or preview/test). No global shared
 /// container: registrations and cached stores cannot leak between scopes.
 @MainActor
-public final class SessionDependencies: ManagedContainer {
-    public nonisolated let manager = ContainerManager()
-
-    public init() {}
-
+extension Container {
     public var endpointSettingsService: Factory<any EndpointSettingsService> {
         self { @MainActor in UserDefaultsEndpointSettingsService() }.cached
     }
 
-    public var settingsController: Factory<SettingsController> {
-        self { @MainActor in SettingsController(service: self.endpointSettingsService()) }.cached
-    }
-
     public var sessionConfiguration: Factory<SessionConfiguration> {
         self { @MainActor in
-            SessionConfiguration(endpoint: self.settingsController().endpoint,
-                                 projectPath: SessionConfiguration.development.projectPath)
+            SessionConfiguration.development
         }
     }
 
@@ -30,7 +21,6 @@ public final class SessionDependencies: ManagedContainer {
         self { { PiClient(endpoint: $0) } }
     }
 
-    /// Each cached store owns a fresh middleware instance and its SDK lifetime.
     public var sessionStore: Factory<FluxStore<SessionFeature>> {
         self { @MainActor in
             let configuration = self.sessionConfiguration()
@@ -40,6 +30,14 @@ public final class SessionDependencies: ManagedContainer {
                 makeConnection: self.makeConnection()
             )
             return FluxStore(state: .init(), middlewares: [middleware])
+        }.cached
+    }
+    
+    public var settingsStore: Factory<FluxStore<SettingsFeature>> {
+        self { @MainActor in
+            return FluxStore(state: .init(endpoint: ""), middlewares: [
+                SettingsMiddleware()
+            ])
         }.cached
     }
 }

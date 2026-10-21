@@ -18,7 +18,8 @@ public struct SettingsFeature: Feature {
         case opened
         case cancelled
         case draftChanged(String)
-        case saveStarted
+        
+        case saveTapped
         case saveFailed(String)
         case saved(String)
     }
@@ -39,7 +40,7 @@ public struct SettingsFeature: Feature {
             guard !state.isSaving else { return }
             state.draft = value
             state.error = nil
-        case .saveStarted:
+        case .saveTapped:
             state.isSaving = true
             state.error = nil
         case .saveFailed(let message):

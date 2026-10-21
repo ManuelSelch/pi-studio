@@ -1,27 +1,14 @@
 import SwiftUI
 import Flux
+import FactoryKit
 
 /// Bridges the session and settings features through app composition. Routing belongs
 /// to the host shell when navigation is introduced; components remain unaware.
 public struct SessionContainer: View {
-    private let projectPath: String
-    private let title: String
-    private let settings: SettingsController
-    @ObservedObject private var settingsStore: FluxStore<SettingsFeature>
-    @ObservedObject private var store: FluxStore<SessionFeature>
-
-    public init(dependencies: SessionDependencies, title: String = "Pi Studio") {
-        self.init(store: dependencies.sessionStore(), settings: dependencies.settingsController(),
-                  projectPath: dependencies.sessionConfiguration().projectPath, title: title)
-    }
-
-    /// Explicit store injection remains useful for focused previews and tests.
-    public init(store: FluxStore<SessionFeature>, settings: SettingsController,
-                projectPath: String = SessionConfiguration.development.projectPath, title: String = "Pi Studio") {
-        self.projectPath = projectPath; self.settings = settings; self.title = title
-        _settingsStore = ObservedObject(wrappedValue: settings.store)
-        _store = ObservedObject(wrappedValue: store)
-    }
+    @Injected(\.settingsStore) var settings
+    @Injected(\.sessionStore) var store
+    
+    public init() {}
 
     public var body: some View {
         SessionScreen(
@@ -31,24 +18,24 @@ public struct SessionContainer: View {
             onDisconnect: { store.dispatch(.disconnectRequested()) },
             onSend: { store.dispatch(.sendRequested(text: $0)) },
             onStop: { store.dispatch(.stopRequested()) },
-            onSettings: settings.open
+            onSettings: { settings.dispatch(.opened) }
         )
         .sheet(isPresented: Binding(
-            get: { settingsStore.state.isPresented },
-            set: { if !$0 { settings.cancel() } }
+            get: { settings.state.isPresented },
+            set: { if !$0 { settings.dispatch(.cancelled) } }
         )) {
-            SettingsContainer(controller: settings)
+            SettingsContainer()
         }
     }
 
     private var presentation: SessionPresentation {
         let state = store.state
         var value = SessionPresentation()
-        value.title = title
+        value.title = "Pi"
         value.status = state.statusText
-        let savedEndpoint = settingsStore.state.savedEndpoint
+        let savedEndpoint = settings.state.savedEndpoint
         let activeEndpoint = state.canConnect ? nil : state.connectionEndpoint?.absoluteString
-        value.details = "\(activeEndpoint ?? savedEndpoint) · \(projectPath)"
+        value.details = "\(activeEndpoint ?? savedEndpoint)"
         if let activeEndpoint, activeEndpoint != savedEndpoint {
             value.details += "\nNext connection: \(savedEndpoint)"
         }
@@ -57,7 +44,7 @@ public struct SessionContainer: View {
         value.canConnect = state.canConnect
         value.canEditMessage = state.canEditMessage
         value.canSend = state.canSend
-        value.canStop = state.canStop && !settingsStore.state.isPresented
+        value.canStop = state.canStop && !settings.state.isPresented
         value.isStopping = state.isStopping || state.projection?.status == .aborting
         value.requiresDisconnectWarning = state.requiresDisconnectWarning
         value.placeholder = state.connection == .connecting ? "Preparing the demo session…" : state.canEditMessage ? "Demo ready. Send a message to begin." : "Your demo conversation will appear here."
