@@ -70,7 +70,10 @@ Preserve the original MVP/settings plan in the root REQUIREMENTS.md and the Pock
 
 ## Implementation Plan
 
-Delivered so far: slice 1 (see [IMPLEMENTATION.md](./IMPLEMENTATION.md) for evidence and deliberate limits).
+Delivered so far: slices 1 and 2 (see [IMPLEMENTATION.md](./IMPLEMENTATION.md) for evidence and
+deliberate limits). Slice 2's SDK prerequisites landed on pi-chat branch `feat/sdk-switching`
+(`c7ef9a0`, `3ed2b73`). R7's per-session request/error state and R12's unread population arrive
+with slice 4; the iPhone session overview is slice 3.
 
 ### 1. Project Browser and Compact Workspace Shell
 Description: Reconcile the Pocket browsing feature with the completed main middleware baseline before production edits. Deliver one end-to-end browsing/open/create flow in the shared workspace, with Quick Chats first, compact Mac split-view shell and iPhone navigation, settings access and explicit connection consent. Preserve current plain-text Send/Stop within a single selected conversation while multi-session SDK work is pending; do not advertise independent tabs yet. Verify catalogue updates, no automatic demo creation, project search, history reuse, open failure, endpoint policy and both native builds, with package/integration tests and allowed iOS UI checks. Retain existing shell regression coverage subject to the Mac automation pause.

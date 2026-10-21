@@ -57,6 +57,61 @@ This worktree's `.dependencies/pi-sdk` symlink currently points at that branch; 
 released checkout with `bash scripts/prepare.sh`, or re-select the branch with
 `PI_SDK_PATH=~/.worktrees/pi-chat/feat-sdk-switching/packages/pi-sdk bash scripts/prepare.sh`.
 
+## Slice 2 — Independent sessions and Mac tabs
+
+SDK prerequisites landed first on pi-chat branch `feat/sdk-switching`:
+
+- `c7ef9a0` — bounded keyed request correlation, selection never blocked by an admitted
+  run, send/stop bound to their session, `PiSessionEvent.closed`/`.replaced`.
+- `3ed2b73` — `sessionEvents()` declared on `PiSessionConnection`, so the workspace
+  observes identity changes through the contract it actually holds.
+
+Delivered in `feat/layout`:
+
+- `Workspace/Domain/OpenSession.swift`: a tab is keyed by server scope plus saved
+  session path (else the runtime identity), so a runtime replacement keeps the tab.
+- `WorkspaceFeature` now owns `openSessions`, `selectedSessionId` and per-tab local
+  state (draft, follow-tail, reading anchor, unread). Opening the same history/runtime
+  selects its existing tab; new sessions append so tabs never jump; closing a tab
+  selects the neighbour on the right, else the left, and last-tab closure leaves an
+  empty workspace with the connection intact.
+- `WorkspaceController` serializes selection work in one loop: a switch is allowed while
+  another session generates, an in-flight attach whose choice was superseded is
+  discarded instead of rendered, and the loop re-attaches until the observed runtime is
+  the selected one. Opens reuse an already-open tab without asking the server again.
+  `closeSession` performs no server call at all, and `SessionController.detach()` stops
+  observing a session without touching the server or the transport.
+- Server identity events drive tabs: `closed` removes the tab and selects the neighbour;
+  `replaced` keeps the tab, its key, draft and order and swaps its runtime identity.
+  Tab status comes from the inventory, never a timer or a second transcript.
+- Mac UI: `SessionTabStrip`/`SessionTab` (status, label, unread marker, per-session
+  close, selected tab scrolled into view) inside `WorkspacePane`, which paints its own
+  surface; the phone still renders no tab strip.
+- `SessionTranscript` no longer scrolls on every message change: it follows the tail
+  only while the reader is at the tail, and each tab restores its own reading position.
+
+Verification (this worktree's DerivedData and simulator):
+
+- PiUI: 57 tests pass — 11 workspace reducer tests, 8 open-tab scenarios and the
+  off-screen render. The tab scenarios were written first and failed until the loop,
+  draft ownership and activity mapping were right.
+- iOS unit 2 pass; iOS UI 14 executions, 0 failures; macOS unit 2 pass; macOS Release
+  builds; the SDK's Swift suite 35 pass and TypeScript suite 155 pass.
+- macOS UI automation stays paused by user request. `MacWorkspacePaneRenderTests`
+  renders the real pane through a hosting window instead of driving a window; it caught
+  two real problems (an `ImageRenderer`-only render fakes a blank layout, and the
+  conversation header was relying on a parent's background).
+
+Deliberate slice-2 limits:
+
+- Per-session request/error state is not kept per tab yet: a send failure is shown for
+  the selected tab and cleared on switch. Slice 4 owns per-session attention/activity,
+  and slice 5 owns pending-request identity.
+- `unread` exists as tab state but nothing sets it yet (slice 4).
+- No iPhone overview (slice 3), no numbered shortcuts, no persistence across launches.
+- Mac scroll-gesture behaviour is verified by build and manual/off-screen review only
+  while app automation is paused.
+
 ## Notes and follow-ups
 
 - Deliberate slice-1 limits: no session tab strip, no Activity section, no Needs you
