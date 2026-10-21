@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Pi Studio · Multi-session layout</title><link rel="stylesheet" href="./styles.css"></head>
+<body>
+<header class="review"><a href="?layout=mac">Pi Studio <span>/ Multi-session · r1</span></a><nav aria-label="Preview layout"><a href="?layout=mac">Mac</a><a href="?layout=ios">iPhone</a></nav><span class="review-note">Interactive concept · fake data</span></header>
+<div id="stage"><div id="app" class="app">
+<aside id="sidebar" aria-label="Projects and sessions"></aside>
+<div id="shade"></div>
+<main>
+<header class="toolbar"><button id="browse" class="icon" aria-label="Toggle projects">☰</button><span id="context">pi-studio</span><span class="branch">⑂ main</span><div class="spacer"></div><button id="activity" class="activity" aria-label="Show background activity">◉ <span id="running-count">2</span></button><button id="overview-button" class="icon" aria-label="Show all open sessions">▣</button><button id="new" class="icon" aria-label="New session">＋</button></header>
+<div class="tab-row"><div id="tabs" role="tablist" aria-label="Open sessions"></div></div>
+<section id="conversation" role="tabpanel" aria-label="Selected conversation"><div id="transcript" class="transcript"></div><div class="composer-wrap"><div id="session-status"></div><form id="composer"><label class="sr-only" for="draft">Message</label><textarea id="draft" placeholder="Ask Pi anything…" rows="2"></textarea><div class="composer-bottom"><span>＋ <span class="model">Claude Sonnet · Thinking</span></span><button id="send" type="submit" aria-label="Send message">↑</button></div></form><div class="composer-note">Server work continues when you switch sessions.</div></div></section>
+</main>
+<section id="overview" aria-label="Open session overview" hidden></section>
+</div></div>
+<footer class="review-footer">Try switching tabs, opening history, closing a running tab, or sending a message. <span>⌘/Ctrl 1–9 switches tabs when the browser allows it.</span></footer>
+<div id="toast" role="status"></div>
+<script type="module" src="./main.js"></script>
+</body></html>
