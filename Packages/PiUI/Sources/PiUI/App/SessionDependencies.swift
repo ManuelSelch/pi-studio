@@ -29,6 +29,18 @@ public final class SessionDependencies: ManagedContainer {
         self { { PiClient(endpoint: $0) } }
     }
 
+    public var makeSessionConnection: Factory<@Sendable (URL) -> any PiSessionConnection> {
+        self { { PiClient(endpoint: $0) } }
+    }
+
+    /// One workspace coordinator owns browsing, the shared connection and session
+    /// selection. Conversations adopt that connection instead of opening their own.
+    public var projectsController: Factory<ProjectsController> {
+        self { @MainActor in
+            ProjectsController(session: self.sessionController(), makeConnection: self.makeSessionConnection())
+        }.cached
+    }
+
     /// Resolve only on the main actor, after installing any overrides. Cache per
     /// container, not globally, so the shell and containers share one controller.
     public var sessionController: Factory<SessionController> {
