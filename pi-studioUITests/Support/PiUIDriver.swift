@@ -37,6 +37,11 @@ final class PiUIDriver {
         XCUIDevice.shared.orientation = .portrait
         #endif
         app.launch()
+        #if os(macOS)
+        // XCUITest launches the app behind whatever is frontmost, and a non-key window gets no
+        // keystrokes and an empty accessibility tree. Activate it instead of clicking the Dock.
+        app.activate()
+        #endif
         test.addTeardownBlock { @MainActor in
             app.terminate()
             app.launchArguments.append("--ui-reset-settings")
