@@ -8,8 +8,8 @@ import Testing
 @MainActor
 struct SessionDependenciesTests {
     @Test func storeIsCachedWithinOneScopeOnly() {
-        let first = SessionDependencies()
-        let second = SessionDependencies()
+        let first = Container()
+        let second = Container()
         first.endpointSettingsService.register { @MainActor in MemoryEndpointSettings() }
         second.endpointSettingsService.register { @MainActor in MemoryEndpointSettings() }
         #expect(first.sessionStore() === first.sessionStore())
@@ -19,19 +19,20 @@ struct SessionDependenciesTests {
     }
 
     @Test func savedSettingsReachAlreadyResolvedStoreWithoutLeakingScopes() async throws {
-        let first = SessionDependencies()
-        let second = SessionDependencies()
+        let first = Container()
+        let second = Container()
         first.endpointSettingsService.register { @MainActor in MemoryEndpointSettings() }
         second.endpointSettingsService.register { @MainActor in MemoryEndpointSettings() }
         let connection = DependencyConnectionStub()
         first.makeConnection.register { { _ in connection } }
         let store = first.sessionStore()
-        let settings = first.settingsController()
-        #expect(settings === first.settingsController())
-        settings.open()
-        settings.setDraft("wss://saved.example/custom")
-        settings.save()
-        #expect(second.settingsController().endpoint == SessionConfiguration.development.endpoint)
+        let settings = first.settingsStore()
+        #expect(settings === first.settingsStore())
+        settings.dispatch(.opened)
+        settings.dispatch(.draftChanged("wss://saved.example/custom"))
+        settings.dispatch(.saveTapped())
+        try await waitUntil { !settings.state.isSaving }
+        #expect(URL(string: second.settingsStore().state.savedEndpoint) == SessionConfiguration.development.endpoint)
         store.dispatch(.connectRequested(takingControl: true))
         try await waitUntil { if case .ready = store.state.connection { true } else { false } }
         #expect(store.state.connectionEndpoint?.absoluteString == "wss://saved.example/custom")
@@ -41,7 +42,7 @@ struct SessionDependenciesTests {
     }
 
     @Test func registrationsReachMiddlewareWithoutLeakingToAnotherScope() async throws {
-        let dependencies = SessionDependencies()
+        let dependencies = Container()
         dependencies.endpointSettingsService.register { @MainActor in MemoryEndpointSettings() }
         let connection = DependencyConnectionStub()
         let configuration = SessionConfiguration(endpoint: URL(string: "ws://127.0.0.1:9999/ws")!, projectPath: "/tmp/injected")
@@ -57,7 +58,7 @@ struct SessionDependenciesTests {
         store.dispatch(.disconnectRequested())
         try await waitUntil { !store.state.isDisconnecting }
         #expect(await connection.closed)
-        let other = SessionDependencies()
+        let other = Container()
         other.endpointSettingsService.register { @MainActor in MemoryEndpointSettings() }
         #expect(other.sessionConfiguration().projectPath == SessionConfiguration.development.projectPath)
     }

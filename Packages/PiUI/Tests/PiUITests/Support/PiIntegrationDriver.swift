@@ -4,6 +4,7 @@ import PiSDK
 import Synchronization
 import PiUI
 import Testing
+import FactoryKit
 
 /// Semantic test API. Only this layer knows stores, middleware, SDK projections and stubs.
 @MainActor
@@ -53,22 +54,29 @@ fileprivate final class IntegrationEndpointSettings: EndpointSettingsService {
 final class IntegrationSettingsDriver {
     private let context: IntegrationContext
     fileprivate init(_ context: IntegrationContext) { self.context = context }
-    func open() { context.settings.open() }
-    func enterEndpoint(_ value: String) { context.settings.setDraft(value) }
-    func save() { context.settings.save() }
-    func cancel() { context.settings.cancel() }
+    func open() { context.settings.dispatch(.opened) }
+    func enterEndpoint(_ value: String) { context.settings.dispatch(.draftChanged(value)) }
+    func save(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        context.settings.dispatch(.saveTapped())
+        try await context.wait("settings save", sourceLocation: sourceLocation) { !self.context.settings.state.isSaving }
+    }
+    func cancel() { context.settings.dispatch(.cancelled) }
 }
 
 @MainActor
 fileprivate final class IntegrationContext {
     var store: FluxStore<SessionFeature>?
-    let settings: SettingsController
+    let settings: FluxStore<SettingsFeature>
+    let dependencies: Container
     let endpoints = EndpointLog()
     let stub: DemoConnectionStub?
     var model: FluxStore<SessionFeature> { store! }
 
     init(configuration: SessionConfiguration?) {
-        let settings = SettingsController(service: IntegrationEndpointSettings())
+        let dependencies = Container()
+        self.dependencies = dependencies
+        dependencies.endpointSettingsService.register { @MainActor in IntegrationEndpointSettings() }
+        let settings = dependencies.settingsStore()
         self.settings = settings
         if let configuration {
             stub = nil
@@ -77,7 +85,7 @@ fileprivate final class IntegrationContext {
             let stub = DemoConnectionStub()
             self.stub = stub
             let endpoints = endpoints
-            let middleware = SessionMiddleware(endpointProvider: { settings.endpoint }, makeConnection: { endpoint in
+            let middleware = SessionMiddleware(endpointProvider: { URL(string: settings.state.savedEndpoint)! }, makeConnection: { endpoint in
                 endpoints.values.withLock { $0.append(endpoint.absoluteString) }
                 return stub
             })

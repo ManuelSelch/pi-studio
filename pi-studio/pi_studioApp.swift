@@ -45,7 +45,7 @@ struct pi_studioApp: App {
         WindowGroup {
             SessionContainer()
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .background { dependencies.sessionStore().dispatch(.disconnectRequested()) }
+                    if phase == .background { Container.shared.sessionStore().dispatch(.disconnectRequested()) }
                 }
         }
         #endif

@@ -3,7 +3,7 @@ import Flux
 import FactoryKit
 
 struct SettingsContainer: View {
-    @Injected(\.settingsStore) var store
+    @InjectedObject(\.settingsStore) var store
 
     var body: some View {
         SettingsScreen(
@@ -12,7 +12,7 @@ struct SettingsContainer: View {
             isSaving: store.state.isSaving,
                        
             onEndpointChanged: { store.dispatch(.draftChanged($0)) },
-            onSave: { store.dispatch(.saveTapped) },
+            onSave: { store.dispatch(.saveTapped()) },
             onCancel: { store.dispatch(.cancelled) }
         )
         .interactiveDismissDisabled(store.state.isSaving)

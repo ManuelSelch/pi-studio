@@ -5,8 +5,8 @@ import FactoryKit
 /// Bridges the session and settings features through app composition. Routing belongs
 /// to the host shell when navigation is introduced; components remain unaware.
 public struct SessionContainer: View {
-    @Injected(\.settingsStore) var settings
-    @Injected(\.sessionStore) var store
+    @InjectedObject(\.settingsStore) var settings
+    @InjectedObject(\.sessionStore) var store
     
     public init() {}
 

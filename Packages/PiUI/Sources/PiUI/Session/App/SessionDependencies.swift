@@ -3,8 +3,8 @@ import Foundation
 import Flux
 import PiSDK
 
-/// One dependency scope per app lifetime (or preview/test). No global shared
-/// container: registrations and cached stores cannot leak between scopes.
+/// The app uses Container.shared; tests/previews can own independent containers.
+/// Registrations and cached stores remain local to their container.
 @MainActor
 extension Container {
     public var endpointSettingsService: Factory<any EndpointSettingsService> {
@@ -13,7 +13,8 @@ extension Container {
 
     public var sessionConfiguration: Factory<SessionConfiguration> {
         self { @MainActor in
-            SessionConfiguration.development
+            SessionConfiguration(endpoint: URL(string: self.settingsStore().state.savedEndpoint)!,
+                                 projectPath: SessionConfiguration.development.projectPath)
         }
     }
 
@@ -35,9 +36,12 @@ extension Container {
     
     public var settingsStore: Factory<FluxStore<SettingsFeature>> {
         self { @MainActor in
-            return FluxStore(state: .init(endpoint: ""), middlewares: [
-                SettingsMiddleware()
-            ])
+            let service = self.endpointSettingsService()
+            let endpoint = service.load().flatMap(ServerEndpoint.validated) ?? ServerEndpoint.defaultValue
+            // @Injected resolves at construction; use this factory's container,
+            // including when tests resolve from an independent scope.
+            let middleware = Container.$shared.withValue(self) { SettingsMiddleware() }
+            return FluxStore(state: .init(endpoint: endpoint), middlewares: [middleware])
         }.cached
     }
 }

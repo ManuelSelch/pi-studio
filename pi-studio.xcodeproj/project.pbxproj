@@ -13,6 +13,7 @@
 		B00000000000000000000007 /* PiSDK in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* PiSDK */; };
 		C00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */; };
 		D00000000000000000000001 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000003 /* FactoryKit */; };
+		D00000000000000000000004 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000003 /* FactoryKit */; };
 		E00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift */; };
 		F00000000000000000000001 /* Flux in Frameworks */ = {isa = PBXBuildFile; productRef = F00000000000000000000003 /* Flux */; };
 		F00000000000000000000004 /* Flux in Frameworks */ = {isa = PBXBuildFile; productRef = F00000000000000000000003 /* Flux */; };
@@ -79,6 +80,7 @@
 			files = (
 				B00000000000000000000004 /* PiUI in Frameworks */,
 				F00000000000000000000004 /* Flux in Frameworks */,
+				D00000000000000000000004 /* FactoryKit in Frameworks */,
 				B00000000000000000000007 /* PiSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -170,6 +172,7 @@
 			);
 			name = "pi-studioTests";
 			packageProductDependencies = (
+				D00000000000000000000003 /* FactoryKit */,
 				A00000000000000000000003 /* PiSDK */,
 				F00000000000000000000003 /* Flux */,
 				B00000000000000000000003 /* PiUI */,

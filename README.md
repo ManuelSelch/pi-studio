@@ -32,18 +32,19 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   platforms. It depends on local PiSDK and [Flux](https://github.com/ManuelSelch/Flux)
   checkouts (Flux 2.0 API, including FluxTestStore, with the iOS 16 minimum fixed locally),
   and [FactoryKit](https://github.com/hmlongco/Factory) from **2.5.3**, allowing compatible 2.x updates.
-- [SessionDependencies](Packages/PiUI/Sources/PiUI/App/SessionDependencies.swift) is
-  an app-owned FactoryKit container, not a global singleton. It registers session
-  configuration, the SDK connection builder and one cached main-actor session store.
+- [Dependency registrations](Packages/PiUI/Sources/PiUI/Session/App/SessionDependencies.swift)
+  extend FactoryKit's Container. The app uses Container.shared; tests/previews own
+  independent containers. Registrations include session configuration, the SDK
+  connection builder and cached main-actor session/settings stores.
   Each store owns a fresh middleware instance. The shell and session container resolve
   the same store; previews/tests use separate scopes. Install overrides before resolution. Native UI
   tests register their debug connection through the same dependency graph.
-- [SessionFeature](Packages/PiUI/Sources/PiUI/App/SessionFeature.swift) holds app-owned
+- [SessionFeature](Packages/PiUI/Sources/PiUI/Session/App/SessionFeature.swift) holds app-owned
   interaction state and typed reducer actions. FluxStore is the sole observable
   source of session interaction state. Editable message text stays local to the
   composer; only submitted snapshots and consumable matching-clear instructions
   cross the store boundary. Typing dispatches no session actions.
-- [SessionMiddleware](Packages/PiUI/Sources/PiUI/Middleware/SessionMiddleware.swift)
+- [SessionMiddleware](Packages/PiUI/Sources/PiUI/Session/Middleware/SessionMiddleware.swift)
   owns SDK effects, observation tasks and disposal. Containers only dispatch
   `connectRequested`, `sendRequested(text:)`, `stopRequested`, `disconnectRequested`
   and `clearDraftConsumed`. The reducer validates readiness/content and synchronously
@@ -56,14 +57,15 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   These lifecycle tasks are owned by middleware, not tracked by Flux `finish()`.
   Tests await result actions/state and explicitly disconnect before draining.
   This does not stop or close the server runtime.
-- [Containers](Packages/PiUI/Sources/PiUI/SessionContainer.swift) bridge Flux, injected
-  dependencies and callbacks to presentation. Future navigation/router wiring
+- [Containers](Packages/PiUI/Sources/PiUI/Session/SessionContainer.swift) bridge Flux, injected
+  dependencies and callbacks to presentation. ObservableObject stores use
+  `@InjectedObject`, not `@Injected`, so SwiftUI observes state publications. Future navigation/router wiring
   belongs here or in the host shell. The selected routing library is
   [Router](https://github.com/ManuelSelch/Router), but integration is deferred by
   agreement: version 1.0.10 unconditionally depends on UIKit-only SwiftEntryKit
   and UIHostingController and cannot build natively for macOS. No substitute
   router is introduced; settings uses native sheet presentation.
-- [Components](Packages/PiUI/Sources/PiUI/Components) take plain display values and
+- [Components](Packages/PiUI/Sources/PiUI/Session/UI) take plain display values and
   callbacks, using SwiftUI and narrowly scoped native editing/event adapters.
   They do not read stores, resolve services, use SDK models or perform network
   work. Local draft/focus/alert state is UI-only.
@@ -88,7 +90,7 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   the app uses their working-tree contents, not the published Flux 2.0.0 tag.
   Keep both Package.resolved files checked in; only remote dependencies are pinned there.
 
-[SessionConfiguration](Packages/PiUI/Sources/PiUI/App/SessionConfiguration.swift)
+[SessionConfiguration](Packages/PiUI/Sources/PiUI/Session/App/SessionConfiguration.swift)
 defaults to `ws://127.0.0.1:8787/ws` and the dedicated **server-side** directory
 `/tmp/pi-studio-demo`. Create that directory and start the local v2 Pi Server
 before connecting. The app does not start/install the backend or store model
@@ -108,10 +110,13 @@ the server-side working directory remains development configuration.
   keep their endpoint snapshot and are not disconnected or restarted. The header
   distinguishes current and next endpoints when they differ.
 - [Settings](Packages/PiUI/Sources/PiUI/Settings) is a vertical Flux feature.
-  SettingsController depends on the small `EndpointSettingsService` protocol;
-  only `UserDefaultsEndpointSettingsService` touches UserDefaults. Tests inject
-  in-memory services or isolated suites, never personal defaults. The existing
-  FactoryKit app scope owns the cached session store, settings controller and service.
+  SettingsMiddleware uses `@Injected` for the small `EndpointSettingsService`
+  protocol. Its factory binds FactoryKit's task-local container during construction
+  so independent scopes stay isolated. Only `UserDefaultsEndpointSettingsService` touches UserDefaults.
+  Tests inject in-memory services or isolated suites, never personal defaults.
+  The settings store loads a validated saved/default endpoint at construction.
+  Save is reserved by the reducer before middleware runs; request IDs reject
+  duplicate work. FactoryKit caches both stores and the service within the container.
 - Explicit configuration overrides still win; the app resolves the endpoint
   when Connect middleware begins, before any SDK suspension, not when the store is created.
   UserDefaults provides no durable-write acknowledgement. This adds no remote
