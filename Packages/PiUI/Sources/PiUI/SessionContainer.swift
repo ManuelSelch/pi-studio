@@ -4,31 +4,33 @@ import Flux
 /// Bridges the session and settings features through app composition. Routing belongs
 /// to the host shell when navigation is introduced; components remain unaware.
 public struct SessionContainer: View {
-    private let controller: SessionController
+    private let projectPath: String
     private let title: String
     private let settings: SettingsController
     @ObservedObject private var settingsStore: FluxStore<SettingsFeature>
     @ObservedObject private var store: FluxStore<SessionFeature>
 
     public init(dependencies: SessionDependencies, title: String = "Pi Studio") {
-        self.init(controller: dependencies.sessionController(), settings: dependencies.settingsController(), title: title)
+        self.init(store: dependencies.sessionStore(), settings: dependencies.settingsController(),
+                  projectPath: dependencies.sessionConfiguration().projectPath, title: title)
     }
 
-    /// Explicit injection remains useful for focused previews and controller tests.
-    public init(controller: SessionController, settings: SettingsController, title: String = "Pi Studio") {
-        self.controller = controller; self.settings = settings; self.title = title
+    /// Explicit store injection remains useful for focused previews and tests.
+    public init(store: FluxStore<SessionFeature>, settings: SettingsController,
+                projectPath: String = SessionConfiguration.development.projectPath, title: String = "Pi Studio") {
+        self.projectPath = projectPath; self.settings = settings; self.title = title
         _settingsStore = ObservedObject(wrappedValue: settings.store)
-        _store = ObservedObject(wrappedValue: controller.store)
+        _store = ObservedObject(wrappedValue: store)
     }
 
     public var body: some View {
         SessionScreen(
             presentation: presentation,
-            onClearDraftConsumed: controller.consumeClearDraft,
-            onConnect: { Task { await controller.connect(takingControl: true) } },
-            onDisconnect: { Task { await controller.disconnect() } },
-            onSend: { text in Task { await controller.send(text) } },
-            onStop: { Task { await controller.stop() } },
+            onClearDraftConsumed: { store.dispatch(.clearDraftConsumed) },
+            onConnect: { store.dispatch(.connectRequested(takingControl: true)) },
+            onDisconnect: { store.dispatch(.disconnectRequested()) },
+            onSend: { store.dispatch(.sendRequested(text: $0)) },
+            onStop: { store.dispatch(.stopRequested()) },
             onSettings: settings.open
         )
         .sheet(isPresented: Binding(
@@ -46,7 +48,7 @@ public struct SessionContainer: View {
         value.status = state.statusText
         let savedEndpoint = settingsStore.state.savedEndpoint
         let activeEndpoint = state.canConnect ? nil : state.connectionEndpoint?.absoluteString
-        value.details = "\(activeEndpoint ?? savedEndpoint) · \(controller.configuration.projectPath)"
+        value.details = "\(activeEndpoint ?? savedEndpoint) · \(projectPath)"
         if let activeEndpoint, activeEndpoint != savedEndpoint {
             value.details += "\nNext connection: \(savedEndpoint)"
         }

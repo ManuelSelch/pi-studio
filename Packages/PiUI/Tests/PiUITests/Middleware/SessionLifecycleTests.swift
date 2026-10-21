@@ -1,7 +1,7 @@
 import Testing
 
 @MainActor
-struct SessionControllerTests {
+struct SessionLifecycleTests {
     @Test func explicitConnectionDisablesDuplicateCreateAndDisconnectDisposes() async throws {
         try await PiIntegrationDriver.run { app in
             app.session.shouldBeDisconnected()
@@ -97,15 +97,15 @@ struct SessionControllerTests {
         }
     }
 
-    @Test func releasingConnectedControllerDisposesConnection() async throws {
+    @Test func releasingConnectedStoreDisposesConnection() async throws {
         try await PiIntegrationDriver.run { app in
             try await app.session.connect()
-            try await app.session.releaseController()
+            try await app.session.releaseStore()
             await app.server.shouldBeDisposed()
         }
     }
 
-    @Test func semanticPromptUsesControllerAdmissionAndForwardsText() async throws {
+    @Test func semanticPromptUsesMiddlewareAdmissionAndForwardsText() async throws {
         try await PiIntegrationDriver.run { app in
             try await app.session.connect()
             try await app.chat.sendPrompt("Say hello")
@@ -139,6 +139,44 @@ struct SessionControllerTests {
             await app.server.shouldHaveSendCount(0)
             app.chat.clearInstructionShouldBe(nil)
             app.chat.shouldHavePendingSend(false)
+        }
+    }
+
+    @Test func releasingStoreDuringSetupDisposesConnection() async throws {
+        try await PiIntegrationDriver.run { app in
+            try await app.session.beginConnect()
+            try await app.session.releaseStore()
+            await app.server.shouldBeDisposed()
+        }
+    }
+
+    @Test func releasingStoreDuringPendingSendDisposesConnection() async throws {
+        try await PiIntegrationDriver.run { app in
+            try await app.session.connect()
+            try await app.chat.beginSend("Uncertain")
+            try await app.session.releaseStore()
+            await app.server.shouldBeDisposed()
+        }
+    }
+
+    @Test func queuedSendUsesOriginalSnapshotAndRejectsLaterSubmission() async throws {
+        try await PiIntegrationDriver.run { app in
+            try await app.session.connect()
+            let snapshot = "  Submit this\n\n    exactly\n"
+            try await app.chat.beginSendThenSubmit(snapshot, duplicate: "Next draft")
+            await app.server.receivedPromptsShouldBe([snapshot])
+            await app.server.acceptSend()
+            app.chat.clearInstructionShouldBe(snapshot)
+        }
+    }
+
+    @Test func duplicateStopRequestsReachSDKOnlyOnce() async throws {
+        try await PiIntegrationDriver.run { app in
+            try await app.session.connect()
+            try await app.server.streamReply("Partial")
+            await app.chat.stopTwice()
+            await app.server.shouldHaveStopCount(1)
+            app.chat.messagesShouldBe(["Partial"])
         }
     }
 

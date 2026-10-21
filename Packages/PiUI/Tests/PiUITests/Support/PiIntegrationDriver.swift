@@ -1,10 +1,11 @@
 import Foundation
+import Flux
 import PiSDK
 import Synchronization
 import PiUI
 import Testing
 
-/// Semantic test API. Only this layer knows controllers, SDK projections and stubs.
+/// Semantic test API. Only this layer knows stores, middleware, SDK projections and stubs.
 @MainActor
 final class PiIntegrationDriver {
     let session: IntegrationSessionDriver
@@ -60,35 +61,36 @@ final class IntegrationSettingsDriver {
 
 @MainActor
 fileprivate final class IntegrationContext {
-    var controller: SessionController?
+    var store: FluxStore<SessionFeature>?
     let settings: SettingsController
     let endpoints = EndpointLog()
     let stub: DemoConnectionStub?
-    var connecting: Task<Void, Never>?
-    var sending: Task<Void, Never>?
-    var model: SessionController { controller! }
+    var model: FluxStore<SessionFeature> { store! }
 
     init(configuration: SessionConfiguration?) {
         let settings = SettingsController(service: IntegrationEndpointSettings())
         self.settings = settings
         if let configuration {
             stub = nil
-            controller = SessionController(configuration: configuration)
+            store = FluxStore(state: .init(), middlewares: [SessionMiddleware(configuration: configuration)])
         } else {
             let stub = DemoConnectionStub()
             self.stub = stub
             let endpoints = endpoints
-            controller = SessionController(endpointProvider: { settings.endpoint }, makeConnection: { endpoint in
+            let middleware = SessionMiddleware(endpointProvider: { settings.endpoint }, makeConnection: { endpoint in
                 endpoints.values.withLock { $0.append(endpoint.absoluteString) }
                 return stub
             })
+            store = FluxStore(state: .init(), middlewares: [middleware])
         }
     }
 
     func dispose() async {
-        await controller?.disconnect()
-        await connecting?.value; connecting = nil
-        await sending?.value; sending = nil
+        guard store != nil else { return }
+        model.dispatch(.disconnectRequested())
+        try? await wait("SDK disposal", sourceLocation: #_sourceLocation) {
+            self.store?.state.isDisconnecting == false
+        }
     }
 
     func wait(_ description: String, sourceLocation: SourceLocation,
@@ -98,7 +100,7 @@ fileprivate final class IntegrationContext {
             if await predicate() { return }
             try await Task.sleep(for: .milliseconds(5))
         }
-        Issue.record("Timed out waiting for \(description); status: \(controller?.state.statusText ?? "released")", sourceLocation: sourceLocation)
+        Issue.record("Timed out waiting for \(description); status: \(store?.state.statusText ?? "released")", sourceLocation: sourceLocation)
         throw DriverTimeout()
     }
 
@@ -114,30 +116,28 @@ final class IntegrationSessionDriver {
         if context.stub != nil {
             try await beginConnect(sourceLocation: sourceLocation)
             await context.stub!.succeed()
-            await context.connecting?.value; context.connecting = nil
         } else {
-            await context.model.connect(takingControl: true)
+            context.model.dispatch(.connectRequested(takingControl: true))
         }
         try await context.wait("ready session", sourceLocation: sourceLocation) { self.context.model.state.canEditMessage }
     }
 
     func beginConnect(sourceLocation: SourceLocation = #_sourceLocation) async throws {
         let stub = try #require(context.stub, sourceLocation: sourceLocation)
-        try #require(context.connecting == nil, sourceLocation: sourceLocation)
-        let model = context.model
+        try #require(context.model.state.canConnect, sourceLocation: sourceLocation)
         let previous = await stub.count
-        context.connecting = Task { await model.connect(takingControl: true) }
+        context.model.dispatch(.connectRequested(takingControl: true))
         try await context.wait("connection request", sourceLocation: sourceLocation) { await stub.count > previous }
     }
 
-    func connectAgain() async { await context.model.connect(takingControl: true) }
-    func connectWithoutConsent() async { await context.model.connect(takingControl: false) }
+    func connectAgain() async { context.model.dispatch(.connectRequested(takingControl: true)) }
+    func connectWithoutConsent() async { context.model.dispatch(.connectRequested(takingControl: false)) }
     func disconnect() async { await context.dispose() }
 
-    func releaseController(sourceLocation: SourceLocation = #_sourceLocation) async throws {
-        weak var model = context.controller
-        context.controller = nil
-        try await context.wait("controller release and disposal", sourceLocation: sourceLocation) {
+    func releaseStore(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        weak var model = context.store
+        context.store = nil
+        try await context.wait("store release and disposal", sourceLocation: sourceLocation) {
             let closed = await self.context.stub?.closed == true
             return model == nil && closed
         }
@@ -184,26 +184,39 @@ final class IntegrationChatDriver {
         if let stub = context.stub {
             try await beginSend(text, sourceLocation: sourceLocation)
             await stub.settleSend()
-            await context.sending?.value; context.sending = nil
         } else {
-            await context.model.send(text)
+            context.model.dispatch(.sendRequested(text: text))
         }
+        try await context.wait("send admission", sourceLocation: sourceLocation) { !self.context.model.state.isSending }
         #expect(context.model.state.errorMessage == nil, sourceLocation: sourceLocation)
     }
     func beginSend(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
         let stub = try #require(context.stub, sourceLocation: sourceLocation)
-        try #require(context.sending == nil, sourceLocation: sourceLocation)
+        try #require(context.model.state.canSend, sourceLocation: sourceLocation)
         let previous = await stub.sendCount
-        let model = context.model
-        context.sending = Task { await model.send(text) }
+        context.model.dispatch(.sendRequested(text: text))
         try await context.wait("send admission request", sourceLocation: sourceLocation) { await stub.sendCount > previous }
     }
-    func submit(_ text: String) async { await context.model.send(text) }
-    func stop() async { await context.model.stop() }
+    func beginSendThenSubmit(_ text: String, duplicate: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        let stub = try #require(context.stub, sourceLocation: sourceLocation)
+        let previous = await stub.sendCount
+        context.model.dispatch(.sendRequested(text: text))
+        context.model.dispatch(.sendRequested(text: duplicate))
+        try await context.wait("send admission request", sourceLocation: sourceLocation) { await stub.sendCount > previous }
+    }
+    func stopTwice() async {
+        context.model.dispatch(.stopRequested())
+        await stop()
+    }
+    func submit(_ text: String) async { context.model.dispatch(.sendRequested(text: text)) }
+    func stop() async {
+        context.model.dispatch(.stopRequested())
+        try? await context.wait("stop admission", sourceLocation: #_sourceLocation) { !self.context.model.state.isStopping }
+    }
     func clearInstructionShouldBe(_ text: String?, sourceLocation: SourceLocation = #_sourceLocation) {
         #expect(context.model.state.clearDraftMatching == text, sourceLocation: sourceLocation)
     }
-    func consumeClearInstruction() { context.model.consumeClearDraft() }
+    func consumeClearInstruction() { context.model.dispatch(.clearDraftConsumed) }
     func shouldAllowSend(_ allowed: Bool, sourceLocation: SourceLocation = #_sourceLocation) {
         #expect(context.model.state.canSend == allowed, sourceLocation: sourceLocation)
     }
@@ -254,16 +267,18 @@ final class IntegrationServerDriver {
 
     func acceptConnection(sourceLocation: SourceLocation = #_sourceLocation) async throws {
         await stub.succeed()
-        await context.connecting?.value; context.connecting = nil
         try await context.wait("initial projection", sourceLocation: sourceLocation) { self.context.model.state.projection != nil }
     }
     func rejectConnection(_ message: String) async {
         await stub.fail(.transport(message: message, outcomeUnknown: false))
-        await context.connecting?.value; context.connecting = nil
+        try? await context.wait("connection failure", sourceLocation: #_sourceLocation) {
+            if case .failed = self.context.model.state.connection { return true }
+            return false
+        }
     }
     private func settleSend(_ error: PiError? = nil) async {
         await stub.settleSend(error)
-        await context.sending?.value; context.sending = nil
+        try? await context.wait("send settlement", sourceLocation: #_sourceLocation) { !self.context.model.state.isSending }
     }
     func acceptSend() async { await settleSend() }
     func rejectSend() async { await settleSend(.rejected(code: "sessionBusy", message: "Not now")) }
@@ -287,11 +302,11 @@ final class IntegrationServerDriver {
     func shouldHaveConnectionCount(_ count: Int, sourceLocation: SourceLocation = #_sourceLocation) async {
         #expect(await stub.count == count, sourceLocation: sourceLocation)
     }
-    func shouldHaveStopCount(_ count: Int, sourceLocation: SourceLocation = #_sourceLocation) async {
-        #expect(await stub.stopCount == count, sourceLocation: sourceLocation)
-    }
     func shouldHaveSendCount(_ count: Int, sourceLocation: SourceLocation = #_sourceLocation) async {
         #expect(await stub.sendCount == count, sourceLocation: sourceLocation)
+    }
+    func shouldHaveStopCount(_ count: Int, sourceLocation: SourceLocation = #_sourceLocation) async {
+        #expect(await stub.stopCount == count, sourceLocation: sourceLocation)
     }
     func receivedPromptsShouldBe(_ texts: [String], sourceLocation: SourceLocation = #_sourceLocation) async {
         #expect(await stub.receivedPrompts == texts, sourceLocation: sourceLocation)

@@ -19,19 +19,21 @@ struct SessionFeatureTests {
         await store.finish()
     }
 
-    @Test func connectionAndDraftAdmissionAreReducedByFlux() async {
-        let initial = SessionFeature.State()
+    @Test func connectionAndSnapshotAdmissionAreReducedByFlux() async {
         let token = UUID()
         let session = DemoSession(sessionId: "demo", projectPath: "/tmp/demo")
-        let store = TestStore<SessionFeature>(state: initial)
+        let store = TestStore<SessionFeature>(state: .init())
         defer { store.tearDown() }
-        store.dispatch(.connectStarted(token)) { $0.generation = token; $0.connection = .connecting }
+        store.dispatch(.connectRequested(token, takingControl: true)) { $0.generation = token; $0.connection = .connecting }
         store.dispatch(.connected(token, session)) { $0.connection = .ready(session) }
         store.dispatch(.projectionChanged(token, .init(session: session))) { $0.projection = .init(session: session) }
         #expect(store.state.canSend)
-        store.dispatch(.sendStarted) { $0.isSending = true }
+        let request = UUID()
+        store.dispatch(.sendRequested(request, text: "Hello")) { $0.isSending = true; $0.sendRequest = request }
         #expect(!store.state.canSend)
-        store.dispatch(.sendFinished(token, submitted: "Hello", error: nil)) { $0.isSending = false; $0.clearDraftMatching = "Hello" }
+        store.dispatch(.sendFinished(token, submitted: "Hello", error: nil)) {
+            $0.isSending = false; $0.sendRequest = nil; $0.clearDraftMatching = "Hello"
+        }
         await store.finish()
     }
 
@@ -39,15 +41,19 @@ struct SessionFeatureTests {
         let token = UUID()
         let store = TestStore<SessionFeature>(state: .init())
         defer { store.tearDown() }
-        store.dispatch(.connectStarted(token)) { $0.generation = token; $0.connection = .connecting }
+        store.dispatch(.connectRequested(token, takingControl: true)) { $0.generation = token; $0.connection = .connecting }
         let next = UUID()
-        store.dispatch(.disconnected(next)) {
-            $0.generation = next; $0.connection = .disconnected
+        store.dispatch(.disconnectRequested(next)) {
+            $0.generation = next; $0.connection = .disconnected; $0.isDisconnecting = true
             $0.actionError = "Disconnected during setup. A demo runtime may have been created on the server."
         }
         store.dispatch(.sendFinished(token, submitted: "Old", error: nil)) { _ in }
         store.dispatch(.failed(token, .disconnected)) { _ in }
-        store.dispatch(.connected(token, .init(sessionId: "old", projectPath: "/tmp/old"))) { _ in }
+        let old = DemoSession(sessionId: "old", projectPath: "/tmp/old")
+        store.dispatch(.connected(token, old)) { _ in }
+        store.dispatch(.projectionChanged(token, .init(session: old))) { _ in }
+        store.dispatch(.connectionChanged(token, .ready(old))) { _ in }
+        store.dispatch(.stopFinished(token, error: nil)) { _ in }
         await store.finish()
     }
 
@@ -57,19 +63,45 @@ struct SessionFeatureTests {
         initial.connection = .ready(session); initial.projection = .init(session: session)
         let store = TestStore<SessionFeature>(state: initial)
         defer { store.tearDown() }
-        store.dispatch(.sendStarted) { $0.isSending = true }
-        store.dispatch(.sendFinished(initial.generation, submitted: "First", error: nil)) {
-            $0.isSending = false; $0.clearDraftMatching = "First"
+        for _ in 0..<2 {
+            let request = UUID()
+            store.dispatch(.sendRequested(request, text: "First")) { $0.isSending = true; $0.sendRequest = request }
+            store.dispatch(.sendFinished(initial.generation, submitted: "First", error: nil)) {
+                $0.isSending = false; $0.sendRequest = nil; $0.clearDraftMatching = "First"
+            }
+            store.dispatch(.clearDraftConsumed) { $0.clearDraftMatching = nil }
         }
-        store.dispatch(.clearDraftConsumed) { $0.clearDraftMatching = nil }
-        store.dispatch(.sendStarted) { $0.isSending = true }
+        let request = UUID()
+        store.dispatch(.sendRequested(request, text: "First")) { $0.isSending = true; $0.sendRequest = request }
         store.dispatch(.sendFinished(initial.generation, submitted: "First", error: nil)) {
-            $0.isSending = false; $0.clearDraftMatching = "First"
+            $0.isSending = false; $0.sendRequest = nil; $0.clearDraftMatching = "First"
         }
-        store.dispatch(.sendStarted) { $0.isSending = true; $0.clearDraftMatching = nil }
+        let retry = UUID()
+        store.dispatch(.sendRequested(retry, text: "First")) {
+            $0.isSending = true; $0.sendRequest = retry; $0.clearDraftMatching = nil
+        }
         store.dispatch(.sendFinished(initial.generation, submitted: "First", error: .disconnected)) {
-            $0.isSending = false; $0.actionError = PiError.disconnected.localizedDescription
+            $0.isSending = false; $0.sendRequest = nil; $0.actionError = PiError.disconnected.localizedDescription
         }
         await store.finish()
+    }
+
+    @Test func reducerRejectsWhitespaceAndUnavailableSnapshots() async {
+        var state = SessionFeature.State()
+        let session = DemoSession(sessionId: "demo", projectPath: "/tmp/demo")
+        let feature = SessionFeature()
+        let disconnected = state
+        feature.reduce(&state, .sendRequested(text: "Not connected"))
+        #expect(state == disconnected)
+        state.connection = .ready(session); state.projection = .init(session: session)
+        let ready = state
+        for text in ["", " ", "\n\t\n"] {
+            feature.reduce(&state, .sendRequested(text: text))
+            #expect(state == ready)
+        }
+        state.projection = .init(session: session, status: .running)
+        let running = state
+        feature.reduce(&state, .sendRequested(text: "Busy"))
+        #expect(state == running)
     }
 }

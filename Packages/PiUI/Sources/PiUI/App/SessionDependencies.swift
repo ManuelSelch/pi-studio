@@ -1,9 +1,10 @@
 import FactoryKit
 import Foundation
+import Flux
 import PiSDK
 
 /// One dependency scope per app lifetime (or preview/test). No global shared
-/// container: registrations and cached controllers cannot leak between scopes.
+/// container: registrations and cached stores cannot leak between scopes.
 @MainActor
 public final class SessionDependencies: ManagedContainer {
     public nonisolated let manager = ContainerManager()
@@ -29,16 +30,16 @@ public final class SessionDependencies: ManagedContainer {
         self { { PiClient(endpoint: $0) } }
     }
 
-    /// Resolve only on the main actor, after installing any overrides. Cache per
-    /// container, not globally, so the shell and containers share one controller.
-    public var sessionController: Factory<SessionController> {
+    /// Each cached store owns a fresh middleware instance and its SDK lifetime.
+    public var sessionStore: Factory<FluxStore<SessionFeature>> {
         self { @MainActor in
             let configuration = self.sessionConfiguration()
-            return SessionController(
+            let middleware = SessionMiddleware(
                 configuration: configuration,
                 endpointProvider: { [weak self] in self?.sessionConfiguration().endpoint ?? configuration.endpoint },
                 makeConnection: self.makeConnection()
             )
+            return FluxStore(state: .init(), middlewares: [middleware])
         }.cached
     }
 }
