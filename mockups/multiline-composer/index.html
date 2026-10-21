@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multiline composer review</title>
+<link rel="stylesheet" href="../session/styles.css">
+<style>
+.app { min-height: min(640px, 85dvh); }
+#keyboard-hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+textarea { resize: none; line-height: 22px; min-height: 68px; max-height: 134px; overflow-y: auto; }
+</style>
+<main class="app">
+<header><h1>Pi Studio</h1></header>
+<section class="connection"><div class="connection-row"><span id="status">Ready</span><button type="button">Disconnect</button></div><p class="endpoint">127.0.0.1:8787 · /tmp/pi-studio-demo</p></section>
+<section id="transcript" aria-label="Conversation"><p class="empty">Demo ready. Send a message to begin.</p></section>
+<form id="composer">
+<label for="message">Message</label>
+<textarea id="message" rows="2" placeholder="Say hello" aria-describedby="keyboard-hint"></textarea>
+<p id="keyboard-hint">Enter to send · Shift+Enter for a new line</p>
+<div class="actions"><span id="hint">One message at a time.</span><button type="button" id="stop" disabled>Stop</button><button id="send" type="submit" disabled>Send</button></div>
+</form>
+</main>
+<aside class="review"><strong>Mockup only</strong> · approximates the native composer, no server.
+<label for="platform">Platform</label><select id="platform"><option value="mac">macOS</option><option value="ios">iOS</option></select>
+<label for="state">State</label><select id="state"><option value="ready">Ready</option><option value="pending">Pending admission</option><option value="error">Rejected send</option></select>
+<p>Review: one subdued shortcut line below the editor, above the unchanged guidance and Send/Stop row. Type/paste multiline text; macOS Enter simulates Send. iOS uses the button.</p></aside>
+<script type="module" src="./main.js"></script>
+</html>
