@@ -13,14 +13,14 @@ Use Swift **lowerCamelCase**, not C# PascalCase or Given/When/Then.
   `app.relaunch()` reuses the isolated defaults suite to verify persistence.
 - Integration-only `app.server` controls the isolated SDK-facing fixture. It is not
   an application action and is only usable in the default stub-backed mode.
-- Contexts keep controllers, SDK projections, XCTest selectors, native-platform
+- Contexts keep stores, middleware, SDK projections, XCTest selectors, native-platform
   differences, pending tasks and cleanup out of scenarios.
 - Drivers and fixtures are test-only. Production code has no dependency on them.
 
 ## Integration driver
 
 [PiIntegrationDriver](../Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift)
-drives the real SessionController, Flux store and reducer. Only the PiDemoConnection
+dispatches request actions through the real Flux store, SessionMiddleware and reducer. Only the PiDemoConnection
 boundary is stubbed by default; assertions inspect app-observable state rather than
 the stub. Fixture assertions separately verify received requests and disposal.
 
@@ -39,7 +39,9 @@ failure, use `enterDraft` / `beginSend`, then `server.acceptSend`,
 `rejectSend` or `loseSendReceipt`. Connection tests similarly use
 `beginConnect` and explicit fixture acceptance/rejection.
 
-`run` disconnects and joins pending tasks on both success and thrown failure.
+`run` dispatches disconnect and awaits disposal settlement on both success and thrown failure.
+Middleware owns SDK tasks and streams; Flux `finish()` alone does not drain them.
+Store release tests also verify disposal during pending Connect/Send without retaining a concrete store.
 Projection waits have a four-second deadline, identify the awaited condition and
 report the scenario's source location. SDK calls retain their own deadlines.
 
@@ -52,7 +54,7 @@ the development backend. The host loopback script owns server/runtime cleanup.
 
 [PiUIDriver](../pi-studioUITests/Support/PiUIDriver.swift) translates the vocabulary
 into actual XCTest taps, typing, dialogs and accessibility assertions. It never
-reads the controller, Flux store or SDK state.
+reads middleware, Flux store or SDK state.
 
 ```swift
 let app = PiUIDriver.launch(for: self)
@@ -88,5 +90,5 @@ Launch/appearance screenshot tests are platform harness checks, not chat workflo
 2. Add the smallest semantic action/assertion if needed.
 3. Implement selectors, SDK calls and bounded waits only in that boundary's driver.
 4. Assert at the boundary under test: rendered UI for UI tests, app state for
-   controller integration, received requests only for explicit fixture checks.
+   middleware integration, received requests only for explicit fixture checks.
 5. Never hide a defect by changing state directly to satisfy an app assertion.

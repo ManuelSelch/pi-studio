@@ -1,4 +1,5 @@
 import SwiftUI
+import Flux
 import FactoryKit
 import PiUI
 
@@ -6,7 +7,6 @@ import PiUI
 struct pi_studioApp: App {
     @State private var dependencies: SessionDependencies
     @Environment(\.scenePhase) private var scenePhase
-    private var session: SessionController { dependencies.sessionController() }
 
     init() {
         let dependencies = SessionDependencies()
@@ -41,14 +41,14 @@ struct pi_studioApp: App {
         Window("Pi Studio", id: "session") {
             SessionContainer(dependencies: dependencies)
                 .frame(minWidth: 480, minHeight: 500)
-                .onDisappear { Task { await session.disconnect() } }
+                .onDisappear { dependencies.sessionStore().dispatch(.disconnectRequested()) }
         }
         .defaultSize(width: 700, height: 760)
         #else
         WindowGroup {
             SessionContainer(dependencies: dependencies, title: "Pi Pocket")
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .background { Task { await session.disconnect() } }
+                    if phase == .background { dependencies.sessionStore().dispatch(.disconnectRequested()) }
                 }
         }
         #endif

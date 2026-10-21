@@ -2,7 +2,7 @@ import Testing
 
 @MainActor
 struct SettingsIntegrationTests {
-    @Test func cachedControllerUsesSavedEndpointOnNextConnectionOnly() async throws {
+    @Test func cachedStoreUsesSavedEndpointOnNextConnectionOnly() async throws {
         try await PiIntegrationDriver.run { app in
             app.settings.open()
             app.settings.enterEndpoint("ws://first.test/ws")
