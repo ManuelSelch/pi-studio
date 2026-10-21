@@ -24,7 +24,7 @@ import PiUI
 @MainActor fileprivate final class WorkspaceContext {
     let stub = WorkspaceConnectionStub()
     let session = SessionController()
-    lazy var controller = ProjectsController(session: session, makeConnection: { [stub] _ in stub })
+    lazy var controller = WorkspaceController(session: session, makeConnection: { [stub] _ in stub })
     var opening: Task<Void, Never>?
     func dispose() async { await controller.disconnect(); await stub.release(); await opening?.value }
     func wait(_ predicate: () async -> Bool, sourceLocation: SourceLocation) async throws {
@@ -102,6 +102,22 @@ fileprivate actor WorkspaceConnectionStub: PiSessionConnection {
     func states() async -> AsyncStream<PiConnectionState> { AsyncStream { $0.finish() } }
     func projections() async -> AsyncStream<DemoSessionProjection> { let value = current; return AsyncStream { if let value { $0.yield(value) }; $0.finish() } }
     func catalogues() async -> AsyncStream<PiCatalogue> { updates.yield(catalogue); return catalogueStream }
+    private var eventObservers: [UUID: AsyncStream<PiSessionEvent>.Continuation] = [:]
+    func sessionEvents() async -> AsyncStream<PiSessionEvent> {
+        let id = UUID()
+        let (stream, listener) = AsyncStream<PiSessionEvent>.makeStream(bufferingPolicy: .bufferingNewest(4))
+        eventObservers[id] = listener
+        listener.onTermination = { [weak self] _ in Task { await self?.removeEvents(id) } }
+        return stream
+    }
+    private func removeEvents(_ id: UUID) { eventObservers.removeValue(forKey: id) }
+    /// Fixture controls: the server, not the app, decides that a runtime ended or moved.
+    func closeRuntime(_ sessionId: String) { publish(.closed(sessionId: sessionId)) }
+    func replaceRuntime(previous: String, current: String) {
+        publish(.replaced(previous: DemoSession(sessionId: previous, projectPath: "/repo"),
+                          current: DemoSession(sessionId: current, projectPath: "/repo")))
+    }
+    private func publish(_ event: PiSessionEvent) { for observer in eventObservers.values { observer.yield(event) } }
     func connect(takingControl: Bool) async throws { guard takingControl else { throw PiError.invalidState } }
     func connectDemo(projectPath: String, takingControl: Bool) async throws -> DemoSession { throw PiError.invalidState }
     func createSession(projectPath: String) async throws -> DemoSession {
@@ -120,7 +136,7 @@ fileprivate actor WorkspaceConnectionStub: PiSessionConnection {
     }
     func send(_ text: String) async throws {}
     func stop() async throws {}
-    func disconnect() async { closed = true; updates.finish() }
+    func disconnect() async { closed = true; updates.finish(); for observer in eventObservers.values { observer.finish() }; eventObservers = [:] }
     func setError(_ value: PiError) { error = value }
     func holdOpen() { holding = true }
     func release() { waiter?.resume(); waiter = nil; holding = false }

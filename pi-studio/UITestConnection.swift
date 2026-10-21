@@ -40,6 +40,14 @@ actor UITestConnection: PiSessionConnection {
         updates.onTermination = { [weak self] _ in Task { await self?.removeCatalogue(id) } }; return stream
     }
     private func removeCatalogue(_ id: UUID) { catalogueObservers.removeValue(forKey: id) }
+    private var eventObservers: [UUID: AsyncStream<PiSessionEvent>.Continuation] = [:]
+    func sessionEvents() async -> AsyncStream<PiSessionEvent> {
+        let id = UUID(); let (stream, updates) = AsyncStream<PiSessionEvent>.makeStream(bufferingPolicy: .bufferingNewest(4))
+        eventObservers[id] = updates
+        updates.onTermination = { [weak self] _ in Task { await self?.removeEvents(id) } }; return stream
+    }
+    private func removeEvents(_ id: UUID) { eventObservers.removeValue(forKey: id) }
+    private func publishEvent(_ event: PiSessionEvent) { for observer in eventObservers.values { observer.yield(event) } }
     private var catalogue: PiCatalogue {
         .init(projects: catalogueReady ? [
             .init(path: "/home/pi", name: "Quick Chats", quickChats: true,
@@ -141,6 +149,7 @@ actor UITestConnection: PiSessionConnection {
         for observer in stateObservers.values { observer.finish() }; stateObservers = [:]
         for observer in projectionObservers.values { observer.finish() }; projectionObservers = [:]
         for observer in catalogueObservers.values { observer.finish() }; catalogueObservers = [:]
+        for observer in eventObservers.values { observer.finish() }; eventObservers = [:]
     }
 }
 #endif
