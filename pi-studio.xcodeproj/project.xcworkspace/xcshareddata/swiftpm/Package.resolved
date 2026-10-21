@@ -9,15 +9,6 @@
         "revision" : "ccc898f21992ebc130bc04cc197460a5ae230bcf",
         "version" : "2.5.3"
       }
-    },
-    {
-      "identity" : "flux",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ManuelSelch/Flux.git",
-      "state" : {
-        "revision" : "00c8b43799d5acbca04127833daf28f1df2ce477",
-        "version" : "1.1.0"
-      }
     }
   ],
   "version" : 3

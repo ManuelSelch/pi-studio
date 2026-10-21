@@ -27,8 +27,8 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
 ## Architecture
 
 - [PiUI](Packages/PiUI/Package.swift) is a local Swift package shared by both
-  platforms. It depends on PiSDK and [Flux](https://github.com/ManuelSelch/Flux),
-  from version **1.1.0**, allowing compatible 1.x updates (including FluxTestStore),
+  platforms. It depends on local PiSDK and [Flux](https://github.com/ManuelSelch/Flux)
+  checkouts (Flux 2.0 API, including FluxTestStore, with the iOS 16 minimum fixed locally),
   and [FactoryKit](https://github.com/hmlongco/Factory) from **2.5.3**, allowing compatible 2.x updates.
 - [SessionDependencies](Packages/PiUI/Sources/PiUI/App/SessionDependencies.swift) is
   an app-owned FactoryKit container, not a global singleton. It registers session
@@ -42,7 +42,7 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
 - [SessionController](Packages/PiUI/Sources/PiUI/App/SessionController.swift) owns
   awaitable SDK effects, observation tasks and disposal, feeding Flux actions.
   Long-lived SDK observation is explicitly cancelled rather than hidden inside
-  uncancellable Flux middleware tasks. Generation tokens reject obsolete results.
+  middleware-owned background tasks. Generation tokens reject obsolete results.
 - [Containers](Packages/PiUI/Sources/PiUI/SessionContainer.swift) bridge Flux, injected
   dependencies and callbacks to presentation. Future navigation/router wiring
   belongs here or in the host shell. The selected routing library is
@@ -65,11 +65,14 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
 - PiSDK checkout defaults to `~/.pi/agent/git/pi-chat/packages/pi-sdk`.
 - Required SDK API baseline: `66ce80552d1757280bbdfdc8bab05f0c3ba8b88c` or later;
   this extraction was verified against pi-chat `b6fcc8865c25454315858be96ca2c76092395537`.
+- Flux checkout defaults to `~/Documents/A_Personal/50 Coding/52 iOS/52.01 Packages/Flux`.
+  It uses the 2.0 API plus the local minimum-iOS fix (iOS 16, required by parameterized protocol types).
 - Run `bash scripts/prepare.sh` **before opening Xcode in a fresh checkout or
-  worktree**. It creates ignored `.dependencies/pi-sdk` wiring and resolves the
-  pinned Flux and FactoryKit dependencies. Set `PI_SDK_PATH` to use a different SDK checkout.
-  The SDK is local and is not fetched or updated automatically; no packages are
-  published. Keep both Package.resolved files checked in.
+  worktree**. It creates ignored `.dependencies/pi-sdk` and `.dependencies/Flux`
+  symlinks and resolves FactoryKit. Set `PI_SDK_PATH` or `PI_FLUX_PATH` to use
+  different checkouts. These local packages are not fetched or updated automatically;
+  the app uses their working-tree contents, not the published Flux 2.0.0 tag.
+  Keep both Package.resolved files checked in; only remote dependencies are pinned there.
 
 [SessionConfiguration](Packages/PiUI/Sources/PiUI/App/SessionController.swift)
 defaults to `ws://127.0.0.1:8787/ws` and the dedicated **server-side** directory
