@@ -63,11 +63,20 @@ struct MacMessageEditor: NSViewRepresentable {
         // Keep the responder/selection while generation temporarily locks editing.
         editor.isEditable = canEdit
         editor.isSelectable = true
-        if editor.string != text, !editor.hasMarkedText() {
+        // A locked composer must look locked: otherwise it silently swallows every keystroke.
+        editor.backgroundColor = canEdit ? .textBackgroundColor : .controlBackgroundColor
+        editor.textColor = canEdit ? .textColor : .secondaryLabelColor
+        // The accessibility *value* of a text view is its text, so the locked state is exposed
+        // as help instead; the visible hint explains it too.
+        editor.setAccessibilityHelp(canEdit ? "Type a message" : "Read only until the run settles")
+        // Only adopt text that did not come from this editor. A render that still carries the
+        // previous value must not revert what the user just typed.
+        if text != context.coordinator.reportedText, !editor.hasMarkedText() {
             editor.string = text
             editor.setSelectedRange(NSRange(location: (text as NSString).length, length: 0))
             editor.undoManager?.removeAllActions()
             editor.scrollRangeToVisible(editor.selectedRange())
+            context.coordinator.reportedText = text
         }
         // Honor explicit focus transitions, not every streaming render: the user
         // may have moved focus before the deferred binding notification arrives.
@@ -111,10 +120,14 @@ struct MacMessageEditor: NSViewRepresentable {
     @MainActor final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: MacMessageEditor
         var wasFocused = false
+        /// The last text this editor reported to the binding, so external changes (a tab switch
+        /// or an admitted send) still apply while a stale render cannot revert typing.
+        var reportedText: String?
         init(_ parent: MacMessageEditor) { self.parent = parent }
         func textDidChange(_ notification: Notification) {
             guard let editor = notification.object as? NSTextView else { return }
             parent.text = editor.string
+            reportedText = editor.string
             editor.scrollRangeToVisible(editor.selectedRange())
         }
     }

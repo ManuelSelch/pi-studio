@@ -3,6 +3,7 @@ import SwiftUI
 struct SessionComposer: View {
     /// The selected tab owns the text; the composer only edits it.
     let draft: String
+    let hint: String
     let canEdit: Bool
     let canSend: Bool
     let canStop: Bool
@@ -32,6 +33,8 @@ struct SessionComposer: View {
                 .disabled(!canEdit).accessibilityLabel("Message").accessibilityIdentifier("messageField")
             #endif
             HStack {
+                Text(hint).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    .accessibilityIdentifier("composerHint")
                 Spacer(minLength: 4)
                 #if os(iOS)
                 if canStop || isStopping {

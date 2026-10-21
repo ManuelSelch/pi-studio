@@ -11,6 +11,8 @@ public struct SessionPresentation: Equatable, Sendable {
     public var error: String?
     /// The selected tab's draft: the workspace owns it, the composer only edits it.
     public var draft = ""
+    /// Why the composer is locked right now, if it is.
+    public var hint = ""
     /// Auto-scroll policy and reading position of the selected tab.
     public var followTail = true
     public var scrollAnchor: String?
@@ -86,7 +88,7 @@ public struct SessionScreen: View {
                               onFollowTailChanged: onFollowTailChanged,
                               onAnchorChanged: onScrollAnchorChanged)
             Divider()
-            SessionComposer(draft: presentation.draft,
+            SessionComposer(draft: presentation.draft, hint: presentation.hint,
                             canEdit: presentation.canEditMessage, canSend: presentation.canSend,
                             canStop: presentation.canStop, isStopping: presentation.isStopping, focus: $messageFocused,
                             onDraftChanged: onDraftChanged,

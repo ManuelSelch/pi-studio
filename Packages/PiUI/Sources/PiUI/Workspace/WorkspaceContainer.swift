@@ -101,6 +101,16 @@ public struct WorkspaceContainer: View {
         return value
     }
 
+    /// A locked composer always says why: running, stopping or not attached yet.
+    private func composerHint(_ state: SessionFeature.State) -> String {
+        if state.isSending || state.projection?.status == .starting { return "Sending… Stop to edit." }
+        if state.isStopping || state.projection?.status == .aborting { return "Stopping…" }
+        if state.projection?.status == .running { return "Generating… Stop to edit." }
+        if state.connection == .connecting { return "Waiting for the session…" }
+        if state.connection == .disconnected { return "No session attached." }
+        return ""
+    }
+
     private var sessionPresentation: SessionPresentation {
         let state = session.state
         let tab = store.state.selectedSession
@@ -113,6 +123,7 @@ public struct WorkspaceContainer: View {
         value.followTail = store.state.followTail
         value.scrollAnchor = store.state.scrollAnchor
         value.placeholder = state.connection == .disconnected ? "Open a session to start." : "Start a conversation."
+        value.hint = composerHint(state)
         value.canConnect = false
         value.canEditMessage = state.canEditMessage
         value.canSend = state.canSend
