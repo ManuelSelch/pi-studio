@@ -13,11 +13,12 @@
 ## Dependencies and commits
 
 - App branch: `feat/pocket`; feature `af0bfe7`, Simulator isolation `0a95ac2`.
-- SDK branch: `feat/pocket-sdk` in `~/.worktrees/pi-chat/feat-pocket-sdk`;
-  commits `3e4612d`, `3abb883`. Retain this checkout while the app symlink uses it.
-- Neither branch was merged or pushed. No dependency publication occurred.
-- Fresh worktrees must use the SDK override documented in the root README until
-  the browsing APIs are integrated into the default SDK checkout.
+- SDK commits `3e4612d`, `3abb883` were merged into pi-chat **main** as
+  `9f8e5b8`. Pocket now uses the default main SDK checkout via
+  `bash scripts/prepare.sh`; the feature-worktree override is no longer needed.
+- The app branch remains unmerged. Nothing was pushed or published.
+- After switching to main, all 28 SDK tests, all 24 PiUI package tests and both
+  native Release builds passed again.
 
 ## Verification
 

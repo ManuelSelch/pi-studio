@@ -19,22 +19,20 @@ controller**. Foreground recovery, steering and question responses are later sli
 ## Development wiring
 
 - Baseline: **Xcode 26.1.1 (17B100), Swift 6.2.1**, macOS 26 and iOS 26.1 targets.
-- Required Swift SDK: pi-chat commit **`3abb883`**, branch **`feat/pocket-sdk`**,
-  or a later revision containing its APIs. SDK changes are isolated from pi-chat
-  main and have not been pushed, published or merged there.
-- This worktree's ignored `.dependencies/pi-sdk` symlink points to
-  `~/.worktrees/pi-chat/feat-pocket-sdk/packages/pi-sdk`.
-- For a fresh worktree, prepare with that SDK explicitly:
+- Required Swift SDK: pi-chat **main**, merge commit **`9f8e5b8`**, or later.
+  This includes the Pocket APIs from `3e4612d` and `3abb883`.
+- The ignored `.dependencies/pi-sdk` symlink uses the default checkout:
+  `~/.pi/agent/git/pi-chat/packages/pi-sdk`.
+- For a fresh worktree:
 
 ```sh
-PI_SDK_PATH="$HOME/.worktrees/pi-chat/feat-pocket-sdk/packages/pi-sdk" bash scripts/prepare.sh
+bash scripts/prepare.sh
 ```
 
-Preparation creates the symlink and resolves the pinned packages. The normal
-fallback SDK location is `~/.pi/agent/git/pi-chat/packages/pi-sdk`; it must contain
-the required browsing API before it can replace the override above. Local SDK
-sources are not fetched, updated or published automatically. Keep both
-Package.resolved files tracked.
+Preparation creates the symlink and resolves the pinned packages. Set
+`PI_SDK_PATH` only to deliberately use another SDK checkout. Local SDK sources
+are not fetched, updated or published automatically. Keep both Package.resolved
+files tracked. The SDK merge is local; nothing was pushed or published.
 
 The fixed development endpoint remains **`ws://127.0.0.1:8787/ws`** in
 [SessionConfiguration](Packages/PiUI/Sources/PiUI/App/SessionController.swift).
