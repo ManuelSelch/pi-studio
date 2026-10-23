@@ -3,7 +3,7 @@
 set -euo pipefail
 source "$(dirname "$0")/build-paths.sh"
 cd "$project_root"
-sdk="${PI_SDK_PATH:-${HOME}/.pi/agent/git/pi-chat/packages/pi-sdk}"
+sdk="${PI_SDK_PATH:-${HOME}/Documents/A_Personal/40 Projekte/47 Agents/Pi Agent/pi-sdk-swift}"
 [[ -f "$sdk/Package.swift" ]] || { echo "Set PI_SDK_PATH to your PiSDK checkout." >&2; exit 1; }
 sdk=$(cd "$sdk" && pwd -P)
 mkdir -p .dependencies

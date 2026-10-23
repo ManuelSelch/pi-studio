@@ -78,7 +78,7 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
 ## Development wiring
 
 - Verified stable toolchain: **Xcode 26.1.1 (17B100), Swift 6.2.1**.
-- PiSDK checkout defaults to `~/.pi/agent/git/pi-chat/packages/pi-sdk`.
+- PiSDK checkout defaults to `~/Documents/A_Personal/40 Projekte/47 Agents/Pi Agent/pi-sdk-swift`, the independent Swift SDK repository.
 - Required SDK API baseline: `66ce80552d1757280bbdfdc8bab05f0c3ba8b88c` or later;
   this extraction was verified against pi-chat `b6fcc8865c25454315858be96ca2c76092395537`.
 - Flux checkout defaults to `~/Documents/A_Personal/50 Coding/52 iOS/52.01 Packages/Flux`.
@@ -242,8 +242,8 @@ bash scripts/test-simulator-loopback.sh ios
 bash scripts/test-simulator-loopback.sh macos
 ```
 
-This requires pi-chat's installed Node/tsx dependencies and built SDK dist
-(`npm ci` and `npm run build:sdk` there). Override `PI_CHAT_CHECKOUT` if needed.
+This requires pi-chat's installed Node/tsx dependencies and packed SDK dependency
+(`npm ci` and `npm run verify:sdk` there). The fixture lives under `test/swift-integration/fixtures` in Pi Chat, not inside the SDK. Override `PI_CHAT_CHECKOUT` if needed.
 The script owns an ephemeral-loopback fake-runtime server with temporary metadata
 and empty history. It verifies streaming, a second turn, Stop/retained text and
 disconnect through SessionMiddleware, then verifies exactly one retained runtime
