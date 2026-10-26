@@ -1,5 +1,5 @@
 {
-  "originHash" : "290e9befa40ac5e6d06fbb2f126024bdd38479ba28388ab6b75bd0ac9f8cf473",
+  "originHash" : "211467df823e7e1df12a92e55ca07ff6ac4631f0dd35731fce0be422bad16912",
   "pins" : [
     {
       "identity" : "factory",
@@ -8,6 +8,24 @@
       "state" : {
         "revision" : "ccc898f21992ebc130bc04cc197460a5ae230bcf",
         "version" : "2.5.3"
+      }
+    },
+    {
+      "identity" : "flux",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ManuelSelch/Flux.git",
+      "state" : {
+        "revision" : "f5ec91329f3b42ff16fab57a378eb759e13cfd50",
+        "version" : "2.0.1"
+      }
+    },
+    {
+      "identity" : "pi-sdk-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ManuelSelch/pi-sdk-swift.git",
+      "state" : {
+        "revision" : "f0a1d5c49b2c1e4ba627353689fd8d5946380ec3",
+        "version" : "0.1.0"
       }
     }
   ],

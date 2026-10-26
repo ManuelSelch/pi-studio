@@ -242,8 +242,8 @@
 			packageReferences = (
 				D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */,
 				B00000000000000000000002 /* XCLocalSwiftPackageReference "Packages/PiUI" */,
-				A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk" */,
-				F00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/Flux" */,
+				A00000000000000000000002 /* XCRemoteSwiftPackageReference "pi-sdk-swift" */,
+				F00000000000000000000002 /* XCRemoteSwiftPackageReference "Flux" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 972B0B393087E5CD0068614C /* Products */;
@@ -650,21 +650,29 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ".dependencies/pi-sdk";
-		};
 		B00000000000000000000002 /* XCLocalSwiftPackageReference "Packages/PiUI" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/PiUI;
 		};
-		F00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/Flux" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = .dependencies/Flux;
-		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		A00000000000000000000002 /* XCRemoteSwiftPackageReference "pi-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ManuelSelch/pi-sdk-swift.git";
+			requirement = {
+				kind = exactVersion;
+				version = 0.1.0;
+			};
+		};
+		F00000000000000000000002 /* XCRemoteSwiftPackageReference "Flux" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ManuelSelch/Flux.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.0.1;
+			};
+		};
 		D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/hmlongco/Factory.git";
@@ -678,7 +686,7 @@
 /* Begin XCSwiftPackageProductDependency section */
 		A00000000000000000000003 /* PiSDK */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk" */;
+			package = A00000000000000000000002 /* XCRemoteSwiftPackageReference "pi-sdk-swift" */;
 			productName = PiSDK;
 		};
 		B00000000000000000000003 /* PiUI */ = {
@@ -693,7 +701,7 @@
 		};
 		F00000000000000000000003 /* Flux */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = F00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/Flux" */;
+			package = F00000000000000000000002 /* XCRemoteSwiftPackageReference "Flux" */;
 			productName = Flux;
 		};
 /* End XCSwiftPackageProductDependency section */

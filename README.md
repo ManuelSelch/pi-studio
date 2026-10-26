@@ -29,8 +29,9 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
 ## Architecture
 
 - [PiUI](Packages/PiUI/Package.swift) is a local Swift package shared by both
-  platforms. It depends on local PiSDK and [Flux](https://github.com/ManuelSelch/Flux)
-  checkouts (Flux 2.0 API, including FluxTestStore, with the iOS 16 minimum fixed locally),
+  platforms. It depends on public [PiSDK](https://github.com/ManuelSelch/pi-sdk-swift)
+  **0.1.0** and [Flux](https://github.com/ManuelSelch/Flux) **2.0.1**
+  (including FluxTestStore and the corrected iOS 16 minimum), both pinned exactly,
   and [FactoryKit](https://github.com/hmlongco/Factory) from **2.5.3**, allowing compatible 2.x updates.
 - [Dependency registrations](Packages/PiUI/Sources/PiUI/Session/App/SessionDependencies.swift)
   extend FactoryKit's Container. The app uses Container.shared; tests/previews own
@@ -78,17 +79,13 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
 ## Development wiring
 
 - Verified stable toolchain: **Xcode 26.1.1 (17B100), Swift 6.2.1**.
-- PiSDK checkout defaults to `~/Documents/A_Personal/40 Projekte/47 Agents/Pi Agent/pi-sdk-swift`, the independent Swift SDK repository.
-- Required SDK API baseline: `66ce80552d1757280bbdfdc8bab05f0c3ba8b88c` or later;
-  this extraction was verified against pi-chat `b6fcc8865c25454315858be96ca2c76092395537`.
-- Flux checkout defaults to `~/Documents/A_Personal/50 Coding/52 iOS/52.01 Packages/Flux`.
-  It uses the 2.0 API plus the local minimum-iOS fix (iOS 16, required by parameterized protocol types).
-- Run `bash scripts/prepare.sh` **before opening Xcode in a fresh checkout or
-  worktree**. It creates ignored `.dependencies/pi-sdk` and `.dependencies/Flux`
-  symlinks and resolves FactoryKit. Set `PI_SDK_PATH` or `PI_FLUX_PATH` to use
-  different checkouts. These local packages are not fetched or updated automatically;
-  the app uses their working-tree contents, not the published Flux 2.0.0 tag.
-  Keep both Package.resolved files checked in; only remote dependencies are pinned there.
+- SwiftPM fetches public PiSDK **0.1.0**, Flux **2.0.1**, and FactoryKit automatically.
+  PiUI and the native Xcode project use the same exact SDK/Flux requirements.
+- Run `bash scripts/prepare.sh` in a fresh checkout or worktree to resolve the
+  PiUI package dependencies. Xcode resolves its dependencies when opening/building
+  the project. No local SDK/Flux checkouts or dependency symlinks are required.
+- Keep both Package.resolved files checked in. Existing ignored local dependency
+  folders are unused and are not deleted by preparation.
 
 [SessionConfiguration](Packages/PiUI/Sources/PiUI/Session/App/SessionConfiguration.swift)
 defaults to `ws://127.0.0.1:8787/ws` and the dedicated **server-side** directory
