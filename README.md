@@ -157,6 +157,25 @@ Disconnect does **not** close server runtimes. Clean up retained demo IDs throug
 Pi Chat or explicit v2 `session.close`. A lost create response may leave a runtime
 behind. Avoid repeated connections without cleanup.
 
+## GitHub Actions
+
+[CI](.github/workflows/ci.yml) runs on pull requests, pushes to `main`, and
+manual dispatch. Three independent GitHub-hosted `macos-26` jobs select Xcode 26.2:
+
+- **Package:** PiUI tests, released-dependency/lockfile checks, icon validation,
+  Simulator-isolation tests and loopback-launcher tests (no actual backend).
+- **iOS:** native unit tests, native UI tests, then Simulator Release build, serially.
+- **macOS:** native Release build only; native unit/UI automation remains paused.
+
+SwiftPM fetches the same public PiSDK 0.1.0 and Flux 2.0.1 releases used locally;
+no dependency checkout secrets, symlinks, model credentials or development server
+are needed. FactoryKit keeps its existing version requirement and resolved pin.
+Each job has isolated temporary build products, bounded execution and failure logs
+retained for seven days; iOS failures also upload available `.xcresult` bundles.
+Superseded runs are cancelled. There is no caching, deployment, distribution
+signing, real-model acceptance or branch-protection configuration.
+A push or PR is needed to verify the workflow on hosted runners.
+
 ## Test pipeline
 
 [.pi/pipeline.json](.pi/pipeline.json) configures once-per-worktree preparation and

@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+
+jobs:
+  package:
+    name: Package and infrastructure checks
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Toolchain diagnostics
+        run: |
+          mkdir -p .build/ci-logs
+          echo "PI_STUDIO_BUILD_ROOT=$RUNNER_TEMP/pi-studio-package" >> "$GITHUB_ENV"
+          { xcodebuild -version; swift --version; } 2>&1 | tee .build/ci-logs/toolchain.log
+      - name: Resolve packages
+        run: bash scripts/prepare.sh 2>&1 | tee .build/ci-logs/prepare.log
+      - name: Released dependency checks
+        run: python3 scripts/test-released-dependencies.py 2>&1 | tee .build/ci-logs/dependencies.log
+      - name: Icon checks
+        run: python3 scripts/test-app-icons.py 2>&1 | tee .build/ci-logs/icons.log
+      - name: Simulator isolation checks
+        run: python3 scripts/test-simulator-isolation.py 2>&1 | tee .build/ci-logs/simulator-isolation.log
+      - name: Loopback launcher checks
+        run: python3 scripts/test-loopback-launcher.py 2>&1 | tee .build/ci-logs/loopback-launcher.log
+      - name: PiUI tests
+        run: bash scripts/test-package.sh 2>&1 | tee .build/ci-logs/piui.log
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: package-failure-logs
+          path: .build/ci-logs/
+          retention-days: 7
+          if-no-files-found: warn
+
+  ios:
+    name: iOS tests and Release build
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Toolchain and Simulator diagnostics
+        run: |
+          mkdir -p .build/ci-logs
+          echo "PI_STUDIO_BUILD_ROOT=$RUNNER_TEMP/pi-studio-ios" >> "$GITHUB_ENV"
+          { xcodebuild -version; swift --version; xcrun simctl list runtimes; xcrun simctl list devices available; } 2>&1 | tee .build/ci-logs/toolchain.log
+      - name: Resolve packages
+        run: bash scripts/prepare.sh 2>&1 | tee .build/ci-logs/prepare.log
+      - name: Native unit tests
+        run: bash scripts/test-app.sh ios unit 2>&1 | tee .build/ci-logs/ios-unit.log
+      - name: Native UI tests
+        run: bash scripts/test-app.sh ios ui 2>&1 | tee .build/ci-logs/ios-ui.log
+      - name: Simulator Release build
+        run: bash scripts/test-app.sh ios release 2>&1 | tee .build/ci-logs/ios-release.log
+      - name: Upload failure logs and test results
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ios-failure-results
+          path: |
+            .build/ci-logs/
+            ${{ env.PI_STUDIO_BUILD_ROOT }}/xcode-ios/Logs/Test/
+          retention-days: 7
+          if-no-files-found: warn
+
+  macos:
+    name: macOS Release build
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Toolchain diagnostics
+        run: |
+          mkdir -p .build/ci-logs
+          echo "PI_STUDIO_BUILD_ROOT=$RUNNER_TEMP/pi-studio-macos" >> "$GITHUB_ENV"
+          { xcodebuild -version; swift --version; } 2>&1 | tee .build/ci-logs/toolchain.log
+      - name: Resolve packages
+        run: bash scripts/prepare.sh 2>&1 | tee .build/ci-logs/prepare.log
+      - name: Native Release build
+        run: bash scripts/test-app.sh macos release 2>&1 | tee .build/ci-logs/macos-release.log
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: macos-failure-logs
+          path: .build/ci-logs/
+          retention-days: 7
+          if-no-files-found: warn
