@@ -9,14 +9,16 @@ import SwiftUI
 public struct WorkspaceContainer: View {
     @InjectedObject(\.workspaceStore) private var store
     @InjectedObject(\.sessionStore) private var session
-    @InjectedObject(\.settingsStore) private var settings
     @State private var confirmConnect = false
     @State private var confirmDisconnect = false
 
     private let onOpenSettings: @MainActor () -> Void
+    private let isSettingsPresented: Bool
 
-    public init(onOpenSettings: @escaping @MainActor () -> Void) {
+    public init(onOpenSettings: @escaping @MainActor () -> Void,
+                isSettingsPresented: Bool = false) {
         self.onOpenSettings = onOpenSettings
+        self.isSettingsPresented = isSettingsPresented
     }
 
     public var body: some View {
@@ -140,7 +142,7 @@ public struct WorkspaceContainer: View {
         value.canConnect = false
         value.canEditMessage = state.canEditMessage
         value.canSend = state.canSend
-        value.canStop = state.canStop && !settings.state.isPresented
+        value.canStop = state.canStop && !isSettingsPresented
         value.isStopping = state.isStopping || state.projection?.status == .aborting
         value.requiresDisconnectWarning = requiresDisconnectWarning
         value.messages = (state.projection?.messages ?? []).map {

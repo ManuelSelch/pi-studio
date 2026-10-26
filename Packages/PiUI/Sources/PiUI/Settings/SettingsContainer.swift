@@ -12,10 +12,9 @@ struct SettingsContainer: View {
             isSaving: store.state.isSaving,
                        
             onEndpointChanged: { store.dispatch(.draftChanged($0)) },
-            onSave: { store.dispatch(.saveTapped()) },
+            onSave: { store.dispatch(.saveTapped) },
             onCancel: { store.dispatch(.cancelled) }
         )
-        .interactiveDismissDisabled(store.state.isSaving)
         #if os(iOS)
         .presentationDetents([.height(300)])
         #endif

@@ -6,13 +6,13 @@ import Testing
 struct SettingsIntegrationTests {
     @Test func savedEndpointAppliesToTheNextConnectionOnly() async throws {
         try await WorkspaceIntegrationDriver.run { app in
-            app.settings.open()
+            try await app.settings.open()
             app.settings.enterEndpoint("ws://first.test/ws")
             app.settings.save()
             try await app.settings.waitUntilSaved("ws://first.test/ws")
             try await app.projects.connect()
             try await app.tabs.openQuickChat()
-            app.settings.open()
+            try await app.settings.open()
             app.settings.enterEndpoint("wss://second.test/custom")
             app.settings.save()
             try await app.settings.waitUntilSaved("wss://second.test/custom")
@@ -28,14 +28,26 @@ struct SettingsIntegrationTests {
 
     @Test func invalidEndpointIsRejectedWithoutSaving() async throws {
         try await WorkspaceIntegrationDriver.run { app in
-            app.settings.open()
+            try await app.settings.open()
             app.settings.enterEndpoint("https://example.com/ws")
             app.settings.save()
             try await app.settings.waitUntilSettled()
             app.settings.shouldShowError(containing: "ws://")
-            app.settings.shouldBePresented(true)
+            try await app.settings.shouldBePresented(true)
             app.settings.cancel()
-            app.settings.shouldBePresented(false)
+            try await app.settings.shouldBePresented(false)
+        }
+    }
+
+    @Test func duplicateOpenPreservesTheActiveFlowAndDraft() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.settings.open()
+            app.settings.enterEndpoint("ws://draft.test/ws")
+            try await app.settings.open()
+            try await app.settings.shouldBePresented(true)
+            app.settings.draftShouldBe("ws://draft.test/ws")
+            app.settings.cancel()
+            try await app.settings.shouldBePresented(false)
         }
     }
 }

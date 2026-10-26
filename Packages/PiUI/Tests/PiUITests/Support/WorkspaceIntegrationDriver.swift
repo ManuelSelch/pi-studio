@@ -371,15 +371,26 @@ final class WorkspaceOverviewDriver {
 final class WorkspaceSettingsDriver {
     private let context: WorkspaceContext
     fileprivate init(_ context: WorkspaceContext) { self.context = context }
-    func open() { context.settings.dispatch(.opened) }
+    /// Opening is a router side effect performed by the middleware; wait until it is presented.
+    func open(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        context.settings.dispatch(.opened)
+        try await context.wait("settings presentation", sourceLocation: sourceLocation) {
+            SettingsPresentation.isPresented(in: self.context.container)
+        }
+    }
     func enterEndpoint(_ value: String) { context.settings.dispatch(.draftChanged(value)) }
-    func save() { context.settings.dispatch(.saveTapped()) }
+    func save() { context.settings.dispatch(.saveTapped) }
     func cancel() { context.settings.dispatch(.cancelled) }
-    func shouldBePresented(_ presented: Bool, sourceLocation: SourceLocation = #_sourceLocation) {
-        #expect(context.settings.state.isPresented == presented, sourceLocation: sourceLocation)
+    func shouldBePresented(_ presented: Bool, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await context.wait("settings presentation == \(presented)", sourceLocation: sourceLocation) {
+            SettingsPresentation.isPresented(in: self.context.container) == presented
+        }
     }
     func shouldShowError(containing text: String, sourceLocation: SourceLocation = #_sourceLocation) {
         #expect(context.settings.state.error?.contains(text) == true, sourceLocation: sourceLocation)
+    }
+    func draftShouldBe(_ value: String, sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.settings.state.draft == value, sourceLocation: sourceLocation)
     }
     func waitUntilSaved(_ endpoint: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
         try await context.wait("saved endpoint", sourceLocation: sourceLocation) {

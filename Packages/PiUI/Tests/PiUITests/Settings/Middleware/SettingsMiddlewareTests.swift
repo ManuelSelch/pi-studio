@@ -1,6 +1,7 @@
 import FactoryKit
 import Flux
 import Foundation
+import Router
 import Testing
 @testable import PiUI
 
@@ -13,15 +14,39 @@ struct SettingsMiddlewareTests {
         }
     }
 
-    @Test func savesTrimmedEndpointAndLoadsItInNewStore() async throws {
+    @Test func openingPresentsThroughTheRouterAndDuplicateOpenPreservesTheFlow() async throws {
         let service = MemoryEndpointSettings()
         let scope = makeScope(service)
         let store = scope.settingsStore()
+        let modal = scope.settingsModal()
+
         store.dispatch(.opened)
+        try await waitUntil { modal.presentation?.stack.root == .settings }
+        let id = try #require(modal.presentation).id
+        #expect(modal.presentation?.canDismiss == true)
+
+        store.dispatch(.draftChanged("ws://draft.test/ws"))
+        store.dispatch(.opened)
+        try await Task.sleep(for: .milliseconds(30))
+
+        #expect(modal.presentation?.id == id)
+        #expect(store.state.draft == "ws://draft.test/ws")
+    }
+
+    @Test func savesTrimmedEndpointAndDismissesTheFlow() async throws {
+        let service = MemoryEndpointSettings()
+        let scope = makeScope(service)
+        let store = scope.settingsStore()
+        let modal = scope.settingsModal()
+        store.dispatch(.opened)
+        try await waitUntil { modal.presentation != nil }
         store.dispatch(.draftChanged("  wss://example.com:9443/custom?mode=demo \n"))
-        try await save(store)
+        store.dispatch(.saveTapped)
+        try await waitUntil {
+            store.state.savedEndpoint == "wss://example.com:9443/custom?mode=demo" && modal.presentation == nil
+        }
         #expect(service.value == "wss://example.com:9443/custom?mode=demo")
-        #expect(!store.state.isPresented)
+        #expect(!store.state.isSaving)
         #expect(makeScope(service).settingsStore().state.savedEndpoint == store.state.savedEndpoint)
     }
 
@@ -29,14 +54,18 @@ struct SettingsMiddlewareTests {
         let service = MemoryEndpointSettings()
         let scope = makeScope(service)
         let store = scope.settingsStore()
+        let modal = scope.settingsModal()
         store.dispatch(.opened)
+        try await waitUntil { modal.presentation != nil }
         store.dispatch(.draftChanged("http://example.com"))
-        try await save(store)
-        #expect(store.state.error != nil)
-        #expect(store.state.isPresented)
+        store.dispatch(.saveTapped)
+        try await waitUntil { store.state.error != nil && !store.state.isSaving }
+        #expect(modal.presentation != nil)
         #expect(service.value == nil)
         store.dispatch(.cancelled)
+        try await waitUntil { modal.presentation == nil }
         store.dispatch(.opened)
+        try await waitUntil { modal.presentation != nil }
         #expect(store.state.draft == store.state.savedEndpoint)
         #expect(store.state.error == nil)
     }
@@ -45,44 +74,61 @@ struct SettingsMiddlewareTests {
         let service = MemoryEndpointSettings()
         let scope = makeScope(service)
         let store = scope.settingsStore()
+        let modal = scope.settingsModal()
         let original = store.state.savedEndpoint
         store.dispatch(.opened)
+        try await waitUntil { modal.presentation != nil }
         store.dispatch(.draftChanged("ws://example.com/ws"))
         service.rejectSave = true
-        try await save(store)
+        store.dispatch(.saveTapped)
+        try await waitUntil { store.state.error != nil && modal.presentation?.canDismiss == true }
         #expect(store.state.savedEndpoint == original)
         #expect(store.state.draft == "ws://example.com/ws")
-        #expect(store.state.error != nil)
-        #expect(store.state.isPresented)
+        #expect(modal.presentation != nil)
         service.rejectSave = false
-        try await save(store)
-        #expect(store.state.savedEndpoint == "ws://example.com/ws")
-        #expect(!store.state.isPresented)
+        store.dispatch(.saveTapped)
+        try await waitUntil { store.state.savedEndpoint == "ws://example.com/ws" && modal.presentation == nil }
     }
 
-    @Test func saveOutsidePresentationDoesNothing() async throws {
+    @Test func saveOutsidePresentationAbandonsWithoutPersisting() async throws {
         let service = MemoryEndpointSettings()
         let scope = makeScope(service)
         let store = scope.settingsStore()
-        try await save(store)
+        store.dispatch(.saveTapped)
+        try await waitUntil { !store.state.isSaving && store.state.error == nil }
         #expect(service.value == nil)
-        #expect(store.state.error == nil)
+    }
+
+    @Test func theSavingGuardIsSetWhilePersisting() async throws {
+        let service = MemoryEndpointSettings()
+        let scope = makeScope(service)
+        let store = scope.settingsStore()
+        let modal = scope.settingsModal()
+        service.canDismissProbe = { modal.presentation?.canDismiss }
+        store.dispatch(.opened)
+        try await waitUntil { modal.presentation != nil }
+        store.dispatch(.draftChanged("wss://example.com/ws"))
+        store.dispatch(.saveTapped)
+        try await waitUntil { service.saveCount == 1 }
+        #expect(service.observedCanDismiss == false)
+        store.dispatch(.cancelled)
+        try await waitUntil { modal.presentation == nil }
     }
 
     @Test func duplicateSaveAndDismissalCannotInterruptPendingSave() async throws {
         let service = MemoryEndpointSettings()
         let scope = makeScope(service)
         let store = scope.settingsStore()
+        let modal = scope.settingsModal()
         store.dispatch(.opened)
+        try await waitUntil { modal.presentation != nil }
         store.dispatch(.draftChanged("wss://example.com/ws"))
-        store.dispatch(.saveTapped())
-        store.dispatch(.saveTapped())
+        store.dispatch(.saveTapped)
+        store.dispatch(.saveTapped)
         store.dispatch(.cancelled)
         store.dispatch(.opened)
         store.dispatch(.draftChanged("ignored"))
-        #expect(store.state.isPresented)
-        #expect(store.state.draft == "wss://example.com/ws")
-        try await waitForSave(store)
+        try await waitUntil { modal.presentation == nil }
         #expect(service.value == "wss://example.com/ws")
         #expect(service.saveCount == 1)
     }
@@ -93,17 +139,14 @@ struct SettingsMiddlewareTests {
         return scope
     }
 
-    private func save(_ store: FluxStore<SettingsFeature>) async throws {
-        store.dispatch(.saveTapped())
-        try await waitForSave(store)
-    }
-
-    private func waitForSave(_ store: FluxStore<SettingsFeature>) async throws {
+    private func waitUntil(sourceLocation: SourceLocation = #_sourceLocation,
+                           _ condition: @escaping @MainActor () -> Bool) async throws {
         let deadline = ContinuousClock.now.advanced(by: .seconds(1))
-        while store.state.isSaving, ContinuousClock.now < deadline {
+        while ContinuousClock.now < deadline {
+            if condition() { return }
             try await Task.sleep(for: .milliseconds(5))
         }
-        try #require(!store.state.isSaving, "Settings save did not settle")
+        Issue.record("Settings effect did not settle", sourceLocation: sourceLocation)
     }
 }
 
@@ -112,10 +155,13 @@ final class MemoryEndpointSettings: EndpointSettingsService {
     var value: String?
     var rejectSave = false
     var saveCount = 0
+    var canDismissProbe: (() -> Bool?)?
+    var observedCanDismiss: Bool?
     init(_ value: String? = nil) { self.value = value }
     func load() -> String? { value }
     func save(_ endpoint: String) throws {
         saveCount += 1
+        observedCanDismiss = canDismissProbe?()
         if rejectSave { throw SaveError() }
         value = endpoint
     }

@@ -17,9 +17,11 @@ struct SessionDependenciesTests {
         #expect(first.workspaceStore() === first.workspaceStore())
         #expect(first.sessionStore() === first.sessionStore())
         #expect(first.sessionTransport() === first.sessionTransport())
+        #expect(first.settingsModal() === first.settingsModal())
         #expect(first.workspaceStore() !== second.workspaceStore())
         #expect(first.sessionStore() !== second.sessionStore())
         #expect(first.sessionTransport() !== second.sessionTransport())
+        #expect(first.settingsModal() !== second.settingsModal())
         #expect(first.workspaceStore().state.connection == .disconnected)
     }
 
@@ -36,9 +38,11 @@ struct SessionDependenciesTests {
         let workspace = first.workspaceStore()
         let settings = first.settingsStore()
         settings.dispatch(.opened)
+        // Opening presents through the router before editing; the flow reset is async.
+        try await waitUntil { first.settingsModal().presentation != nil }
         settings.dispatch(.draftChanged("wss://saved.example/custom"))
-        settings.dispatch(.saveTapped())
-        try await waitUntil { !settings.state.isSaving }
+        settings.dispatch(.saveTapped)
+        try await waitUntil { settings.state.savedEndpoint == "wss://saved.example/custom" }
         #expect(second.settingsStore().state.savedEndpoint == ServerEndpoint.defaultValue)
         workspace.dispatch(.connectRequested(takingControl: true))
         try await waitUntil { await connection.connectCount == 1 }

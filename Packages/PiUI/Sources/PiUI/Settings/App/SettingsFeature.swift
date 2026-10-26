@@ -5,9 +5,7 @@ public struct SettingsFeature: Feature {
     public struct State: Equatable, Sendable {
         public internal(set) var savedEndpoint: String
         public internal(set) var draft: String
-        public internal(set) var isPresented = false
-        public internal(set) var saveRequest: UUID?
-        public var isSaving: Bool { saveRequest != nil }
+        public internal(set) var isSaving = false
         public internal(set) var error: String?
 
         public init(endpoint: String) {
@@ -17,11 +15,18 @@ public struct SettingsFeature: Feature {
     }
 
     public enum Action: Equatable, Sendable {
+        /// A request to open settings. The middleware presents through the router; a duplicate
+        /// request preserves the active flow, draft and error.
         case opened
+        /// A new flow was actually admitted by the middleware; only then are draft and error reset.
+        case flowStarted
+        /// Cancel and native dismissal discard unsaved edits without persisting them.
         case cancelled
         case draftChanged(String)
-        
-        case saveTapped(UUID = UUID())
+
+        case saveTapped
+        /// The middleware refused a save because no flow was presented; nothing was persisted.
+        case saveAbandoned
         case saveFailed(String)
         case saved(String)
     }
@@ -31,32 +36,33 @@ public struct SettingsFeature: Feature {
     @MainActor public func reduce(_ state: inout State, _ action: Action) {
         switch action {
         case .opened:
-            guard !state.isSaving else { return }
+            // Presentation is router-owned; the middleware dispatches .flowStarted for a new flow.
+            break
+        case .flowStarted:
             state.draft = state.savedEndpoint
             state.error = nil
-            state.isPresented = true
         case .cancelled:
             guard !state.isSaving else { return }
             state.draft = state.savedEndpoint
             state.error = nil
-            state.isPresented = false
         case .draftChanged(let value):
             guard !state.isSaving else { return }
             state.draft = value
             state.error = nil
-        case .saveTapped(let request):
-            guard state.isPresented, !state.isSaving else { return }
-            state.saveRequest = request
+        case .saveTapped:
+            guard !state.isSaving else { return }
+            state.isSaving = true
             state.error = nil
+        case .saveAbandoned:
+            state.isSaving = false
         case .saveFailed(let message):
-            state.saveRequest = nil
+            state.isSaving = false
             state.error = message
         case .saved(let endpoint):
             state.savedEndpoint = endpoint
             state.draft = endpoint
-            state.saveRequest = nil
+            state.isSaving = false
             state.error = nil
-            state.isPresented = false
         }
     }
 }

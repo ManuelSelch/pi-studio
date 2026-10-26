@@ -2,6 +2,7 @@ import FactoryKit
 import Foundation
 import Flux
 import PiSDK
+import Router
 
 /// The app uses Container.shared; tests/previews can own independent containers.
 /// Registrations and cached stores remain local to their container.
@@ -16,13 +17,20 @@ extension Container {
         self { { PiClient(endpoint: $0) } }
     }
 
+    /// The one modal scope the settings middleware and the app-level host share.
+    var settingsModal: Factory<ModalRouter<AppRoute>> {
+        self { @MainActor in ModalRouter<AppRoute>() }.cached
+    }
+
     public var settingsStore: Factory<FluxStore<SettingsFeature>> {
         self { @MainActor in
             let service = self.endpointSettingsService()
             let endpoint = service.load().flatMap(ServerEndpoint.validated) ?? ServerEndpoint.defaultValue
             // @Injected resolves at construction; use this factory's container,
             // including when tests resolve from an independent scope.
-            let middleware = Container.$shared.withValue(self) { SettingsMiddleware() }
+            let middleware = Container.$shared.withValue(self) {
+                SettingsMiddleware(modal: self.settingsModal())
+            }
             return FluxStore(state: .init(endpoint: endpoint), middlewares: [middleware])
         }.cached
     }
