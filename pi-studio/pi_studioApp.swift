@@ -39,14 +39,14 @@ struct pi_studioApp: App {
         #if os(macOS)
         // One window/connection. Losing focus is not a disconnect on desktop.
         Window("Pi Studio", id: "workspace") {
-            WorkspaceContainer()
+            AppContainer()
                 .frame(minWidth: 620, minHeight: 500)
                 .onDisappear { Container.shared.workspaceStore().dispatch(.disconnectRequested()) }
         }
         .defaultSize(width: 980, height: 760)
         #else
         WindowGroup {
-            WorkspaceContainer()
+            AppContainer()
                 .onChange(of: scenePhase) { _, phase in
                     // Backgrounding disposes local networking; server work keeps running.
                     if phase == .background { Container.shared.workspaceStore().dispatch(.disconnectRequested()) }

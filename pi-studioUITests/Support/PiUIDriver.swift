@@ -164,6 +164,15 @@ final class UISettingsDriver {
         field.typeText(text)
         #endif
     }
+    #if os(iOS)
+    func dismissInteractively(file: StaticString = #filePath, line: UInt = #line) {
+        let title = context.app.staticTexts["Settings"].firstMatch
+        context.waitFor(title, file: file, line: line)
+        let start = title.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let end = context.app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98))
+        start.press(forDuration: 0.05, thenDragTo: end)
+    }
+    #endif
     func save() { context.app.buttons["saveSettingsButton"].firstMatch.tap() }
     func cancel() { context.app.buttons["cancelSettingsButton"].firstMatch.tap() }
     func endpointShouldBe(_ text: String, file: StaticString = #filePath, line: UInt = #line) {

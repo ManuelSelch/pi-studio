@@ -3,9 +3,9 @@ import Flux
 import PiSDK
 import SwiftUI
 
-/// Bridges the workspace, its conversation and the settings slice for one platform shell.
-/// Consent, settings presentation and the two cross-feature signals stay here; screens receive
-/// plain values and callbacks, and every effect goes to a store.
+/// Bridges the workspace and its conversation for one platform shell.
+/// Consent and cross-feature signals stay here; app-level settings presentation is a callback.
+/// Screens receive plain values and callbacks, and every effect goes to a store.
 public struct WorkspaceContainer: View {
     @InjectedObject(\.workspaceStore) private var store
     @InjectedObject(\.sessionStore) private var session
@@ -13,11 +13,14 @@ public struct WorkspaceContainer: View {
     @State private var confirmConnect = false
     @State private var confirmDisconnect = false
 
-    public init() {}
+    private let onOpenSettings: @MainActor () -> Void
+
+    public init(onOpenSettings: @escaping @MainActor () -> Void) {
+        self.onOpenSettings = onOpenSettings
+    }
 
     public var body: some View {
         screen
-            .sheet(isPresented: settingsPresented) { SettingsContainer() }
             .alert("Connect and take control?", isPresented: $confirmConnect) {
                 Button("Cancel", role: .cancel) {}
                 Button("Connect and take control") { store.dispatch(.connectRequested(takingControl: true)) }
@@ -46,11 +49,6 @@ public struct WorkspaceContainer: View {
         #endif
     }
 
-    private var settingsPresented: Binding<Bool> {
-        Binding(get: { settings.state.isPresented },
-                set: { if !$0 { settings.dispatch(.cancelled) } })
-    }
-
     private var actions: WorkspaceActions {
         WorkspaceActions(
             open: { target, title in store.dispatch(.openRequested(target: target, title: title)) },
@@ -59,7 +57,7 @@ public struct WorkspaceContainer: View {
                 store.dispatch(.createRequested(projectPath: path, title: quick ? "New chat" : "New session"))
             },
             connection: requestConnectionChange,
-            settings: { settings.dispatch(.opened) },
+            settings: onOpenSettings,
             back: { store.dispatch(.back) },
             draftChanged: { store.dispatch(.draftChanged($0)) },
             send: { text in session.dispatch(.sendRequested(text: text)) },

@@ -23,6 +23,20 @@ final class SettingsUITests: XCTestCase {
         app.settings.cancel()
     }
 
+    #if os(iOS)
+    @MainActor func testInteractiveDismissalDiscardsTheDraftBeforeReopening() {
+        let app = PiUIDriver.launch(for: self)
+        app.settings.open()
+        app.settings.enterEndpoint("ws://discard.example/ws")
+        app.settings.dismissInteractively()
+        app.settings.shouldBeClosed()
+        app.settings.open()
+        app.settings.endpointShouldBe("ws://127.0.0.1:8787/ws")
+        app.settings.cancel()
+        app.settings.shouldBeClosed()
+    }
+    #endif
+
     @MainActor func testSavingWhileConnectedLeavesTheSessionUntouched() {
         let app = PiUIDriver.launch(for: self)
         app.session.connect()

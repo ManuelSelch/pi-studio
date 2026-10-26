@@ -9,7 +9,7 @@ import Testing
 /// editor looks identical to an editable one.
 @MainActor
 struct WorkspaceContainerTests {
-    private let container = WorkspaceContainer()
+    private let container = WorkspaceContainer(onOpenSettings: {})
 
     private func state(status: DemoRunStatus?, connection: PiConnectionState = .ready(.init(sessionId: "s", projectPath: "/p")),
                        sending: Bool = false, stopping: Bool = false) -> SessionFeature.State {
