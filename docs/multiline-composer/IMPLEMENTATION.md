@@ -1,6 +1,18 @@
 # Multiline composer implementation status
 
-## Implemented
+## Current Mac editor — SwiftUI migration
+
+The approved [SwiftUI migration design](DESIGN.md) replaces the custom AppKit editor with a vertical SwiftUI TextField. This supersedes the AppKit implementation described in the historical record below; workspace-owned per-tab drafts supersede the original local-draft design.
+
+- SwiftUI owns full-width layout/hit testing, two-to-five-line growth, wrapping, focus and selection. No NSViewRepresentable, custom NSTextView, geometry mutation, native event inspection or AppKit editor fallback remains. Existing unrelated native colour styling is unchanged.
+- Return delegates to native onSubmit; composer-local SwiftUI key handling distinguishes Shift+Return and suppresses repeated unmodified submission. Shift+Return replaces the selected range with LF, with explicit undo/redo snapshots. Invalid transient selection indices are ignored, not indexed into the draft.
+- SessionScreen uses SwiftUI focus/exit commands: pending admission transfers composer focus to the conversation without taking focus from another control; eligible Escape stops, modified/repeated Escape does not. Focus can return when editing becomes available. iOS keeps its prior keyboard-dismissal behavior on Send.
+- Red-first reproduction: old editor width48pt versus visible input width724pt. New off-screen semantic driver tests field/editor width and hit targets at 360/760/1708pt host widths, native typing/bindings, external drafts, locks, Return, Shift+Return selection replacement, undo/redo, repeat/whitespace guards, synthetic marked-text submit suppression and Escape across pending admission/running transitions. Hosted editor scenarios serialize their shared native focus machinery.
+- Verification: **88 PiUI tests**, three consecutive final-tree passes; both native Release builds; iOS unit suite (normal opt-in transport skip); full **23 iOS UI tests** passed, then the **six iOS multiline scenarios** passed again after the final focus adjustment. No desktop-controlling macOS app automation, live-user server access or real-model acceptance was performed.
+- Still manual: real IME candidate preservation/confirmation, physical keyboard behavior, full desktop focus/selection/scroll UX. Artificial marked-text checks establish submit suppression only; they do not prove a real input-method session. In-process local event delivery and off-screen layout checks do not constitute full Mac UI acceptance.
+- Project rule: SwiftUI first; ask the user before introducing AppKit.
+
+## Historical implementation
 
 - Composer owns editable text in local SwiftUI state; no session draft action, setter or projection remains. Typing has no callback to Flux. Send passes the exact string snapshot, preserving newlines/indentation/whitespace. Reducer guards readiness, whitespace-only content and duplicate in-flight requests; middleware sends only the admitted action snapshot.
 - Reducer emits only an admitted snapshot through `clearDraftMatching`; new submissions reset it, rejection/uncertainty do not emit it, and session-generation guards ignore obsolete results. Composer clears matching text and consumes new instructions. Mounting consumes an old instruction without replaying it.

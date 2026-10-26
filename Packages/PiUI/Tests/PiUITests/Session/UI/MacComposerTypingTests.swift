@@ -1,104 +1,168 @@
 #if os(macOS)
-import AppKit
 import Flux
 import Foundation
-import PiSDK
 import SwiftUI
 import Testing
 @testable import PiUI
 
-/// macOS UI automation is paused by user request, so the composer's typing path is covered
-/// here instead: a store-backed draft, the real `SessionScreen`, and a hosted text view.
+extension MacComposerTests {
 @MainActor
 struct MacComposerTypingTests {
-    /// Mirrors the app: the container observes the workspace store and rebuilds the screen, so
-    /// `updateNSView` runs after every state change.
     private struct Harness: View {
         @ObservedObject var workspace: FluxStore<WorkspaceFeature>
         let canEdit: Bool
-        let hint: String
+        let onSend: @MainActor (String) -> Void
+        let onStop: @MainActor () -> Void
 
         var body: some View {
             var presentation = SessionPresentation()
             presentation.draft = workspace.state.draft
-            presentation.hint = hint
             presentation.canEditMessage = canEdit
             presentation.canSend = canEdit
-            presentation.placeholder = "Start a conversation."
+            presentation.canStop = true
             return SessionScreen(presentation: presentation,
-                                 onDraftChanged: { workspace.dispatch(.draftChanged($0)) },
-                                 onConnect: {}, onDisconnect: {}, onSend: { _ in }, onStop: {},
-                                 showsHeader: false, maxContentWidth: 760)
+                onDraftChanged: { workspace.dispatch(.draftChanged($0)) },
+                onConnect: {}, onDisconnect: {}, onSend: onSend, onStop: onStop, showsHeader: false)
         }
     }
 
-    @MainActor private struct Fixture {
-        let workspace: FluxStore<WorkspaceFeature>
-        let window: NSWindow
-        let editor: NSTextView
-    }
-
-    private func fixture(canEdit: Bool = true, hint: String = "") throws -> Fixture {
+    private func fixture(canEdit: Bool = true, width: CGFloat = 760,
+                         onSend: @escaping @MainActor (String) -> Void = { _ in },
+                         onStop: @escaping @MainActor () -> Void = {}) -> (FluxStore<WorkspaceFeature>, MacComposerDriver) {
         let workspace = FluxStore<WorkspaceFeature>(state: .init())
-        let tab = OpenSession(identity: OpenSessionIdentity(scope: "scope", sessionPath: nil,
-                                                           runtimeId: "runtime", projectPath: "/repo"),
-                              title: "Session")
+        let tab = OpenSession(identity: .init(scope: "scope", sessionPath: nil,
+            runtimeId: "runtime", projectPath: "/repo"), title: "Session")
         workspace.dispatch(.opened(workspace.state.generation, tab))
-        let hosting = NSHostingView(rootView: Harness(workspace: workspace, canEdit: canEdit, hint: hint))
-        hosting.frame = NSRect(x: 0, y: 0, width: 760, height: 520)
-        let window = NSWindow(contentRect: hosting.frame, styleMask: [.titled], backing: .buffered, defer: false)
-        window.contentView = hosting
-        hosting.layoutSubtreeIfNeeded()
-        let editor = try #require(textView(in: hosting), "The composer must host a text view")
-        return Fixture(workspace: workspace, window: window, editor: editor)
+        return (workspace, MacComposerDriver(Harness(workspace: workspace, canEdit: canEdit, onSend: onSend, onStop: onStop), width: width))
     }
 
-    /// Types the way a keystroke does: mutate the text view, then let it notify its delegate.
-    private func type(_ text: String, into editor: NSTextView, window: NSWindow) {
-        editor.string += text
-        editor.didChangeText()
-        window.contentView?.layoutSubtreeIfNeeded()
+    @Test(arguments: [CGFloat(360), CGFloat(760), CGFloat(1708)])
+    func theEditorFillsItsVisibleInputArea(width: CGFloat) async throws {
+        let (_, app) = fixture(width: width)
+        try await app.settle()
+        try app.wholeWidthShouldAcceptClicks()
     }
 
-    private func textView(in view: NSView) -> NSTextView? {
-        if let editor = view as? NSTextView { return editor }
-        for subview in view.subviews {
-            if let found = textView(in: subview) { return found }
+    @Test func typingReachesTheStoreBackedDraftAndSurvivesRendering() async throws {
+        let (workspace, app) = fixture()
+        try await app.type("hello")
+        #expect(workspace.state.draft == "hello")
+        try await app.type(" world")
+        #expect(workspace.state.draft == "hello world")
+        try app.textShouldBe("hello world")
+    }
+
+    @Test func anExternalDraftChangeIsAdopted() async throws {
+        let (workspace, app) = fixture()
+        try await app.type("draft")
+        workspace.dispatch(.draftChanged("other tab"))
+        try await app.settle()
+        try app.textShouldBe("other tab")
+        workspace.dispatch(.draftChanged(""))
+        try await app.settle()
+        try app.textShouldBe("")
+    }
+
+    @Test func aLockedComposerDisablesEditing() async throws {
+        let (workspace, app) = fixture(canEdit: false)
+        try await app.settle()
+        try app.editingShouldBeEnabled(false)
+        #expect(workspace.state.draft.isEmpty)
+    }
+
+    @Test func returnSubmitsExactTextButRepeatDoesNotSubmit() async throws {
+        var sent: [String] = []
+        let (_, app) = fixture(onSend: { sent.append($0) })
+        try await app.type(" hello\nworld ")
+        try await app.pressReturn(repeating: true)
+        #expect(sent.isEmpty)
+        try await app.pressReturn()
+        #expect(sent == [" hello\nworld "])
+        try app.textShouldBe(" hello\nworld ")
+    }
+
+    @Test func shiftReturnReplacesTheSelectionWithoutSending() async throws {
+        var sent: [String] = []
+        let (workspace, app) = fixture(onSend: { sent.append($0) })
+        try await app.type("hello world")
+        try await app.select(NSRange(location: 5, length: 1))
+        try await app.pressReturn(shift: true)
+        #expect(sent.isEmpty)
+        #expect(workspace.state.draft == "hello\nworld")
+        try app.textShouldBe("hello\nworld")
+        try await app.undo()
+        try app.textShouldBe("hello world")
+        try await app.redo()
+        try app.textShouldBe("hello\nworld")
+    }
+
+    @Test func whitespaceReturnNeverSends() async throws {
+        var sent: [String] = []
+        let (_, app) = fixture(onSend: { sent.append($0) })
+        try await app.type(" \n ")
+        try await app.pressReturn()
+        #expect(sent.isEmpty)
+        try app.textShouldBe(" \n ")
+    }
+
+    @Test(arguments: [false, true])
+    func returnConfirmsMarkedTextWithoutSending(shift: Bool) async throws {
+        var sent: [String] = []
+        let (_, app) = fixture(onSend: { sent.append($0) })
+        try await app.beginComposition("漢")
+        try await app.pressReturn(shift: shift)
+        #expect(sent.isEmpty)
+        // Synthetic marked text checks command suppression, not a real input-method session.
+        // Candidate preservation/confirmation remains an explicit manual acceptance check.
+    }
+
+    @MainActor private final class RunState: ObservableObject {
+        @Published var pending = false
+        @Published var running = false
+    }
+
+    private struct RunHarness: View {
+        @State private var draft = ""
+        @ObservedObject var run: RunState
+        let onStop: @MainActor () -> Void
+        var body: some View {
+            var presentation = SessionPresentation()
+            presentation.draft = draft
+            presentation.canEditMessage = !run.pending && !run.running
+            presentation.canSend = !run.pending && !run.running
+            presentation.canStop = run.running
+            return SessionScreen(presentation: presentation, onDraftChanged: { draft = $0 },
+                onConnect: {}, onDisconnect: {}, onSend: { _ in run.pending = true }, onStop: onStop,
+                showsHeader: false)
         }
-        return nil
     }
 
-    @Test func typingReachesTheStoreBackedDraftAndSurvivesRendering() throws {
-        let fixture = try fixture()
-        type("hello", into: fixture.editor, window: fixture.window)
-        #expect(fixture.workspace.state.draft == "hello")
-        #expect(fixture.editor.string == "hello")
-        type(" world", into: fixture.editor, window: fixture.window)
-        #expect(fixture.workspace.state.draft == "hello world")
-        #expect(fixture.editor.string == "hello world")
+    @Test func escapeStillWorksAfterSubmissionDisablesTheField() async throws {
+        var stops = 0
+        let run = RunState()
+        let app = MacComposerDriver(RunHarness(run: run, onStop: { stops += 1 }))
+        try await app.type("hello")
+        try await app.pressReturn()
+        try app.editingShouldBeEnabled(false)
+        try await app.pressEscape()
+        #expect(stops == 0) // Admission is still pending; Stop is not available yet.
+        run.pending = false
+        run.running = true
+        try await app.settle()
+        try await app.pressEscape()
+        #expect(stops == 1)
     }
 
-    @Test func anExternalDraftChangeIsAdopted() throws {
-        let fixture = try fixture()
-        type("draft", into: fixture.editor, window: fixture.window)
-        #expect(fixture.workspace.state.draft == "draft")
-        // Selecting another tab replaces the text, and an admitted send clears it.
-        fixture.workspace.dispatch(.draftChanged("other tab"))
-        fixture.window.contentView?.layoutSubtreeIfNeeded()
-        #expect(fixture.editor.string == "other tab")
-        fixture.workspace.dispatch(.draftChanged(""))
-        fixture.window.contentView?.layoutSubtreeIfNeeded()
-        #expect(fixture.editor.string == "")
+    @Test func escapeStopsOnlyOnTheFirstUnmodifiedPress() async throws {
+        var stops = 0
+        let (_, app) = fixture(onStop: { stops += 1 })
+        try await app.type("hello")
+        try await app.pressEscape(repeating: true)
+        try await app.pressEscape(shift: true)
+        #expect(stops == 0)
+        try await app.pressEscape()
+        #expect(stops == 1)
     }
-
-    @Test func aLockedComposerRefusesInputAndShowsTheReason() throws {
-        let fixture = try fixture(canEdit: false, hint: "Generating… Stop to edit.")
-        #expect(!fixture.editor.isEditable)
-        #expect(fixture.editor.accessibilityHelp() == "Read only until the run settles")
-        // A locked composer must not silently accept keystrokes either.
-        fixture.editor.insertText("blocked", replacementRange: fixture.editor.selectedRange())
-        #expect(fixture.editor.string.isEmpty)
-        #expect(fixture.workspace.state.draft.isEmpty)
-    }
+}
 }
 #endif

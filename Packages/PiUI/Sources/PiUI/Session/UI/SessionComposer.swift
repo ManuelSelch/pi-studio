@@ -25,7 +25,7 @@ struct SessionComposer: View {
             Text("Message").font(.caption).foregroundStyle(.secondary)
             #if os(macOS)
             MacMessageEditor(text: text, canEdit: canEdit, canSend: sendEnabled,
-                             canStop: canStop, focus: focus, onSend: submit, onStop: onStop)
+                             focus: focus, onSend: submit)
             #else
             TextField("Say hello", text: text, axis: .vertical)
                 .lineLimit(2...5).textFieldStyle(.roundedBorder).focused(focus)

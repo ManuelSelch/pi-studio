@@ -42,9 +42,9 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   tests register their debug connection through the same dependency graph.
 - [SessionFeature](Packages/PiUI/Sources/PiUI/Session/App/SessionFeature.swift) holds app-owned
   interaction state and typed reducer actions. FluxStore is the sole observable
-  source of session interaction state. Editable message text stays local to the
-  composer; only submitted snapshots and consumable matching-clear instructions
-  cross the store boundary. Typing dispatches no session actions.
+  source of session interaction state. Workspace state owns per-tab editable drafts;
+  the session feature receives only submitted snapshots and consumable matching-clear
+  instructions. Typing dispatches no session actions.
 - [SessionMiddleware](Packages/PiUI/Sources/PiUI/Session/Middleware/SessionMiddleware.swift)
   owns SDK effects, observation tasks and disposal. Containers only dispatch
   `connectRequested`, `sendRequested(text:)`, `stopRequested`, `disconnectRequested`
@@ -67,9 +67,10 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   and UIHostingController and cannot build natively for macOS. No substitute
   router is introduced; settings uses native sheet presentation.
 - [Components](Packages/PiUI/Sources/PiUI/Session/UI) take plain display values and
-  callbacks, using SwiftUI and narrowly scoped native editing/event adapters.
-  They do not read stores, resolve services, use SDK models or perform network
-  work. Local draft/focus/alert state is UI-only.
+  callbacks. The Mac composer uses a vertical SwiftUI TextField, selection/focus bindings
+  and SwiftUI keyboard/exit commands, without an AppKit editor/event adapter.
+  They do not read stores, resolve services, use SDK models or perform network work.
+  Focus/selection/alert state is UI-only. Ask before introducing AppKit.
 - The [app shell](pi-studio/pi_studioApp.swift) owns lifetime and native windows.
   iOS backgrounding disposes local networking. macOS losing focus does not;
   closing its single window disposes the local connection.
@@ -182,7 +183,8 @@ A push or PR is needed to verify the workflow on hosted runners.
 seven independent suites. Only fast `piui` tests opt into after-agent execution;
 UI automation is manual because it takes control of the Simulator/desktop.
 **Current user instruction: do not run macOS automation tests until authorized.**
-The macOS composer interaction scenarios are compiled, not executed.
+The macOS app UI scenarios remain unexecuted. PiUI package tests drive hosted
+editors off-screen without activating windows or posting system input.
 
 Equivalent commands after preparation:
 
@@ -219,15 +221,17 @@ DYLD missing-symbol crashes and misleading macOS compatibility dialogs. Use
 separate Simulator devices via `PI_STUDIO_TEST_DESTINATION` (or run serially);
 separate derived-data directories alone do not isolate Simulator installations.
 
-- PiUI: **42 named tests** (including parameterized URL cases), covering settings
+- PiUI: **88 tests** (including parameterized cases), covering settings
   reducers, mock-service failure/retry, isolated UserDefaults persistence,
   next-connection snapshots during setup/streaming, and dependency scope
   identity/isolation, configuration/connection overrides, FluxTestStore reducer
   transitions, draft admission/retention, duplicate guards, stale callbacks,
-  setup/pending-send disconnect, connection errors and deallocation disposal.
+  setup/pending-send disconnect, connection errors and deallocation disposal;
+  workspace tab/draft isolation; and off-screen Mac composer width/hit testing,
+  typing, selection newline, undo/redo, submit guards and Escape focus transitions.
 - The settings connection integration scenario and semantic driver also compile
   into both native unit-test targets; their source is shared, not copied.
-- iOS: 15 functional UI tests (including six multiline scenarios), plus four
+- iOS: 19 functional UI tests (including six multiline scenarios), plus four
   launch/appearance cases. macOS has corresponding Return/Shift+Return,
   paste/selection/undo, duplicate admission, Escape and retention scenarios,
   compiled but not executed during the automation pause. Debug-only injected
@@ -235,7 +239,7 @@ separate derived-data directories alone do not isolate Simulator installations.
   projections, not a second wire protocol.
 - For current verification and outstanding native macOS/IME/physical-keyboard
   checks, see [implementation status](docs/multiline-composer/IMPLEMENTATION.md).
-  No macOS interaction verification is claimed while automation is paused.
+  Off-screen checks are not full desktop, real-IME or physical-keyboard acceptance.
 
 ### Semantic test DSL
 

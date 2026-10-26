@@ -11,6 +11,7 @@ import Testing
 /// The whole macOS path: the real `WorkspaceContainer` on one scoped connection, connect,
 /// open a session, then type into the hosted composer. macOS XCUITest cannot read this app's
 /// accessibility tree in this environment, so the container is hosted in-process instead.
+extension MacComposerTests {
 @MainActor
 struct MacWorkspaceComposerTests {
     @MainActor private final class Fixture {
@@ -28,13 +29,8 @@ struct MacWorkspaceComposerTests {
         let workspace: FluxStore<WorkspaceFeature>
         let session: FluxStore<SessionFeature>
 
-        func host() -> NSHostingView<WorkspaceContainerProbe> {
-            let hosting = NSHostingView(rootView: WorkspaceContainerProbe(store: workspace, session: session))
-            hosting.frame = NSRect(x: 0, y: 0, width: 900, height: 640)
-            let window = NSWindow(contentRect: hosting.frame, styleMask: [.titled], backing: .buffered, defer: false)
-            window.contentView = hosting
-            hosting.layoutSubtreeIfNeeded()
-            return hosting
+        func host() -> MacComposerDriver {
+            MacComposerDriver(WorkspaceContainerProbe(store: workspace, session: session), width: 900)
         }
 
         func wait(_ description: String, sourceLocation: SourceLocation = #_sourceLocation,
@@ -65,14 +61,6 @@ struct MacWorkspaceComposerTests {
         }
     }
 
-    private func textView(in view: NSView) -> NSTextView? {
-        if let editor = view as? NSTextView { return editor }
-        for subview in view.subviews {
-            if let found = textView(in: subview) { return found }
-        }
-        return nil
-    }
-
     @Test func aSessionOpenedThroughTheWorkspaceAcceptsTyping() async throws {
         let fixture = Fixture()
         let hosting = fixture.host()
@@ -82,18 +70,14 @@ struct MacWorkspaceComposerTests {
         try await fixture.wait("attached session") {
             fixture.workspace.state.observedRuntimeId != nil && fixture.session.state.canEditMessage
         }
-        let editor = try #require(textView(in: hosting), "The workspace composer must host a text view")
-        // The store settles before the hosted view re-renders, so pump layout until it does.
-        try await fixture.wait("editable composer") {
-            hosting.layoutSubtreeIfNeeded()
-            return editor.isEditable
-        }
-        editor.string = "hello"
-        editor.didChangeText()
-        hosting.layoutSubtreeIfNeeded()
+        try await hosting.settle()
+        try hosting.editingShouldBeEnabled(true)
+        try hosting.wholeWidthShouldAcceptClicks()
+        try await hosting.type("hello")
         #expect(fixture.workspace.state.draft == "hello")
-        #expect(editor.string == "hello")
+        try hosting.textShouldBe("hello")
     }
+}
 }
 
 @MainActor private final class MacMemorySettings: EndpointSettingsService {

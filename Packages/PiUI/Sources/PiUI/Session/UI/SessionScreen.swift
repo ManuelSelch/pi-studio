@@ -1,7 +1,4 @@
 import SwiftUI
-#if os(macOS)
-import AppKit
-#endif
 
 /// Plain presentation values: no Flux, router, SDK types or service lookups.
 public struct SessionPresentation: Equatable, Sendable {
@@ -43,7 +40,9 @@ public struct SessionScreen: View {
     private let maxContentWidth: CGFloat
     @State private var confirmConnect = false
     @State private var confirmDisconnect = false
+    @State private var stopKeyAllowed = false
     @FocusState private var messageFocused: Bool
+    @FocusState private var conversationFocused: Bool
 
     public init(presentation: SessionPresentation,
                 onDraftChanged: @escaping @MainActor (String) -> Void,
@@ -92,17 +91,36 @@ public struct SessionScreen: View {
                             canEdit: presentation.canEditMessage, canSend: presentation.canSend,
                             canStop: presentation.canStop, isStopping: presentation.isStopping, focus: $messageFocused,
                             onDraftChanged: onDraftChanged,
-                            onSend: { text in messageFocused = false; onSend(text) }, onStop: onStop)
+                            onSend: { text in
+                                #if os(iOS)
+                                messageFocused = false
+                                #endif
+                                onSend(text)
+                            }, onStop: onStop)
         }
         #if os(macOS)
+        // Keep an eligible run's Escape command reachable when its editor becomes disabled.
+        // Only transfer focus if the user was in this composer, never from another control.
+        .focusable(!presentation.canEditMessage)
+        .focusEffectDisabled()
+        .focused($conversationFocused)
+        .onChange(of: presentation.canEditMessage) { _, editable in
+            if !editable && messageFocused { conversationFocused = true }
+            else if editable && conversationFocused {
+                conversationFocused = false
+                messageFocused = true
+            }
+        }
+        .onKeyPress(.escape, phases: [.down, .repeat]) { press in
+            stopKeyAllowed = press.phase == .down && press.modifiers.isEmpty
+            return .ignored
+        }
         .onExitCommand {
-            // Fallback for focus elsewhere on the conversation. A sheet owns its own
-            // Escape handling; the container also withholds canStop while settings is open.
-            let event = NSApp.currentEvent
-            let modifiers = event?.modifierFlags.intersection([.shift, .command, .option, .control]) ?? []
-            let composing = (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() == true
-            if !confirmConnect && !confirmDisconnect && presentation.canStop,
-               !composing, event?.isARepeat != true, modifiers.isEmpty { onStop() }
+            // Native field/IME cancellation and presented surfaces take precedence.
+            // The workspace also withholds canStop while settings is presented.
+            let allowed = stopKeyAllowed
+            stopKeyAllowed = false
+            if allowed && !confirmConnect && !confirmDisconnect && presentation.canStop { onStop() }
         }
         #endif
         .frame(maxWidth: maxContentWidth, maxHeight: .infinity)
