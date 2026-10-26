@@ -39,16 +39,10 @@ public enum ProjectListModel {
         }.map(\.0)
     }
     private static func row(historyPath: String?, title: String, live: PiRuntimeSummary?, project: PiProjectSummary) -> ProjectSessionRow {
-        let activity: String?
-        switch live?.status {
-        case "running": activity = "Running"
-        case "blocked": activity = "Needs input"
-        case "closing": activity = "Closing"
-        default: activity = nil
-        }
         return .init(id: historyPath ?? "runtime:\(live!.sessionId)", title: title,
-                     detail: project.worktree?.branch, activity: activity,
+                     detail: project.worktree?.branch, activity: live.flatMap { SessionActivity(runtimeStatus: $0.status) },
                      target: live.map { .runtime($0.sessionId) } ?? .history(historyPath!),
-                     canOpen: live?.status != "closing")
+                     canOpen: live?.status != "closing",
+                     runtimeId: live?.sessionId, sessionPath: historyPath ?? live?.sessionPath)
     }
 }

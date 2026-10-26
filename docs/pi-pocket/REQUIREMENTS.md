@@ -1,5 +1,9 @@
 # Pi Pocket — Requirements
 
+Historical Pocket follow-on plan. The consolidated [product requirements](../product/REQUIREMENTS.md)
+supersede this backlog and its earlier exclusions. Slice 1 is now represented by
+the shared Workspace implementation; see the [reconciliation record](IMPLEMENTATION.md).
+
 ## Goal
 Provide a small native iPhone app for browsing projects and sessions, using Quick Chats, and steering agents hosted by Pi Server on the homelab over VPN. Build on the existing shared PiUI demo rather than replacing its architecture. The root REQUIREMENTS.md remains the historical MVP plan; this document defines the Pocket follow-on.
 

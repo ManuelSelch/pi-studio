@@ -6,13 +6,13 @@ let package = Package(
     platforms: [.iOS("26.1"), .macOS(.v26)],
     products: [.library(name: "PiUI", targets: ["PiUI"])],
     dependencies: [
-        .package(path: "../../.dependencies/pi-sdk"),
-        .package(url: "https://github.com/hmlongco/Factory.git", exact: "2.5.3"),
-        .package(url: "https://github.com/ManuelSelch/Flux.git", revision: "00c8b43799d5acbca04127833daf28f1df2ce477"),
+        .package(url: "https://github.com/ManuelSelch/pi-sdk-swift.git", exact: "0.1.0"),
+        .package(url: "https://github.com/hmlongco/Factory.git", from: "2.5.3"),
+        .package(url: "https://github.com/ManuelSelch/Flux.git", exact: "2.0.1"),
     ],
     targets: [
         .target(name: "PiUI", dependencies: [
-            .product(name: "PiSDK", package: "pi-sdk"),
+            .product(name: "PiSDK", package: "pi-sdk-swift"),
             .product(name: "Flux", package: "Flux"),
             .product(name: "FactoryKit", package: "Factory"),
         ]),

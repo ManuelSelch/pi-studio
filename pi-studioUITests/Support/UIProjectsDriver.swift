@@ -40,7 +40,14 @@ import XCTest
     func expandProject(_ name: String) { app.buttons[name].tap() }
     func openRunningSession() { app.buttons["session-runtime:ui-running"].tap() }
     func newProjectSession() { app.buttons["newSession-/repo"].tap() }
-    func back() { app.buttons["projectsBack"].tap() }
+    func back() {
+        #if os(iOS)
+        // The workspace uses native navigation, so back is the bar's leading button.
+        let leading = app.navigationBars.buttons.firstMatch
+        XCTAssertTrue(leading.waitForExistence(timeout: 4))
+        leading.tap()
+        #endif
+    }
     func shouldShowSavedAnswer(file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertTrue(app.staticTexts["message-saved-answer"].waitForExistence(timeout: 4), file: file, line: line)
     }

@@ -17,7 +17,16 @@ import PiUI
         #expect(groups[1].sessions.map(\.title) == ["Pocket", "Main chat"])
         #expect(groups[1].sessions[0].target == .runtime("live"))
         #expect(groups[1].sessions[0].detail == "feat/pocket")
-        #expect(groups[1].sessions[0].activity == "Running")
+        #expect(groups[1].sessions[0].activity == .running)
+    }
+
+    @Test func blockedRuntimeIsReportedAsNeedsYou() {
+        let catalogue = PiCatalogue(
+            projects: [.init(path: "/repo", name: "repo")],
+            sessions: [.init(sessionId: "waiting", title: "Waiting", projectPath: "/repo", projectName: "repo", status: "blocked")])
+        let groups = ProjectListModel.groups(catalogue)
+        #expect(groups[0].sessions[0].activity == .needsYou)
+        #expect(groups[0].sessions[0].canOpen)
     }
 
     @Test func unsavedRuntimesAppearEvenBeforeTheirProjectIsCatalogued() {

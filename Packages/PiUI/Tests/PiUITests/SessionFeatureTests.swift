@@ -1,53 +1,114 @@
+import Flux
 import Foundation
-import FluxTestStore
 import PiSDK
 import Testing
 @testable import PiUI
 
+/// The conversation reducer: it knows only the runtime the workspace attached.
 @MainActor
 struct SessionFeatureTests {
-    @Test func connectionAndDraftAdmissionAreReducedByFlux() async {
-        let initial = SessionFeature.State()
+    private struct Fixture {
+        let store: FluxStore<SessionFeature>
+        let token: UUID
+        let session: DemoSession
+    }
+
+    private func fixture(_ sessionId: String = "demo") -> Fixture {
         let token = UUID()
-        let session = DemoSession(sessionId: "demo", projectPath: "/tmp/demo")
-        let store = TestStore<SessionFeature>(state: initial)
-        defer { store.tearDown() }
-        store.dispatch(.connectStarted(token)) { $0.generation = token; $0.connection = .connecting }
-        store.dispatch(.connected(token, session)) { $0.connection = .ready(session) }
-        store.dispatch(.projectionChanged(token, .init(session: session))) { $0.projection = .init(session: session) }
-        store.dispatch(.draftChanged("Hello")) { $0.draft = "Hello" }
-        #expect(store.state.canSend)
-        store.dispatch(.sendStarted) { $0.isSending = true }
+        let session = DemoSession(sessionId: sessionId, projectPath: "/tmp/demo")
+        var state = SessionFeature.State()
+        state.generation = token
+        state.observedSessionId = sessionId
+        state.connection = .ready(session)
+        state.projection = .init(session: session)
+        return Fixture(store: FluxStore(state: state), token: token, session: session)
+    }
+
+    @Test func attachingARuntimeIsNotReadyUntilItsProjectionArrives() {
+        let store = FluxStore<SessionFeature>(state: .init())
+        #expect(!store.state.canEditMessage)
+        store.dispatch(.attachRequested(sessionId: "opened"))
+        #expect(store.state.statusText == "Attaching…")
+        #expect(store.state.observedSessionId == "opened")
+        #expect(!store.state.canEditMessage)
+        let session = DemoSession(sessionId: "opened", projectPath: "/repo")
+        store.dispatch(.attached(store.state.generation, session))
+        // Ready means the runtime is known; the transcript still has to arrive.
+        #expect(store.state.connection == .ready(session))
         #expect(!store.state.canSend)
-        store.dispatch(.sendFinished(token, submitted: "Hello", error: nil)) { $0.isSending = false; $0.draft = "" }
-        await store.finish()
+        store.dispatch(.projectionChanged(store.state.generation, .init(session: session)))
+        #expect(store.state.canEditMessage)
+        #expect(store.state.canSend)
+        #expect(store.state.statusText == "Ready")
     }
 
-    @Test func staleCallbacksCannotOverwriteDisconnectedState() async {
-        let token = UUID()
-        let store = TestStore<SessionFeature>(state: .init())
-        defer { store.tearDown() }
-        store.dispatch(.connectStarted(token)) { $0.generation = token; $0.connection = .connecting }
-        let next = UUID()
-        store.dispatch(.disconnected(next)) {
-            $0.generation = next; $0.connection = .disconnected
-            $0.actionError = "Disconnected during setup. A demo runtime may have been created on the server."
+    @Test func attachingAnotherRuntimeDiscardsTheSupersededTranscriptAndWork() {
+        let fixture = fixture("first")
+        let store = fixture.store
+        store.dispatch(.sendRequested(text: "Keep going"))
+        #expect(store.state.isSending)
+        // Switching tabs attaches another runtime: the old transcript and work are dropped.
+        store.dispatch(.attachRequested(sessionId: "second"))
+        #expect(store.state.projection == nil)
+        #expect(!store.state.isSending)
+        #expect(store.state.observedSessionId == "second")
+        #expect(!store.state.canEditMessage)
+        // Late results for the previous runtime cannot settle anywhere.
+        let current = store.state
+        store.dispatch(.sendFinished(fixture.token, submitted: "Keep going", error: nil))
+        store.dispatch(.projectionChanged(fixture.token, .init(session: fixture.session)))
+        store.dispatch(.stopFinished(fixture.token, error: nil))
+        store.dispatch(.attached(fixture.token, fixture.session))
+        #expect(store.state == current)
+    }
+
+    @Test func detachingKeepsTheLastKnownTranscriptWithoutObserving() {
+        let store = fixture("first").store
+        let shown = store.state.projection
+        store.dispatch(.detachRequested())
+        #expect(store.state.observedSessionId == nil)
+        #expect(store.state.connection == .disconnected)
+        // A disconnect disposes local networking only: what was on screen stays on screen.
+        #expect(store.state.projection == shown)
+        #expect(!store.state.isSending)
+        let detached = store.state
+        store.dispatch(.sendFinished(UUID(), submitted: "Old", error: nil))
+        store.dispatch(.projectionChanged(UUID(), .init(session: DemoSession(sessionId: "first", projectPath: "/tmp/demo"))))
+        #expect(store.state == detached)
+    }
+
+    @Test func reducerRejectsWhitespaceAndUnavailableSnapshots() {
+        let feature = SessionFeature()
+        var state = SessionFeature.State()
+        let detached = state
+        feature.reduce(&state, .sendRequested(text: "Not attached"))
+        #expect(state == detached)
+        state = fixture().store.state
+        let available = state
+        for text in ["", " ", "\n\t\n"] {
+            feature.reduce(&state, .sendRequested(text: text))
+            #expect(state == available)
         }
-        store.dispatch(.failed(token, .disconnected)) { _ in }
-        store.dispatch(.connected(token, .init(sessionId: "old", projectPath: "/tmp/old"))) { _ in }
-        await store.finish()
+        state.projection = .init(session: .init(sessionId: "demo", projectPath: "/tmp/demo"), status: .running)
+        let running = state
+        feature.reduce(&state, .sendRequested(text: "Busy"))
+        #expect(state == running)
     }
 
-    @Test func changedDraftIsNotClearedByEarlierSend() async {
-        let session = DemoSession(sessionId: "demo", projectPath: "/tmp/demo")
-        var initial = SessionFeature.State()
-        initial.connection = .ready(session); initial.projection = .init(session: session)
-        initial.draft = "First"
-        let store = TestStore<SessionFeature>(state: initial)
-        defer { store.tearDown() }
-        store.dispatch(.sendStarted) { $0.isSending = true }
-        store.dispatch(.draftChanged("Next")) { $0.draft = "Next" }
-        store.dispatch(.sendFinished(initial.generation, submitted: "First", error: nil)) { $0.isSending = false }
-        await store.finish()
+    @Test func consecutiveIdenticalSubmissionsIssueConsumableClearInstructions() {
+        let fixture = fixture()
+        let store = fixture.store
+        for _ in 0..<2 {
+            store.dispatch(.sendRequested(text: "First"))
+            #expect(store.state.isSending)
+            store.dispatch(.sendFinished(fixture.token, submitted: "First", error: nil))
+            #expect(store.state.clearDraftMatching == "First")
+            store.dispatch(.clearDraftConsumed)
+            #expect(store.state.clearDraftMatching == nil)
+        }
+        store.dispatch(.sendRequested(text: "First"))
+        store.dispatch(.sendFinished(fixture.token, submitted: "First", error: .disconnected))
+        #expect(store.state.clearDraftMatching == nil)
+        #expect(store.state.actionError == PiError.disconnected.localizedDescription)
     }
 }

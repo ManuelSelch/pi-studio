@@ -12,10 +12,12 @@
 		B00000000000000000000004 /* PiUI in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000003 /* PiUI */; };
 		B00000000000000000000007 /* PiSDK in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* PiSDK */; };
 		C00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */; };
+		C00000000000000000000007 /* Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000008 /* Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift */; };
 		D00000000000000000000001 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000003 /* FactoryKit */; };
-		E10000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift */; };
-		E20000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift */; };
-		E30000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift */; };
+		D00000000000000000000004 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000003 /* FactoryKit */; };
+		E00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift */; };
+		F00000000000000000000001 /* Flux in Frameworks */ = {isa = PBXBuildFile; productRef = F00000000000000000000003 /* Flux */; };
+		F00000000000000000000004 /* Flux in Frameworks */ = {isa = PBXBuildFile; productRef = F00000000000000000000003 /* Flux */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,9 +42,8 @@
 		972B0B453087E5CF0068614C /* pi-studioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pi-studioTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		972B0B4F3087E5CF0068614C /* pi-studioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pi-studioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift; sourceTree = SOURCE_ROOT; };
-		E10000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift; sourceTree = SOURCE_ROOT; };
-		E20000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift; sourceTree = SOURCE_ROOT; };
-		E30000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift; sourceTree = SOURCE_ROOT; };
+		C00000000000000000000008 /* Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift; sourceTree = SOURCE_ROOT; };
+		E00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -69,6 +70,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000000000000000000001 /* PiUI in Frameworks */,
+				F00000000000000000000001 /* Flux in Frameworks */,
 				D00000000000000000000001 /* FactoryKit in Frameworks */,
 				A00000000000000000000001 /* PiSDK in Frameworks */,
 			);
@@ -79,6 +81,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000000000000000000004 /* PiUI in Frameworks */,
+				F00000000000000000000004 /* Flux in Frameworks */,
+				D00000000000000000000004 /* FactoryKit in Frameworks */,
 				B00000000000000000000007 /* PiSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -118,9 +122,8 @@
 			isa = PBXGroup;
 			children = (
 				C00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift */,
-				E10000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift */,
-				E20000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift */,
-				E30000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift */,
+				C00000000000000000000008 /* Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift */,
+				E00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -146,6 +149,7 @@
 			name = "pi-studio";
 			packageProductDependencies = (
 				B00000000000000000000003 /* PiUI */,
+				F00000000000000000000003 /* Flux */,
 				A00000000000000000000003 /* PiSDK */,
 				D00000000000000000000003 /* FactoryKit */,
 			);
@@ -171,7 +175,9 @@
 			);
 			name = "pi-studioTests";
 			packageProductDependencies = (
+				D00000000000000000000003 /* FactoryKit */,
 				A00000000000000000000003 /* PiSDK */,
+				F00000000000000000000003 /* Flux */,
 				B00000000000000000000003 /* PiUI */,
 			);
 			productName = "pi-studioTests";
@@ -236,7 +242,8 @@
 			packageReferences = (
 				D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */,
 				B00000000000000000000002 /* XCLocalSwiftPackageReference "Packages/PiUI" */,
-				A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk" */,
+				A00000000000000000000002 /* XCRemoteSwiftPackageReference "pi-sdk-swift" */,
+				F00000000000000000000002 /* XCRemoteSwiftPackageReference "Flux" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 972B0B393087E5CD0068614C /* Products */;
@@ -287,9 +294,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				C00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift in Sources */,
-				E10000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Support/PocketIntegrationDriver.swift in Sources */,
-				E20000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectsControllerTests.swift in Sources */,
-				E30000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Projects/App/ProjectListModelTests.swift in Sources */,
+				C00000000000000000000007 /* Packages/PiUI/Tests/PiUITests/Support/WorkspaceIntegrationDriver.swift in Sources */,
+				E00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -447,6 +453,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=macosx*]" = StudioIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -484,6 +491,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=macosx*]" = StudioIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -642,10 +650,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ".dependencies/pi-sdk";
-		};
 		B00000000000000000000002 /* XCLocalSwiftPackageReference "Packages/PiUI" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/PiUI;
@@ -653,12 +657,28 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		A00000000000000000000002 /* XCRemoteSwiftPackageReference "pi-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ManuelSelch/pi-sdk-swift.git";
+			requirement = {
+				kind = exactVersion;
+				version = 0.1.0;
+			};
+		};
+		F00000000000000000000002 /* XCRemoteSwiftPackageReference "Flux" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ManuelSelch/Flux.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.0.1;
+			};
+		};
 		D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/hmlongco/Factory.git";
 			requirement = {
-				kind = exactVersion;
-				version = 2.5.3;
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.3;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -666,7 +686,7 @@
 /* Begin XCSwiftPackageProductDependency section */
 		A00000000000000000000003 /* PiSDK */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk" */;
+			package = A00000000000000000000002 /* XCRemoteSwiftPackageReference "pi-sdk-swift" */;
 			productName = PiSDK;
 		};
 		B00000000000000000000003 /* PiUI */ = {
@@ -678,6 +698,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */;
 			productName = FactoryKit;
+		};
+		F00000000000000000000003 /* Flux */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F00000000000000000000002 /* XCRemoteSwiftPackageReference "Flux" */;
+			productName = Flux;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

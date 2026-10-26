@@ -1,5 +1,20 @@
 # Pocket slice 1 — Implementation record
 
+## Reconciliation with current main
+
+This is historical evidence for the original controller-based Pocket slice, not
+current architecture or a fresh verification claim. During merge reconciliation,
+main's WorkspaceFeature/WorkspaceMiddleware and separate SessionFeature were
+retained: they already implement catalogue browsing, Quick Chats, explicit
+create/open/attach, local navigation and per-session drafts. Workspace integration
+and browsing UI tests supersede the original Pocket controller tests/drivers.
+Main's endpoint settings, phone session overview, SwiftUI composer, released
+PiSDK/Flux dependencies and per-worktree Simulator isolation are preserved.
+The approved Pocket mockup remains a historical reference; the newer workspace
+layout remains authoritative. No obsolete controllers or duplicate screens were
+restored. Current scope is tracked in [product requirements](../product/REQUIREMENTS.md);
+the delivery and test results below describe the original branch only.
+
 ## Delivered
 
 - Approved compact mockup revision 2; preview stopped and reference preserved.

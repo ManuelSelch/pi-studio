@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Pi Studio Settings</title><link rel="stylesheet" href="./styles.css"></head>
+<body>
+<main class="app">
+<header><h1>Pi Studio</h1><button id="open">Settings</button></header>
+<section class="connection"><strong id="status">Disconnected</strong><button id="connect">Connect</button><p id="endpoint"></p><p>/tmp/pi-studio-demo</p></section>
+<section class="empty">Your demo conversation will appear here.</section>
+<footer><label>Message<textarea disabled placeholder="Connect to start a fresh demo."></textarea></label></footer>
+</main>
+<dialog aria-labelledby="title">
+<form id="form" novalidate>
+<h2 id="title">Settings</h2>
+<label for="url">Pi Server endpoint</label>
+<input id="url" type="text" spellcheck="false" autocomplete="off" aria-describedby="error">
+<p id="error" role="alert" hidden></p>
+<div class="actions"><button id="cancel" type="button">Cancel</button><button class="primary" type="submit">Save</button></div>
+</form></dialog>
+<p class="review">Native sheet approximation · fake data only · no persistence or networking.<br>Try saving an invalid URL, cancelling edits, or saving while connected.</p>
+<script type="module" src="./main.js"></script>
+</body></html>
