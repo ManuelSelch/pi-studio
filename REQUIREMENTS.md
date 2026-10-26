@@ -59,7 +59,7 @@ Prove that a native SwiftUI application can use PiSDK to connect to Pi Server, c
 - A simple native layout is sufficient. Any UI mockup/approval workflow required by the implementation environment occurs before production UI changes, not as extra product scope.
 - The original MVP used a development-only endpoint; the settings follow-on supersedes that restriction. The working directory remains development configuration.
 - Confirmed: UserDefaults is sufficient for this non-secret setting, persisted per app installation without cross-device sync. The service protocol keeps persistence replaceable and mockable.
-- Confirmed: use a small native settings sheet/form opened from the session screen on both macOS and iOS. Detailed layout approval remains part of the UI implementation workflow. Do not add the deferred Router dependency.
+- Confirmed: use a small native settings sheet/form opened from the session screen on both macOS and iOS. Detailed layout approval remains part of the UI implementation workflow. Do not add the deferred Router dependency. (Superseded: the later [Router integration](docs/router-integration/REQUIREMENTS.md) follow-on added released Router 2.0.0.)
 - Explicit test/development configuration overrides remain deterministic; automated tests never inherit personal saved settings.
 
 ## Implementation Plan

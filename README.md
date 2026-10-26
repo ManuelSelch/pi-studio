@@ -61,11 +61,9 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
 - [Containers](Packages/PiUI/Sources/PiUI/Session/SessionContainer.swift) bridge Flux, injected
   dependencies and callbacks to presentation. ObservableObject stores use
   `@InjectedObject`, not `@Injected`, so SwiftUI observes state publications. Future navigation/router wiring
-  belongs here or in the host shell. The selected routing library is
-  [Router](https://github.com/ManuelSelch/Router), but integration is deferred by
-  agreement: version 1.0.10 unconditionally depends on UIKit-only SwiftEntryKit
-  and UIHostingController and cannot build natively for macOS. No substitute
-  router is introduced; settings uses native sheet presentation.
+  belongs here or in the host shell. [Router](https://github.com/ManuelSelch/Router)
+  **2.0.0** drives settings presentation through an app-scoped `ModalRouter`;
+  workspace session tabs and phone navigation remain workspace state.
 - [Components](Packages/PiUI/Sources/PiUI/Session/UI) take plain display values and
   callbacks. The Mac composer uses a vertical SwiftUI TextField, selection/focus bindings
   and SwiftUI keyboard/exit commands, without an AppKit editor/event adapter.
@@ -80,21 +78,13 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
 ## Development wiring
 
 - Verified stable toolchain: **Xcode 26.1.1 (17B100), Swift 6.2.1**.
-- SwiftPM fetches public PiSDK **0.1.0**, Flux **2.0.1**, and FactoryKit automatically.
-  PiUI and the native Xcode project use the same exact SDK/Flux requirements.
-- Router is temporarily a **local package**, using the modernized checkout
-  (verified at `87238d7`), not the older published release. Run
-  `bash scripts/prepare.sh` before opening Xcode or testing. It creates the ignored
-  `.dependencies/router` symlink and resolves PiUI's packages.
-- The default Router path is
-  `~/Documents/A_Personal/50 Coding/52 iOS/52.01 Packages/router-modernized`.
-  Other machines/worktrees can run
-  `PI_ROUTER_PATH="../router-modernized" bash scripts/prepare.sh`.
-  Relative overrides resolve from the caller's directory; preparation fails clearly
-  if the checkout is missing and never replaces a real dependency directory.
-- No local SDK/Flux checkouts are required. Keep both Package.resolved files
-  checked in; local Router is not recorded in them. Preparation leaves unrelated
-  dependency folders untouched.
+- SwiftPM fetches public PiSDK **0.1.0**, Flux **2.0.1**, Router **2.0.0**, and
+  FactoryKit automatically. PiUI and the native Xcode project use the same exact
+  SDK/Flux/Router requirements; no local checkouts are required.
+- Run `bash scripts/prepare.sh` before opening Xcode or testing on a fresh
+  checkout/worktree; it only resolves the released packages.
+- Keep both Package.resolved files checked in; they pin all four released
+  dependencies.
 - AppContainer owns the settings modal scope through Router; workspace session
   tabs and phone navigation remain workspace state. See the
   [integration design](docs/router-integration/DESIGN.md).
@@ -179,13 +169,9 @@ manual dispatch. Three independent GitHub-hosted `macos-26` jobs select Xcode 26
 - **iOS:** native unit tests, native UI tests, then Simulator Release build, serially.
 - **macOS:** native Release build only; native unit/UI automation remains paused.
 
-SwiftPM fetches the same public PiSDK 0.1.0 and Flux 2.0.1 releases used locally.
-FactoryKit keeps its existing version requirement and resolved pin. **Hosted CI
-is currently blocked at preparation by the local-only Router dependency**:
-runners need the modernized checkout supplied through PI_ROUTER_PATH. The current
-workflow does not supply it, and the required local Router commits have not been
-pushed/published. Restore reproducible hosted resolution when Router is made
-available; the older public Router release is not a compatible substitute.
+SwiftPM fetches the same public PiSDK 0.1.0, Flux 2.0.1 and Router 2.0.0 releases
+used locally. FactoryKit keeps its existing version requirement and resolved pin,
+so preparation is fully reproducible on hosted runners.
 No model credentials or development server are needed for the listed checks.
 Each job has isolated temporary build products, bounded execution and failure logs
 retained for seven days; iOS failures also upload available `.xcresult` bundles.

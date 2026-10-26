@@ -6,7 +6,7 @@ let package = Package(
     platforms: [.iOS("26.1"), .macOS(.v26)],
     products: [.library(name: "PiUI", targets: ["PiUI"])],
     dependencies: [
-        .package(path: "../../.dependencies/router"),
+        .package(url: "https://github.com/ManuelSelch/Router.git", exact: "2.0.0"),
         .package(url: "https://github.com/ManuelSelch/pi-sdk-swift.git", exact: "0.1.0"),
         .package(url: "https://github.com/hmlongco/Factory.git", from: "2.5.3"),
         .package(url: "https://github.com/ManuelSelch/Flux.git", exact: "2.0.1"),

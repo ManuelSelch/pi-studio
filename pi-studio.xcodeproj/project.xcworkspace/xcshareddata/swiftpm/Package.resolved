@@ -27,6 +27,15 @@
         "revision" : "f0a1d5c49b2c1e4ba627353689fd8d5946380ec3",
         "version" : "0.1.0"
       }
+    },
+    {
+      "identity" : "router",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ManuelSelch/Router.git",
+      "state" : {
+        "revision" : "87238d7a1fd40659c518b20c099e35100c067023",
+        "version" : "2.0.0"
+      }
     }
   ],
   "version" : 3

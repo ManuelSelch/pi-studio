@@ -1,5 +1,5 @@
 {
-  "originHash" : "211467df823e7e1df12a92e55ca07ff6ac4631f0dd35731fce0be422bad16912",
+  "originHash" : "d7367ed455b0cebd5c634e3ee98cdc40464f970374d0769d88d16947331522f9",
   "pins" : [
     {
       "identity" : "factory",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "f0a1d5c49b2c1e4ba627353689fd8d5946380ec3",
         "version" : "0.1.0"
+      }
+    },
+    {
+      "identity" : "router",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ManuelSelch/Router.git",
+      "state" : {
+        "revision" : "87238d7a1fd40659c518b20c099e35100c067023",
+        "version" : "2.0.0"
       }
     }
   ],

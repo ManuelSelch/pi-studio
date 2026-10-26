@@ -18,6 +18,8 @@
 		E00000000000000000000001 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000002 /* Packages/PiUI/Tests/PiUITests/Settings/SettingsIntegrationTests.swift */; };
 		F00000000000000000000001 /* Flux in Frameworks */ = {isa = PBXBuildFile; productRef = F00000000000000000000003 /* Flux */; };
 		F00000000000000000000004 /* Flux in Frameworks */ = {isa = PBXBuildFile; productRef = F00000000000000000000003 /* Flux */; };
+		G00000000000000000000001 /* Router in Frameworks */ = {isa = PBXBuildFile; productRef = G00000000000000000000003 /* Router */; };
+		G00000000000000000000004 /* Router in Frameworks */ = {isa = PBXBuildFile; productRef = G00000000000000000000003 /* Router */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,6 +73,7 @@
 			files = (
 				B00000000000000000000001 /* PiUI in Frameworks */,
 				F00000000000000000000001 /* Flux in Frameworks */,
+				G00000000000000000000001 /* Router in Frameworks */,
 				D00000000000000000000001 /* FactoryKit in Frameworks */,
 				A00000000000000000000001 /* PiSDK in Frameworks */,
 			);
@@ -82,6 +85,7 @@
 			files = (
 				B00000000000000000000004 /* PiUI in Frameworks */,
 				F00000000000000000000004 /* Flux in Frameworks */,
+				G00000000000000000000004 /* Router in Frameworks */,
 				D00000000000000000000004 /* FactoryKit in Frameworks */,
 				B00000000000000000000007 /* PiSDK in Frameworks */,
 			);
@@ -150,6 +154,7 @@
 			packageProductDependencies = (
 				B00000000000000000000003 /* PiUI */,
 				F00000000000000000000003 /* Flux */,
+				G00000000000000000000003 /* Router */,
 				A00000000000000000000003 /* PiSDK */,
 				D00000000000000000000003 /* FactoryKit */,
 			);
@@ -178,6 +183,7 @@
 				D00000000000000000000003 /* FactoryKit */,
 				A00000000000000000000003 /* PiSDK */,
 				F00000000000000000000003 /* Flux */,
+				G00000000000000000000003 /* Router */,
 				B00000000000000000000003 /* PiUI */,
 			);
 			productName = "pi-studioTests";
@@ -244,6 +250,7 @@
 				B00000000000000000000002 /* XCLocalSwiftPackageReference "Packages/PiUI" */,
 				A00000000000000000000002 /* XCRemoteSwiftPackageReference "pi-sdk-swift" */,
 				F00000000000000000000002 /* XCRemoteSwiftPackageReference "Flux" */,
+				G00000000000000000000002 /* XCRemoteSwiftPackageReference "Router" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 972B0B393087E5CD0068614C /* Products */;
@@ -681,6 +688,14 @@
 				minimumVersion = 2.5.3;
 			};
 		};
+		G00000000000000000000002 /* XCRemoteSwiftPackageReference "Router" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ManuelSelch/Router.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -703,6 +718,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F00000000000000000000002 /* XCRemoteSwiftPackageReference "Flux" */;
 			productName = Flux;
+		};
+		G00000000000000000000003 /* Router */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = G00000000000000000000002 /* XCRemoteSwiftPackageReference "Router" */;
+			productName = Router;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

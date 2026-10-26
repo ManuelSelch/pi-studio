@@ -1,10 +1,11 @@
 # Router Integration — Implementation
 
 ## Delivered
-- **S1:** PiUI consumes the local Router library through ignored `.dependencies/router`.
-  `scripts/prepare.sh` links the modernized checkout (verified at `87238d7`),
-  accepts `PI_ROUTER_PATH`, rejects missing checkouts/non-symlink destinations,
-  and preserves released SDK/Flux requirements and lockfiles.
+- **S1:** PiUI consumes released Router **2.0.0** (exact pin, `87238d7`) alongside the
+  exact PiSDK 0.1.0/Flux 2.0.1 releases. The Xcode project references the same remote
+  Router package and links its product to the app and native unit-test targets.
+  `scripts/prepare.sh` only resolves the released packages (no local checkout, symlink or
+  `PI_ROUTER_PATH`); both lockfiles pin all four dependencies.
 - **S2:** `AppContainer` owns the settings modal router; the app installs it on both platforms.
   WorkspaceContainer exposes a settings callback instead of hosting the sheet.
   Flux retains draft/save/endpoint policy, with guarded, identity-based modal dismissal.
@@ -20,8 +21,8 @@
     `canDismiss` in sync with saving, and holds one in-flight Save token so a duplicate
     Save cannot double-persist and an obsolete completion cannot dismiss a newer flow.
   - `Container.settingsModal` is the single cached modal scope shared by `settingsStore`
-    and `AppContainer`; `SettingsPresentation.isPresented(in:)` keeps Router types out of the
-    shared test support files the native unit target compiles without linking Router.
+    and `AppContainer`. Because the Xcode project now references and links the released
+    Router product, shared test support files inspect the router directly.
   - `AppContainer` only translates native dismissal to editing cleanup
     (`settingsFlowEnded`) and passes modal-derived presentation to `WorkspaceContainer` for
     Stop suppression; it no longer observes settings state to navigate. The workspace never
@@ -29,7 +30,9 @@
   - No navigation-triggering success field or view-observer loop remains.
 - **S4:** Regression verification of the new routing (evidence below). Existing workspace
   session tabs, overview surfaces, navigation and connection lifecycle are unchanged. No
-  Router sources, original library folder or remote repository were modified.
+  Router sources or remote repository were modified.
+- **Released-dependency migration:** the earlier local Router checkout is fully replaced by
+  the public 2.0.0 release, so hosted CI preparation no longer needs an unpublished checkout.
 
 ## Verification
 Run locally with Xcode 26.1.1 / Swift 6.2.1 (pipeline suites):
@@ -46,12 +49,15 @@ Run locally with Xcode 26.1.1 / Swift 6.2.1 (pipeline suites):
 - Native iOS UI: **24 passed**, 0 failures — Cancel, swipe-dismiss/reopen, validation, Save,
   relaunch persistence and active-session preservation still hold with middleware-owned routing.
 - Native macOS and iOS Simulator Release builds: **passed**.
-- `git diff --check`: pending final check. No macOS desktop UI automation was run; native
-  macOS interaction acceptance remains manual.
+- Dependency contract: **4 tests passed** (`scripts/test-released-dependencies.py`) —
+  PiUI declares exact remote Router/PiSDK/Flux with factory-only local `Packages/PiUI`, the
+  Xcode project matches, preparation resolves only released packages, and both lockfiles pin
+  Router 2.0.0.
+- `git diff --check`: passed. No macOS desktop UI automation was run; native macOS
+  interaction acceptance remains manual.
 
-## Local-only dependency limitation
-Run `bash scripts/prepare.sh` before opening Xcode in a fresh checkout/worktree.
-Other machines can set `PI_ROUTER_PATH` to their modernized Router checkout.
-Hosted CI currently cannot complete preparation because its workflow does not supply this
-unpublished checkout. Publishing/pushing Router or provisioning a suitable checkout is
-separate work; do not substitute the incompatible old public release.
+## Released dependency wiring
+Run `bash scripts/prepare.sh` before opening Xcode or testing on a fresh checkout/worktree;
+SwiftPM then fetches Router 2.0.0, PiSDK 0.1.0, Flux 2.0.1 and FactoryKit. Both
+`Package.resolved` files are checked in. No local Router checkout, `.dependencies` link or
+path override is required, so hosted CI preparation is reproducible.

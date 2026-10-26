@@ -1,14 +1,14 @@
 # Router Integration — Requirements
 
 ## Goal
-Use the modernized local Router in Pi Studio/Pocket and move settings presentation out of the workspace without changing the interface. Complete the integration by making Router the sole owner of settings presentation, removing SettingsFeature.isPresented and the two-way synchronization bridge.
+Use released Router **2.0.0** in Pi Studio/Pocket and move settings presentation out of the workspace without changing the interface. Complete the integration by making Router the sole owner of settings presentation, removing SettingsFeature.isPresented and the two-way synchronization bridge.
 
 ## Requirements
-- **R1** — PiUI consumes the Router library from the existing local router-modernized checkout. Do not publish or copy library sources.
+- **R1** — PiUI consumes the released Router 2.0.0 package (`https://github.com/ManuelSelch/Router.git`, exact version) alongside the existing released SDK/Flux pins. Do not copy library sources.
 - **R2** — An app-level container hosts settings with ModalRouter/ModalRouterView on macOS and iOS. Workspace requests settings through a callback.
 - **R3** — Preserve draft reset, validation, persistence, Cancel, successful-save dismissal, interactive dismissal and the saving dismissal guard. Failed saves remain visible; saved endpoints apply only to the next explicit connection.
 - **R4** — Preserve session selection, tabs, drafts, transcript, connection lifecycle and Stop suppression while settings is visible. Do not replace session tabs with TabRouter or introduce unused stacks.
-- **R5** — Preserve existing SDK/Flux release pins. Document local Router preparation and fail clearly if unavailable. Keep external build roots and the macOS automation restriction.
+- **R5** — Preserve existing SDK/Flux release pins and add the Router 2.0.0 exact pin to PiUI and the Xcode project. Preparation only resolves released packages. Keep external build roots and the macOS automation restriction.
 - **R6** — Router alone determines whether settings is presented. Remove SettingsFeature.State.isPresented, synchronizeSettings and the two-way presentation synchronization loop. Do not replace the field with another visibility flag in Flux.
 - **R7** — SettingsFeature owns editing and persistence state only: saved endpoint, draft, validation/error and saving progress. Beginning a new settings flow resets its draft/error; duplicate open requests preserve the current flow and edits. Cancel and interactive dismissal discard unsaved edits without persisting them. Neither can dismiss while saving. Do not add a success-status field solely to trigger navigation from a view observer.
 - **R8** — Middleware directly dismisses the originating settings flow after successful persistence, including when the endpoint is unchanged; failures retain the draft and error in the open flow. Admit at most one save at a time; block editing, repeat Save and dismissal while saving. Duplicate or obsolete work must not dismiss a newer flow or overwrite newer edits. Remove UUID save-request bookkeeping from Flux actions/state; retain any necessary presentation-identity safety inside middleware/Router, not in action payloads.
@@ -18,11 +18,11 @@ Use the modernized local Router in Pi Studio/Pocket and move settings presentati
 
 ## Assumptions
 - First integration covers settings only; session overview surfaces and phone navigation remain unchanged.
-- Use an ignored .dependencies/router link with a PI_ROUTER_PATH override so worktrees need not share the original folder layout.
+- Router is a released remote package, so worktrees and hosted runners no longer need a local checkout or path override.
 
 ## Implementation Plan
-### S1 — Local Router Dependency
-Description: Delivered in e88401b. Add the local dependency, preparation and documentation. Update dependency-contract tests while preserving SDK/Flux pins. Verify resolution and missing-checkout diagnostics.
+### S1 — Router Dependency
+Description: Delivered in e88401b against a local checkout, then replaced by released Router 2.0.0. Add the exact remote dependency to PiUI and the Xcode project, simplify preparation to package resolution, update dependency-contract tests/lockfiles and documentation while preserving SDK/Flux pins. Verify resolution on a fresh checkout and hosted-CI reproducibility.
 
 ### S2 — App-Level Settings Routing
 Description: Delivered in e88401b after S1. Introduce app-level modal composition and replace workspace settings ownership with a callback. Existing implementation retains a temporary Flux/Router synchronization bridge, superseded by S3/S4 below. Verification evidence is in IMPLEMENTATION.md.

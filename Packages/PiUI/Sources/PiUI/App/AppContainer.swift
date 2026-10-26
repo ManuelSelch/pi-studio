@@ -41,12 +41,3 @@ public struct AppContainer: View {
         store.dispatch(.cancelled)
     }
 }
-
-/// Keeps the Router type out of shared test support files that the native unit target compiles
-/// without linking the Router product directly.
-@MainActor
-enum SettingsPresentation {
-    static func isPresented(in scope: Container) -> Bool {
-        scope.settingsModal().presentation?.stack.root == .settings
-    }
-}

@@ -1,7 +1,7 @@
 # Router Integration — Design
 
 ## Overview
-Use local Router for settings presentation in a public AppContainer in PiUI. Router becomes the
+Use released Router 2.0.0 for settings presentation in a public AppContainer in PiUI. Router becomes the
 sole owner of whether settings is presented; `SettingsMiddleware` drives the router and owns the
 saving dismissal guard. Keep the settings Flux feature (editing/persistence only) and
 workspace/session behavior; this is a composition refactor, not a navigation redesign.
@@ -13,8 +13,8 @@ the new routing through integration/UI scenarios.
 ## Components
 | Package/module | Component | Change | Responsibility |
 |---|---|---|---|
-| PiUI | [Package.swift](../../Packages/PiUI/Package.swift) | Changed | Consume local Router through ../../.dependencies/router |
-| Scripts | [prepare.sh](../../scripts/prepare.sh) | Changed | Validate PI_ROUTER_PATH (default: existing modernized checkout), create ignored link, resolve packages |
+| PiUI | [Package.swift](../../Packages/PiUI/Package.swift) | Changed | Consume released Router 2.0.0 (exact) with the other exact SDK/Flux pins |
+| Scripts | [prepare.sh](../../scripts/prepare.sh) | Changed | Resolve the released packages only; no local checkout or path override |
 | PiUI | AppContainer | Changed | Resolve the app-scoped modal router, host workspace/settings, and translate native dismissal to editing cleanup only |
 | PiUI | [WorkspaceContainer](../../Packages/PiUI/Sources/PiUI/Workspace/WorkspaceContainer.swift) | Changed | Receive settings callback and modal-derived presentation; retain workspace/session effects and Stop suppression |
 | PiUI | [SettingsFeature](../../Packages/PiUI/Sources/PiUI/Settings/App/SettingsFeature.swift) | Changed | Own draft, saving progress, validation/error and endpoint only; no visibility flag, no save UUID |
@@ -34,7 +34,7 @@ the new routing through integration/UI scenarios.
 ## Contracts & API changes
 | Provider → consumer | Current → proposed contract | Compatibility |
 |---|---|---|
-| Router → PiUI | No dependency → local Router library | Local checkout required; no RouterDemo |
+| Router → PiUI | No dependency → released Router 2.0.0 | Remote exact pin; no RouterDemo |
 | App → PiUI | WorkspaceContainer() → AppContainer() | Entry changes; lifecycle semantics unchanged |
 | AppContainer → WorkspaceContainer | Workspace owns opening → required onOpenSettings callback plus modal-derived presentation | Screen actions unchanged |
 | Settings Flux → presentation | Boolean drives sheet → middleware drives app-scoped ModalRouter | SettingsFeature no longer owns presentation or save UUIDs |
@@ -49,11 +49,11 @@ the new routing through integration/UI scenarios.
 - A real new flow resets draft/error; duplicate opens preserve both. The middleware distinguishes
   them by whether the scope is already presenting .settings.
 - Do not introduce StackRouter/TabRouter without a present need or change overview surfaces.
-- Local preparation intentionally replaces the all-remote guarantee for Router only. Preserve SDK/Flux pins; update dependency/preparation tests and setup guidance.
+- Router is a released remote package like SDK/Flux, so the project is fully reproducible on fresh checkouts and hosted runners. Preserve the exact pins and update dependency/preparation tests, lockfiles and setup guidance.
 - Approved settings layout is unchanged; no mockup iteration is needed.
 
 ## Verification
-- Script tests cover valid/missing Router paths and retained release pins; resolve PiUI/Xcode dependencies.
+- Script tests cover the exact released Router/SDK/Flux requirements in both manifests and lockfiles, plus preparation resolving only the released packages.
 - Middleware/reducer tests cover duplicate admission, failure/retry, unchanged-endpoint success,
   guarded dismissal and presentation-identity safety; an app-routing test covers native dismissal
   cleanup.

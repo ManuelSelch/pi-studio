@@ -2,6 +2,7 @@ import FactoryKit
 import Flux
 import Foundation
 import PiSDK
+import Router
 import Synchronization
 import Testing
 @testable import PiUI
@@ -73,6 +74,7 @@ fileprivate final class WorkspaceContext {
     var workspace: FluxStore<WorkspaceFeature> { container.workspaceStore() }
     var session: FluxStore<SessionFeature> { container.sessionStore() }
     var settings: FluxStore<SettingsFeature> { container.settingsStore() }
+    var settingsModal: ModalRouter<AppRoute> { container.settingsModal() }
 
     func dispose() async {
         workspace.dispatch(.disconnectRequested())
@@ -375,7 +377,7 @@ final class WorkspaceSettingsDriver {
     func open(sourceLocation: SourceLocation = #_sourceLocation) async throws {
         context.settings.dispatch(.opened)
         try await context.wait("settings presentation", sourceLocation: sourceLocation) {
-            SettingsPresentation.isPresented(in: self.context.container)
+            self.context.settingsModal.presentation?.stack.root == .settings
         }
     }
     func enterEndpoint(_ value: String) { context.settings.dispatch(.draftChanged(value)) }
@@ -383,7 +385,7 @@ final class WorkspaceSettingsDriver {
     func cancel() { context.settings.dispatch(.cancelled) }
     func shouldBePresented(_ presented: Bool, sourceLocation: SourceLocation = #_sourceLocation) async throws {
         try await context.wait("settings presentation == \(presented)", sourceLocation: sourceLocation) {
-            SettingsPresentation.isPresented(in: self.context.container) == presented
+            (self.context.settingsModal.presentation != nil) == presented
         }
     }
     func shouldShowError(containing text: String, sourceLocation: SourceLocation = #_sourceLocation) {
