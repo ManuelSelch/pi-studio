@@ -20,7 +20,7 @@ struct SettingsFeatureTests {
         store.dispatch(.flowStarted) { $0.draft = "ws://original/ws"; $0.error = nil }
         store.dispatch(.draftChanged("invalid")) { $0.draft = "invalid"; $0.error = nil }
         store.dispatch(.saveFailed("Invalid URL")) { $0.isSaving = false; $0.error = "Invalid URL" }
-        store.dispatch(.cancelled) { _ in }
+        store.dispatch(.cancelTapped) { _ in }
         store.dispatch(.opened) { _ in }
         store.dispatch(.flowStarted) { $0.draft = "ws://original/ws"; $0.error = nil }
         store.dispatch(.draftChanged("wss://new/ws")) { $0.draft = "wss://new/ws"; $0.error = nil }
