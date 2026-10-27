@@ -44,8 +44,19 @@ jobs:
         run: python3 scripts/test-simulator-isolation.py 2>&1 | tee .build/ci-logs/simulator-isolation.log
       - name: Loopback launcher checks
         run: python3 scripts/test-loopback-launcher.py 2>&1 | tee .build/ci-logs/loopback-launcher.log
-      - name: PiUI tests
+      - name: Coverage converter checks
+        run: python3 scripts/test-sonar-coverage.py 2>&1 | tee .build/ci-logs/sonar-coverage.log
+      - name: PiUI tests with coverage
+        env:
+          PI_STUDIO_COVERAGE: '1'
         run: bash scripts/test-package.sh 2>&1 | tee .build/ci-logs/piui.log
+      - name: Upload Sonar coverage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sonar-coverage
+          path: .build/coverage/sonar.xml
+          retention-days: 7
+          if-no-files-found: error
       - name: Upload failure logs
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -86,6 +97,43 @@ jobs:
             ${{ env.PI_STUDIO_BUILD_ROOT }}/xcode-ios/Logs/Test/
           retention-days: 7
           if-no-files-found: warn
+
+  sonar:
+    name: SonarCloud analysis and quality gate
+    needs: [package, ios, macos]
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate Sonar configuration
+        run: |
+          for name in SONAR_ORGANIZATION SONAR_PROJECT_KEY SONAR_TOKEN; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Configure $name in repository Actions settings; see docs/sonar/setup.md."
+              exit 1
+            fi
+          done
+      - name: Download coverage
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: sonar-coverage
+          path: .build/coverage
+      - name: SonarCloud scan
+        uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9 # v7.0.0
+        with:
+          args: >-
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
 
   macos:
     name: macOS Release build
