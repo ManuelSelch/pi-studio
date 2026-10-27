@@ -1,7 +1,7 @@
 # Rich transcript — Mockup
 
 - **Revision:** 1
-- **Review:** In review; not approved.
+- **Review:** Approved for the revision 1 scope.
 - **Scope:** Product [S9](../../docs/product/REQUIREMENTS.md): R32/R33 plus native appearance and responsive rendering foundations R61/R73. Prioritize a usable single session; S10 tool cards/file actions remain separate.
 - **Approach:** Preserve the compact workspace, tabs and composer. Render assistant Markdown in the existing conversation rather than adding another surface. User text stays literal.
 - **Presentation:** Headings, ordered/task lists, tables, links, highlighted code with Copy, blockquotes and centered display math. Code and tables scroll horizontally on narrow screens. Thinking is collapsible, initially expanded when active and initially collapsed for completed content. A user can collapse active thinking. Extension notices stay in transcript order and are visually distinct from assistant prose.
@@ -10,4 +10,4 @@
 - **Simulation limits:** React/Mantine browser approximation, not native acceptance. Markdown examples are hand-rendered fixtures, not a parser; math is a typographic placeholder, not LaTeX. Replay advances fixed chunks, not real token streaming. No SDK/server, external requests or persistence. Example link intentionally does not navigate. No tool cards, file actions or actual reconnect.
 - **Implementation constraints:** SwiftUI-first; ask before introducing AppKit. SDK owns structured message projection. Retain literal content for unsupported/malformed rich content. No raw active HTML or automatic remote image loads. Avoid reparsing unchanged historical blocks on stream/catalogue updates. Native parser/highlighting/math dependency decisions belong to the technical design after mockup review.
 - **Review questions:** Are the reading density, code/table presentation, quiet thinking disclosure and inline notice treatment appropriate on both Mac and Phone?
-- **Approval evidence:** None.
+- **Approval evidence:** User: “yes approved. now create the design doc”. Revision 1 source preserved; agent-owned preview stopped and process/listener shutdown verified. Technical design still requires separate approval before production changes.
