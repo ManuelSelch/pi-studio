@@ -4,7 +4,7 @@
 
 **Evaluate LiYanan2004/MarkdownView 3.0.0 first, with Textual 0.5.0 as the alternative.** MarkdownView combines an explicit incremental/background streaming pipeline with an extensible SwiftUI renderer. Unlike Rill, it offers a public code-block style protocol, so removing Copy does not require replacing recursive block rendering.
 
-This is a source/documentation assessment, **not a build, performance benchmark or adoption decision**. The existing DESIGN.md still proposes Rill; changing that choice requires revising and approving the design. No application dependency was changed.
+This is a source/documentation assessment, **not a build or performance benchmark**. After this research, the user selected MarkdownView and DESIGN.md was revised accordingly; technical-design approval remains required before implementation. No application dependency has been changed.
 
 ## Comparison
 
