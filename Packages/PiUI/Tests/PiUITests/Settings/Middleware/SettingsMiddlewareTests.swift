@@ -50,7 +50,7 @@ struct SettingsMiddlewareTests {
         #expect(makeScope(service).settingsStore().state.savedEndpoint == store.state.savedEndpoint)
     }
 
-    @Test func invalidInputDoesNotSaveAndCancelDiscardsDraft() async throws {
+    @Test func cancelPreservesEditingStateUntilReopening() async throws {
         let service = MemoryEndpointSettings()
         let scope = makeScope(service)
         let store = scope.settingsStore()
@@ -64,10 +64,36 @@ struct SettingsMiddlewareTests {
         #expect(service.value == nil)
         store.dispatch(.cancelled)
         try await waitUntil { modal.presentation == nil }
+        #expect(store.state.draft == "http://example.com")
+        #expect(store.state.error != nil)
+        #expect(service.value == nil)
         store.dispatch(.opened)
-        try await waitUntil { modal.presentation != nil }
+        try await waitUntil { modal.presentation != nil && store.state.error == nil }
         #expect(store.state.draft == store.state.savedEndpoint)
         #expect(store.state.error == nil)
+    }
+
+    @Test func nativeDismissalNeedsNoCleanupBeforeReopening() async throws {
+        let service = MemoryEndpointSettings()
+        let scope = makeScope(service)
+        let store = scope.settingsStore()
+        let modal = scope.settingsModal()
+        store.dispatch(.opened)
+        try await waitUntil { modal.presentation != nil }
+        store.dispatch(.draftChanged("invalid"))
+        store.dispatch(.saveTapped)
+        try await waitUntil { store.state.error != nil && modal.presentation?.canDismiss == true }
+
+        let flow = try #require(modal.presentation)
+        #expect(modal.dismiss(id: flow.id))
+        #expect(store.state.draft == "invalid")
+        #expect(store.state.error != nil)
+        #expect(service.value == nil)
+
+        store.dispatch(.opened)
+        try await waitUntil { modal.presentation != nil && store.state.error == nil }
+        #expect(modal.presentation?.id != flow.id)
+        #expect(store.state.draft == store.state.savedEndpoint)
     }
 
     @Test func saveFailureRetainsDraftAndEffectiveEndpointForRetry() async throws {

@@ -23,10 +23,10 @@
   - `Container.settingsModal` is the single cached modal scope shared by `settingsStore`
     and `AppContainer`. Because the Xcode project now references and links the released
     Router product, shared test support files inspect the router directly.
-  - `AppContainer` only translates native dismissal to editing cleanup
-    (`settingsFlowEnded`) and passes modal-derived presentation to `WorkspaceContainer` for
-    Stop suppression; it no longer observes settings state to navigate. The workspace never
-    inspects `SettingsFeature` for visibility.
+  - `AppContainer` passes modal-derived presentation to `WorkspaceContainer` for Stop
+    suppression without observing dismissal or settings outcomes. The workspace never inspects
+    `SettingsFeature` for visibility. Cancel and native dismissal leave draft/error unchanged;
+    `.flowStarted` resets them when Settings opens again.
   - No navigation-triggering success field or view-observer loop remains.
 - **S4:** Regression verification of the new routing (evidence below). Existing workspace
   session tabs, overview surfaces, navigation and connection lifecycle are unchanged. No
@@ -34,7 +34,17 @@
 - **Released-dependency migration:** the earlier local Router checkout is fully replaced by
   the public 2.0.0 release, so hosted CI preparation no longer needs an unpublished checkout.
 
+## Dismissal simplification
+- Removed `settingsFlowEnded`, the native-dismissal observer and their obsolete helper tests.
+- `.cancelled` only requests middleware dismissal; reopening resets draft/error through `.flowStarted`.
+- Reducer/middleware regressions cover retained closed-state edits/errors, Cancel/reopen and
+  direct router dismissal/reopen without a cleanup callback.
+- Verified after simplification: PiUI **93 tests in 20 suites passed**; native iOS
+  unit/integration suite passed; `git diff --check` passed. Native UI tests were not rerun.
+
 ## Verification
+Historical routing verification before the dismissal simplification:
+
 Run locally with Xcode 26.1.1 / Swift 6.2.1 (pipeline suites):
 - PiUI: **94 tests in 21 suites passed**. New/updated coverage:
   `SettingsMiddlewareTests` (presentation, duplicate open, trimmed save + dismissal, invalid

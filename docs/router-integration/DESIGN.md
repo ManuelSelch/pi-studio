@@ -6,6 +6,9 @@ sole owner of whether settings is presented; `SettingsMiddleware` drives the rou
 saving dismissal guard. Keep the settings Flux feature (editing/persistence only) and
 workspace/session behavior; this is a composition refactor, not a navigation redesign.
 
+Follow-up simplification: remove `settingsFlowEnded` and the native-dismissal observer.
+Reset draft/error only when `.flowStarted` begins a new settings flow, not when it closes.
+
 S3 supersedes the earlier S2 synchronization bridge: `SettingsFeature.isPresented`, the UUID
 save-request bookkeeping and `synchronizeSettings` are removed rather than extended. S4 verifies
 the new routing through integration/UI scenarios.
@@ -15,7 +18,7 @@ the new routing through integration/UI scenarios.
 |---|---|---|---|
 | PiUI | [Package.swift](../../Packages/PiUI/Package.swift) | Changed | Consume released Router 2.0.0 (exact) with the other exact SDK/Flux pins |
 | Scripts | [prepare.sh](../../scripts/prepare.sh) | Changed | Resolve the released packages only; no local checkout or path override |
-| PiUI | AppContainer | Changed | Resolve the app-scoped modal router, host workspace/settings, and translate native dismissal to editing cleanup only |
+| PiUI | AppContainer | Changed | Resolve the app-scoped modal router and host workspace/settings; no dismissal observer |
 | PiUI | [WorkspaceContainer](../../Packages/PiUI/Sources/PiUI/Workspace/WorkspaceContainer.swift) | Changed | Receive settings callback and modal-derived presentation; retain workspace/session effects and Stop suppression |
 | PiUI | [SettingsFeature](../../Packages/PiUI/Sources/PiUI/Settings/App/SettingsFeature.swift) | Changed | Own draft, saving progress, validation/error and endpoint only; no visibility flag, no save UUID |
 | PiUI | [SettingsMiddleware](../../Packages/PiUI/Sources/PiUI/Settings/Middleware/SettingsMiddleware.swift) | Changed | Present/dismiss through the injected router, admit at most one save, manage the dismissal guard |
@@ -28,8 +31,9 @@ the new routing through integration/UI scenarios.
    the saving state and admits at most one save at a time.
 3. Cancel dismisses the current flow by identity; a successful save dismisses the originating flow
    after persisting (including unchanged endpoints); failures leave it open with the draft.
-4. Native (swipe/interactive) dismissal clears the router presentation and signals editing cleanup
-   only (dispatch .cancelled). It never re-creates a two-way visibility loop; saving blocks it.
+4. Native (swipe/interactive) dismissal only clears the router presentation; saving blocks it.
+   Cancel requests dismissal through middleware without changing draft/error. The next admitted
+   flow dispatches `.flowStarted` to reset draft/error; duplicate opens still preserve them.
 
 ## Contracts & API changes
 | Provider → consumer | Current → proposed contract | Compatibility |
@@ -38,6 +42,7 @@ the new routing through integration/UI scenarios.
 | App → PiUI | WorkspaceContainer() → AppContainer() | Entry changes; lifecycle semantics unchanged |
 | AppContainer → WorkspaceContainer | Workspace owns opening → required onOpenSettings callback plus modal-derived presentation | Screen actions unchanged |
 | Settings Flux → presentation | Boolean drives sheet → middleware drives app-scoped ModalRouter | SettingsFeature no longer owns presentation or save UUIDs |
+| Dismissal → SettingsFeature | Immediate draft/error cleanup → reset only on `.flowStarted` | `.cancelled` remains a dismissal request; public action signatures unchanged |
 
 ## Decisions & Trade-offs
 - Router alone owns presentation identity; Flux keeps only editing/persistence state. Middleware is
@@ -48,6 +53,9 @@ the new routing through integration/UI scenarios.
   completion cannot dismiss a newer flow.
 - A real new flow resets draft/error; duplicate opens preserve both. The middleware distinguishes
   them by whether the scope is already presenting .settings.
+- Closed settings may retain stale draft/error in memory until reopening. They are invisible and
+  never persisted by dismissal, so immediate cleanup and its observer are unnecessary. Keep
+  existing middleware flow-identity and save-guard handling; no Router changes or dependencies.
 - Do not introduce StackRouter/TabRouter without a present need or change overview surfaces.
 - Router is a released remote package like SDK/Flux, so the project is fully reproducible on fresh checkouts and hosted runners. Preserve the exact pins and update dependency/preparation tests, lockfiles and setup guidance.
 - Approved settings layout is unchanged; no mockup iteration is needed.
@@ -55,8 +63,9 @@ the new routing through integration/UI scenarios.
 ## Verification
 - Script tests cover the exact released Router/SDK/Flux requirements in both manifests and lockfiles, plus preparation resolving only the released packages.
 - Middleware/reducer tests cover duplicate admission, failure/retry, unchanged-endpoint success,
-  guarded dismissal and presentation-identity safety; an app-routing test covers native dismissal
-  cleanup.
+  guarded dismissal and presentation-identity safety. Replace obsolete `settingsFlowEnded`
+  tests with coverage that Cancel preserves editing state and reopening resets draft/error;
+  also cover native router dismissal followed by reopening without a cleanup callback.
 - Semantic integration and native iOS UI scenarios cover Cancel, swipe-dismiss/reopen, duplicate
   opens, successful saves and active-session preservation, plus next-connection endpoint semantics.
 - Run PiUI tests, iOS unit/settings UI checks and macOS/iOS Release builds. Workspace regressions

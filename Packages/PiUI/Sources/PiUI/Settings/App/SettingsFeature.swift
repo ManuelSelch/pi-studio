@@ -20,7 +20,7 @@ public struct SettingsFeature: Feature {
         case opened
         /// A new flow was actually admitted by the middleware; only then are draft and error reset.
         case flowStarted
-        /// Cancel and native dismissal discard unsaved edits without persisting them.
+        /// Request dismissal without persisting edits; the next flow resets draft/error.
         case cancelled
         case draftChanged(String)
 
@@ -42,9 +42,8 @@ public struct SettingsFeature: Feature {
             state.draft = state.savedEndpoint
             state.error = nil
         case .cancelled:
-            guard !state.isSaving else { return }
-            state.draft = state.savedEndpoint
-            state.error = nil
+            // Dismissal is middleware-owned; editing state resets on the next .flowStarted.
+            break
         case .draftChanged(let value):
             guard !state.isSaving else { return }
             state.draft = value
