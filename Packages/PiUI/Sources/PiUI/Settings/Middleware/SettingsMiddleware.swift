@@ -25,7 +25,7 @@ final class SettingsMiddleware: Middleware {
         switch action {
         case .opened:
             return presentIfNeeded()
-        case .cancelled:
+        case .cancelTapped:
             saveInFlight = false
             syncCanDismiss(false)
             dismissPresentedFlow()

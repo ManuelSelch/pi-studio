@@ -20,8 +20,8 @@ public struct SettingsFeature: Feature {
         case opened
         /// A new flow was actually admitted by the middleware; only then are draft and error reset.
         case flowStarted
-        /// Request dismissal without persisting edits; the next flow resets draft/error.
-        case cancelled
+
+        case cancelTapped
         case draftChanged(String)
 
         case saveTapped
@@ -35,15 +35,9 @@ public struct SettingsFeature: Feature {
 
     @MainActor public func reduce(_ state: inout State, _ action: Action) {
         switch action {
-        case .opened:
-            // Presentation is router-owned; the middleware dispatches .flowStarted for a new flow.
-            break
         case .flowStarted:
             state.draft = state.savedEndpoint
             state.error = nil
-        case .cancelled:
-            // Dismissal is middleware-owned; editing state resets on the next .flowStarted.
-            break
         case .draftChanged(let value):
             guard !state.isSaving else { return }
             state.draft = value
@@ -62,6 +56,8 @@ public struct SettingsFeature: Feature {
             state.draft = endpoint
             state.isSaving = false
             state.error = nil
+        default:
+            break
         }
     }
 }

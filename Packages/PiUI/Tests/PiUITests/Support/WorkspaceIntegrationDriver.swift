@@ -382,7 +382,7 @@ final class WorkspaceSettingsDriver {
     }
     func enterEndpoint(_ value: String) { context.settings.dispatch(.draftChanged(value)) }
     func save() { context.settings.dispatch(.saveTapped) }
-    func cancel() { context.settings.dispatch(.cancelled) }
+    func cancel() { context.settings.dispatch(.cancelTapped) }
     func shouldBePresented(_ presented: Bool, sourceLocation: SourceLocation = #_sourceLocation) async throws {
         try await context.wait("settings presentation == \(presented)", sourceLocation: sourceLocation) {
             (self.context.settingsModal.presentation != nil) == presented

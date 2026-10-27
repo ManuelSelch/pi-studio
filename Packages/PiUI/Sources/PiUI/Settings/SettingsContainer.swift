@@ -13,7 +13,7 @@ struct SettingsContainer: View {
                        
             onEndpointChanged: { store.dispatch(.draftChanged($0)) },
             onSave: { store.dispatch(.saveTapped) },
-            onCancel: { store.dispatch(.cancelled) }
+            onCancel: { store.dispatch(.cancelTapped) }
         )
         #if os(iOS)
         .presentationDetents([.height(300)])
