@@ -12,6 +12,14 @@ opens on launch. The approved layouts are preserved in
 [mockups/session](mockups/session/DESIGN.md), [mockups/settings](mockups/settings/DESIGN.md)
 and [mockups/multiline-composer](mockups/multiline-composer/DESIGN.md).
 
+## Documentation layout
+
+- [Current-system documentation](docs/README.md): maintained guides for the system as implemented.
+- [Plans](plans/README.md): requirements, backlog, designs, research and implementation/verification records; not current-system authority.
+- [Mockups](mockups/): preserved UI prototypes and their approval records.
+
+Keep temporary requirements and design files in `plans/`, not `docs/` or the repository root.
+
 ## App icons
 
 Both platforms use Pi Chat's black π on white (`public/apple-touch-icon.png`
@@ -87,7 +95,7 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   dependencies.
 - AppContainer owns the settings modal scope through Router; workspace session
   tabs and phone navigation remain workspace state. See the
-  [integration design](docs/router-integration/DESIGN.md).
+  [integration design](plans/router-integration/DESIGN.md).
 
 [SessionConfiguration](Packages/PiUI/Sources/PiUI/Session/App/SessionConfiguration.swift)
 defaults to `ws://127.0.0.1:8787/ws` and the dedicated **server-side** directory
@@ -240,7 +248,7 @@ separate derived-data directories alone do not isolate Simulator installations.
   connections are never selected by normal app launches; tests use public SDK
   projections, not a second wire protocol.
 - For current verification and outstanding native macOS/IME/physical-keyboard
-  checks, see [implementation status](docs/multiline-composer/IMPLEMENTATION.md).
+  checks, see [implementation status](plans/multiline-composer/IMPLEMENTATION.md).
   Off-screen checks are not full desktop, real-IME or physical-keyboard acceptance.
 
 ### Semantic test DSL

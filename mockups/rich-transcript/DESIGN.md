@@ -2,7 +2,7 @@
 
 - **Revision:** 1
 - **Review:** Approved for the revision 1 scope.
-- **Scope:** Product [S9](../../docs/product/REQUIREMENTS.md): R32/R33 plus native appearance and responsive rendering foundations R61/R73. Prioritize a usable single session; S10 tool cards/file actions remain separate.
+- **Scope:** Product [S9](../../plans/product/REQUIREMENTS.md): R32/R33 plus native appearance and responsive rendering foundations R61/R73. Prioritize a usable single session; S10 tool cards/file actions remain separate.
 - **Approach:** Preserve the compact workspace, tabs and composer. Render assistant Markdown in the existing conversation rather than adding another surface. User text stays literal.
 - **Presentation:** Headings, ordered/task lists, tables, links, highlighted code with Copy, blockquotes and centered display math. Code and tables scroll horizontally on narrow screens. Thinking is collapsible, initially expanded when active and initially collapsed for completed content. A user can collapse active thinking. Extension notices stay in transcript order and are visually distinct from assistant prose.
 - **Interactions:** State selector, timed Replay (thinking → streaming → complete), thinking disclosure, Copy code, Latest after scrolling away, light/dark and Mac/Phone layouts. Stop interrupts the simulation; Send, settings and project navigation are intentionally nonfunctional.

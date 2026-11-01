@@ -200,5 +200,5 @@ arrive with slice 4, and there is no launch persistence yet.
   against another worktree's installed app; the same script fixes that class of failure.
 - Reconciliation: `feat/pocket` also contains this browsing feature built on the older
   controller baseline. Only its grouping/model and UI-fixture knowledge were reused;
-  `docs/pi-pocket/REQUIREMENTS.md` slice 2 (foreground recovery) and slice 3 (steering,
+  `plans/pi-pocket/REQUIREMENTS.md` slice 2 (foreground recovery) and slice 3 (steering,
   structured questions) remain unmerged and unstarted here.

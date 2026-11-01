@@ -3,7 +3,7 @@
 ## Goal
 Deliver native macOS **Pi Studio** and iOS **Pi Pocket** with all previously planned native capabilities and functional parity with the current Pi Chat. Share capabilities, not identical layouts; keep Pi Chat usable during migration.
 
-This is the consolidated product backlog. It expands earlier MVP/Pocket exclusions, without rewriting their historical records or authorizing implementation. Detailed sources: [MVP/settings](../../REQUIREMENTS.md), [workspace](../multi-session/REQUIREMENTS.md), [delivery evidence](../multi-session/IMPLEMENTATION.md), [composer](../multiline-composer/REQUIREMENTS.md), and `feat/pocket:docs/pi-pocket/REQUIREMENTS.md`. Pi Chat baseline: local `main` at `4dc0d03`, usage/configuration documentation and current frontend source; native baseline: `f7b8ee6`.
+This is the consolidated product backlog. It expands earlier MVP/Pocket exclusions, without rewriting their historical records or authorizing implementation. Detailed sources: [MVP/settings](../mvp/REQUIREMENTS.md), [workspace](../multi-session/REQUIREMENTS.md), [delivery evidence](../multi-session/IMPLEMENTATION.md), [composer](../multiline-composer/REQUIREMENTS.md), and [Pocket](../pi-pocket/REQUIREMENTS.md). Pi Chat baseline: local `main` at `4dc0d03`, usage/configuration documentation and current frontend source; native baseline: `f7b8ee6`.
 
 ## Requirements
 

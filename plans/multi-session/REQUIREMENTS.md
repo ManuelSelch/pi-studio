@@ -3,7 +3,7 @@
 ## Goal
 Implement the approved revision 4 layout as native SwiftUI on Mac and iPhone: compact project/history navigation, application-managed open sessions, and clear independent agent activity. This document plans implementation only. The user approved the layout with “looks good. Start planning the swiftui layout and components for this”; production implementation is not yet authorized.
 
-Preserve the original MVP/settings plan in the root REQUIREMENTS.md and the Pocket follow-on plan on feat/pocket. This separate feature plan avoids overwriting concurrent middleware-refactor work in the current checkout. Visual reference: [approved mockup](../../mockups/multi-session/DESIGN.md).
+Preserve the original MVP/settings plan in [MVP requirements](../mvp/REQUIREMENTS.md) and the Pocket follow-on plan on feat/pocket. This separate feature plan avoids overwriting concurrent middleware-refactor work in the current checkout. Visual reference: [approved mockup](../../mockups/multi-session/DESIGN.md).
 
 ## Scope
 ### In Scope

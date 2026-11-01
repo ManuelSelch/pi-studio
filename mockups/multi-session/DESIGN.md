@@ -38,4 +38,4 @@ Default is populated, with two running sessions (one without an open tab) and on
 
 ## Approval
 
-Revision 4 layout approved by the user: “looks good. Start planning the swiftui layout and components for this”. This approves the reviewed visual direction and authorizes planning only, not production implementation. Mockup files are preserved. Native planning lives in ../../docs/multi-session/REQUIREMENTS.md; production source and app dependencies are untouched by this design work.
+Revision 4 layout approved by the user: “looks good. Start planning the swiftui layout and components for this”. This approves the reviewed visual direction and authorizes planning only, not production implementation. Mockup files are preserved. Native planning lives in ../../plans/multi-session/REQUIREMENTS.md; production source and app dependencies are untouched by this design work.
