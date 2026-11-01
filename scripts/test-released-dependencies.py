@@ -8,7 +8,8 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parent.parent
-EXPECTED = {"pi-sdk-swift": "0.1.0", "flux": "2.0.1", "router": "2.0.0"}
+EXPECTED = {"flux": "2.0.1", "router": "2.0.0"}
+LOCAL_SDK_PATH = "../../.dependencies/pi-sdk-swift"
 
 
 class ReleasedDependencyTests(unittest.TestCase):
@@ -17,7 +18,8 @@ class ReleasedDependencyTests(unittest.TestCase):
                                  "dump-package"], check=True, text=True, capture_output=True)
         dependencies = json.loads(result.stdout)["dependencies"]
         local = [dependency["fileSystem"][0] for dependency in dependencies if "fileSystem" in dependency]
-        self.assertEqual(local, [])
+        self.assertEqual([dependency["identity"] for dependency in local], ["pi-sdk-swift"])
+        self.assertEqual(Path(local[0]["path"]).resolve(), (ROOT / "Packages/PiUI" / LOCAL_SDK_PATH).resolve())
         packages = {dependency["sourceControl"][0]["identity"]: dependency["sourceControl"][0]
                     for dependency in dependencies if "sourceControl" in dependency}
         for identity, version in EXPECTED.items():
@@ -34,11 +36,14 @@ class ReleasedDependencyTests(unittest.TestCase):
         for identity, version in EXPECTED.items():
             self.assertEqual(packages[identity]["requirement"], {"kind": "exactVersion", "version": version})
         local = [item["relativePath"] for item in objects if item["isa"] == "XCLocalSwiftPackageReference"]
-        self.assertEqual(local, ["Packages/PiUI"])
+        self.assertEqual(set(local), {"Packages/PiUI", ".dependencies/pi-sdk-swift"})
 
-    def test_prepare_only_resolves_released_packages(self):
+    def test_prepare_links_local_sdk_and_resolves_remote_packages(self):
         with tempfile.TemporaryDirectory(prefix="pi-prepare-") as directory:
             root = Path(directory).resolve()
+            sdk = root / "sdk"
+            sdk.mkdir()
+            (sdk / "Package.swift").write_text("// fixture")
             (root / "scripts").mkdir()
             (root / "bin").mkdir()
             for script in ("prepare.sh", "build-paths.sh"):
@@ -49,9 +54,10 @@ class ReleasedDependencyTests(unittest.TestCase):
             result = subprocess.run(["bash", "scripts/prepare.sh"], cwd=root, text=True, capture_output=True,
                                     env={**os.environ, "PATH": str(root / "bin") + ":" + os.environ["PATH"],
                                          "PI_STUDIO_BUILD_ROOT": str(root / "products"),
+                                         "PI_SDK_SWIFT_PATH": str(sdk),
                                          "TEST_SWIFT_ARGS": str(root / "args")})
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertFalse((root / ".dependencies").exists())
+            self.assertEqual((root / ".dependencies/pi-sdk-swift").resolve(), sdk)
             self.assertEqual((root / "args").read_text().splitlines(),
                              ["package", "--package-path", str(root / "Packages/PiUI"),
                               "--scratch-path", str(root / "products/swiftpm"), "resolve"])
@@ -63,6 +69,7 @@ class ReleasedDependencyTests(unittest.TestCase):
                 pins = {pin["identity"]: pin for pin in json.loads((ROOT / path).read_text())["pins"]}
                 for identity, version in EXPECTED.items():
                     self.assertEqual(pins[identity]["state"]["version"], version)
+                self.assertNotIn("pi-sdk-swift", pins)
 
 
 if __name__ == "__main__":
