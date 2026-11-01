@@ -15,15 +15,16 @@ actor UITestConnection: PiSessionConnection {
     private let unknownSend: Bool
     private let rejectOpen: Bool
     private let delayedAdmission: Bool
+    private var failNextConnect: Bool
     private var stateObservers: [UUID: AsyncStream<PiConnectionState>.Continuation] = [:]
     private var projectionObservers: [UUID: AsyncStream<DemoSessionProjection>.Continuation] = [:]
     private var catalogueObservers: [UUID: AsyncStream<PiCatalogue>.Continuation] = [:]
     private var runtimes: [PiRuntimeSummary] = [.init(sessionId: "ui-running", title: "Pocket navigation", projectPath: "/repo", projectName: "pi-studio", status: "running")]
 
     init(rejectSend: Bool = false, unknownSend: Bool = false, rejectOpen: Bool = false,
-         delayedAdmission: Bool = false) {
+         delayedAdmission: Bool = false, failFirstConnection: Bool = false) {
         self.rejectSend = rejectSend; self.unknownSend = unknownSend; self.rejectOpen = rejectOpen
-        self.delayedAdmission = delayedAdmission
+        self.delayedAdmission = delayedAdmission; self.failNextConnect = failFirstConnection
     }
     func states() async -> AsyncStream<PiConnectionState> {
         let id = UUID(); let (stream, updates) = AsyncStream<PiConnectionState>.makeStream(bufferingPolicy: .bufferingNewest(1))
@@ -64,7 +65,12 @@ actor UITestConnection: PiSessionConnection {
     }
     func connect(takingControl: Bool) async throws {
         try await Task.sleep(for: .milliseconds(100))
-        guard !closed, takingControl else { throw PiError.disconnected }
+        closed = false
+        guard takingControl else { throw PiError.disconnected }
+        if failNextConnect {
+            failNextConnect = false
+            throw PiError.disconnected
+        }
         publishState(.connected)
         Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(150))

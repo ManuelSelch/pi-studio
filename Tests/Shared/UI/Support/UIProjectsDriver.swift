@@ -5,24 +5,28 @@ import XCTest
     private let app: XCUIApplication
     init(_ app: XCUIApplication) { self.app = app }
     func connect(file: StaticString = #filePath, line: UInt = #line) {
-        app.buttons["connectButton"].tap()
-        let consent = confirmation.buttons["Connect and take control"]
-        XCTAssertTrue(consent.waitForExistence(timeout: 4), file: file, line: line)
-        consent.tap()
+        showSidebarIfNeeded(for: "connectButton")
+        app.buttons["connectButton"].firstMatch.tap()
         shouldShowProject("Quick Chats", file: file, line: line)
     }
-    private var confirmation: XCUIElement {
-        #if os(macOS)
-        app.sheets.firstMatch
-        #else
-        app.alerts.firstMatch
-        #endif
+    func shouldShowHome(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(app.staticTexts["homeGreeting"].waitForExistence(timeout: 5), file: file, line: line)
+        XCTAssertTrue(app.textFields["quickSwitcher"].exists, file: file, line: line)
+        XCTAssertFalse(app.staticTexts["Recent conversations"].exists, file: file, line: line)
+    }
+    func shouldShowHomeConnectionError(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(app.staticTexts["homeConnectionError"].waitForExistence(timeout: 5), file: file, line: line)
+        XCTAssertTrue(app.buttons["homeRetryConnection"].exists, file: file, line: line)
+    }
+    func retryHomeConnection(file: StaticString = #filePath, line: UInt = #line) {
+        app.buttons["homeRetryConnection"].tap()
+        XCTAssertTrue(app.buttons["sessionsButton"].waitForExistence(timeout: 5),
+                      "The retry did not connect", file: file, line: line)
     }
     func shouldShowProject(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertTrue(app.buttons[name].waitForExistence(timeout: 5), file: file, line: line)
     }
     func shouldBeBrowsing(file: StaticString = #filePath, line: UInt = #line) {
-        shouldShowProject("Quick Chats", file: file, line: line)
         XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "messageField").firstMatch.exists, file: file, line: line)
     }
     func shouldHaveCompactHeader(file: StaticString = #filePath, line: UInt = #line) {
@@ -36,10 +40,27 @@ import XCTest
             activity.add(attachment)
         }
     }
-    func openSavedQuickChat() { app.buttons["session-/history/quick"].tap() }
-    func expandProject(_ name: String) { app.buttons[name].tap() }
-    func openRunningSession() { app.buttons["session-runtime:ui-running"].tap() }
-    func newProjectSession() { app.buttons["newSession-/repo"].tap() }
+    func openSavedQuickChat() {
+        showSidebarIfNeeded(for: "session-/history/quick")
+        app.buttons["session-/history/quick"].tap()
+    }
+    func expandProject(_ name: String) {
+        showSidebarIfNeeded(for: name)
+        app.buttons[name].tap()
+    }
+    func openRunningSession() {
+        showSidebarIfNeeded(for: "session-runtime:ui-running")
+        app.buttons["session-runtime:ui-running"].tap()
+    }
+    func newProjectSession() {
+        showSidebarIfNeeded(for: "newSession-/repo")
+        app.buttons["newSession-/repo"].tap()
+    }
+    private func showSidebarIfNeeded(for identifier: String) {
+        if !app.buttons[identifier].exists, app.buttons["projectsButton"].exists {
+            app.buttons["projectsButton"].tap()
+        }
+    }
     func back() {
         #if os(iOS)
         // The workspace uses native navigation, so back is the bar's leading button.

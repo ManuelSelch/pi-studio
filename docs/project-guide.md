@@ -5,10 +5,13 @@ Native SwiftUI for **macOS 26** (Pi Studio) and **iPhone/iPad iOS 26.1**
 select **My Mac** for a native desktop app, not Catalyst. The mobile product is
 still a Simulator/local-server demo, not a remotely deployed phone controller.
 
-One screen shows connection state, explicit Connect/Disconnect, a plain-text
-transcript, multiline message field, icon-only ↑ Send and errors. macOS Esc stops
-an active run; iOS replaces Send with a stop icon while running. No connection
-opens on launch. The approved layouts are preserved in
+The app opens to a Home screen with a centered quick-switcher field; the existing
+project/history sidebar remains available for navigation. Launch automatically
+connects to the configured server and takes control without creating or attaching
+to a session. A failed connection is shown on Home with a retry action. Conversations
+use a plain-text transcript, multiline message field, icon-only ↑ Send and errors.
+macOS Esc stops an active run; iOS replaces Send with a stop icon while running.
+The approved layouts are preserved in
 [mockups/session](../mockups/session/DESIGN.md), [mockups/settings](../mockups/settings/DESIGN.md)
 and [mockups/multiline-composer](../mockups/multiline-composer/DESIGN.md).
 
@@ -68,10 +71,10 @@ the server-side working directory remains development configuration.
   and trimming surrounding whitespace. Credentials, fragments and invalid URLs
   are rejected. Nothing probes the server or appends a path.
 - Saved endpoints persist per installation in UserDefaults (`pi.serverEndpoint`).
-  Missing/invalid stored values fall back to `ws://127.0.0.1:8787/ws`.
-- Save changes the **next explicit Connect** only. Active/in-flight connections
-  keep their endpoint snapshot and are not disconnected or restarted. The header
-  distinguishes current and next endpoints when they differ.
+  Missing/invalid stored values fall back to `ws://127.0.0.1:8787/ws`. The launch
+  connection uses the saved endpoint loaded by the settings store.
+- Save changes the next connection only. Active/in-flight connections keep their
+  endpoint snapshot and are not disconnected or restarted.
 - [Settings](../Packages/PiUI/Sources/PiUI/Settings) is a vertical Flux feature.
   SettingsMiddleware uses `@Injected` for the small `EndpointSettingsService`
   protocol. Its factory binds FactoryKit's task-local container during construction
@@ -93,11 +96,12 @@ iPhone, loopback refers to the phone, not your Mac.
 
 ## Behavior
 
-- Connect asks for takeover consent: initialization replaces the existing server
+- Launch automatically takes control: initialization replaces the existing server
   controller. **Single-controller handoff is intentional**; simultaneous Studio
-  and Pocket control is not required.
-- Each explicit connection creates one fresh demo session. Existing runtimes are
-  never attached to, aborted or closed by the app.
+  and Pocket control is not required. Retry after a failed connection also takes
+  control directly.
+- Launch connection and retry only load the catalogue; they do not create a session.
+  Existing runtimes are never attached to, aborted or closed by the app.
 - The editor wraps and grows from two to five lines, then scrolls internally.
   macOS Enter sends and Shift+Enter inserts a newline at the caret. iOS Return
   inserts a newline; only the ↑ button submits. No routine composer hints are shown.
