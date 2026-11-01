@@ -25,10 +25,12 @@ public struct SessionFeature: Feature {
         public init() {}
 
         public var canEditMessage: Bool {
-            guard case .ready = connection else { return false }
-            return projection?.status == .idle && !isSending && !isStopping
+            guard case .ready = connection, let status = projection?.status else { return false }
+            return (status == .idle || status == .running) && !isSending && !isStopping
         }
-        public var canSend: Bool { canEditMessage }
+        public var canSend: Bool {
+            canEditMessage && projection?.status == .idle
+        }
         public var canStop: Bool {
             guard case .ready = connection else { return false }
             return projection?.status == .running && !isSending && !isStopping

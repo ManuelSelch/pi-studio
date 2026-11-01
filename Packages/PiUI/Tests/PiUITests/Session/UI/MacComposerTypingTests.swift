@@ -130,7 +130,7 @@ struct MacComposerTypingTests {
         var body: some View {
             var presentation = SessionPresentation()
             presentation.draft = draft
-            presentation.canEditMessage = !run.pending && !run.running
+            presentation.canEditMessage = !run.pending
             presentation.canSend = !run.pending && !run.running
             presentation.canStop = run.running
             return SessionScreen(presentation: presentation, onDraftChanged: { draft = $0 },
@@ -158,6 +158,20 @@ struct MacComposerTypingTests {
         run.running = false
         try await app.settle()
         try app.composerShouldBeFocused()
+    }
+
+    @Test func runningSessionKeepsComposerEditableForTheNextDraft() async throws {
+        let run = RunState()
+        run.running = true
+        let app = MacComposerDriver(RunHarness(run: run, onStop: {}))
+
+        try await app.type("Next prompt")
+
+        try app.textShouldBe("Next prompt")
+        try app.editingShouldBeEnabled(true)
+        try await app.pressReturn()
+        // The draft is editable while running, but cannot be sent until idle.
+        try app.textShouldBe("Next prompt")
     }
 
     @Test func escapeStopsOnlyOnTheFirstUnmodifiedPress() async throws {

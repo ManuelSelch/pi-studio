@@ -148,10 +148,12 @@ iPhone, loopback refers to the phone, not your Mac.
 - The editor wraps and grows from two to five lines, then scrolls internally.
   macOS Enter sends and Shift+Enter inserts a newline at the caret. iOS Return
   inserts a newline; only the ↑ button submits. No routine composer hints are shown.
-- Send permits one non-whitespace plain-text prompt while idle and preserves exact
-  indentation, blank lines and surrounding whitespace. Slash/bash commands,
-  steering and queued messages are deliberately unsupported. Drafts clear only
-  after admission, remain on rejection/unknown outcome, and are never replayed.
+- The composer remains editable while a session is running so the user can prepare
+  the next prompt; Send is available only while idle. Send permits one non-whitespace
+  plain-text prompt and preserves exact indentation, blank lines and surrounding
+  whitespace. Slash/bash commands, steering and queued messages are deliberately
+  unsupported. Drafts clear only after admission when they still match the submitted
+  text, remain on rejection/unknown outcome, and are never replayed.
 - SDK-owned complete projections deliver incremental text, ordered messages and
   finalized answers without duplicate drafts. Admission is not answer completion.
 - macOS Esc (no separate Stop button) and the iOS running-state stop icon invoke

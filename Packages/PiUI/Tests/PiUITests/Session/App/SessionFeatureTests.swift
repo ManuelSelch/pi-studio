@@ -42,6 +42,17 @@ struct SessionFeatureTests {
         #expect(store.state.statusText == "Ready")
     }
 
+    @Test func aRunningSessionAllowsDraftingButNotSending() {
+        let store = fixture().store
+        store.dispatch(.projectionChanged(store.state.generation,
+            .init(session: fixture().session, status: .running)))
+
+        #expect(store.state.canEditMessage)
+        #expect(!store.state.canSend)
+        store.dispatch(.sendRequested(text: "Next prompt"))
+        #expect(!store.state.isSending)
+    }
+
     @Test func attachingAnotherRuntimeDiscardsTheSupersededTranscriptAndWork() {
         let fixture = fixture("first")
         let store = fixture.store

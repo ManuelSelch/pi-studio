@@ -93,6 +93,17 @@ struct WorkspaceFeatureTests {
         #expect(store.state.openSessions.first { $0.id == second.id }?.scrollAnchor == "message-1")
     }
 
+    @Test func aLateClearForSubmittedTextDoesNotEraseANewerDraft() {
+        let session = tab("one", title: "One")
+        store.dispatch(.opened(token, session))
+        store.dispatch(.draftChanged("Submitted prompt"))
+        store.dispatch(.draftChanged("Draft typed while running"))
+
+        store.dispatch(.draftCleared(matching: "Submitted prompt"))
+
+        #expect(store.state.draft == "Draft typed while running")
+    }
+
     @Test func closingASelectedTabSelectsTheAdjacentTabAndDropsItsDraft() {
         let first = tab("one", title: "One")
         let second = tab("two", title: "Two")
