@@ -28,26 +28,16 @@ struct SessionComposer: View {
             #if !os(macOS)
             Text("Message").font(.caption).foregroundStyle(.secondary)
             #endif
-            #if os(macOS)
-            MacMessageEditor(text: text, canEdit: canEdit, canSend: sendEnabled,
-                             focus: focus, onSend: submit)
-                .padding(10)
-                .background(Color(nsColor: .textBackgroundColor),
-                            in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(Color(nsColor: .separatorColor).opacity(0.45), lineWidth: 1)
-                }
-            #else
-            TextField("Say hello", text: text, axis: .vertical)
-                .lineLimit(2...5).textFieldStyle(.roundedBorder).focused(focus)
-                .submitLabel(.return)
-                .disabled(!canEdit).accessibilityLabel("Message").accessibilityIdentifier("messageField")
-            #endif
-            HStack {
-                Text(hint).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    .accessibilityIdentifier("composerHint")
-                Spacer(minLength: 4)
+            HStack(alignment: .bottom, spacing: 8) {
+                #if os(macOS)
+                MacMessageEditor(text: text, canEdit: canEdit, canSend: sendEnabled,
+                                 focus: focus, onSend: submit)
+                #else
+                TextField("Say hello", text: text, axis: .vertical)
+                    .lineLimit(2...5).textFieldStyle(.plain).focused(focus)
+                    .submitLabel(.return)
+                    .disabled(!canEdit).accessibilityLabel("Message").accessibilityIdentifier("messageField")
+                #endif
                 #if os(iOS)
                 if canStop || isStopping {
                     Button(action: onStop) { Image(systemName: "stop.fill").frame(minWidth: 24, minHeight: 24) }
@@ -61,8 +51,34 @@ struct SessionComposer: View {
                 sendButton
                 #endif
             }
+            .padding(10)
+            .background(inputBackground, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(inputBorder, lineWidth: 1)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("composerInput")
+            Text(hint).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                .accessibilityIdentifier("composerHint")
         }
         .padding()
+    }
+
+    private var inputBackground: Color {
+        #if os(macOS)
+        Color(nsColor: .textBackgroundColor)
+        #else
+        Color(uiColor: .systemBackground)
+        #endif
+    }
+
+    private var inputBorder: Color {
+        #if os(macOS)
+        Color(nsColor: .separatorColor).opacity(0.45)
+        #else
+        Color(uiColor: .separator).opacity(0.45)
+        #endif
     }
 
     private var sendButton: some View {

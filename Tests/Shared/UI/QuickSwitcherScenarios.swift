@@ -105,6 +105,24 @@ final class QuickSwitcherScenarios: XCTestCase {
         try switcher.shouldShowNewSession(in: "feat/pocket")
     }
 
+    #if os(macOS)
+    func testOpeningSavedSessionFocusesComposerWithoutClicking() throws {
+        try switcher.openFromHomeSearch()
+        try switcher.selectSession("Saved quick chat")
+
+        try switcher.shouldShowSession("Saved quick chat")
+        try switcher.composerShouldRegainFocus()
+    }
+
+    func testCreatingSessionFocusesComposerWithoutClicking() throws {
+        try switcher.openFromHomeSearch()
+        try switcher.selectFolder("Quick Chats")
+
+        try switcher.shouldShowNewSession(in: "Quick Chats")
+        try switcher.composerShouldRegainFocus()
+    }
+    #endif
+
     func testSelectingSessionOpensAndRefocusesExistingSession() throws {
         try switcher.openFromHomeSearch()
         try switcher.selectSession("Saved quick chat")

@@ -282,6 +282,18 @@ final class UIChatDriver {
         let field = context.messageField
         field.tap(); field.typeText(text)
     }
+    func composerShouldHaveInlineActionWithoutDivider(file: StaticString = #filePath, line: UInt = #line) throws {
+        let field = context.messageField
+        let button = context.app.buttons["sendButton"]
+        let container = context.app.descendants(matching: .any).matching(identifier: "composerInput").firstMatch
+        context.waitFor(field, file: file, line: line)
+        context.waitFor(button, file: file, line: line)
+        context.waitFor(container, file: file, line: line)
+        XCTAssertTrue(container.frame.contains(field.frame), file: file, line: line)
+        XCTAssertTrue(container.frame.contains(button.frame), file: file, line: line)
+        XCTAssertGreaterThanOrEqual(button.frame.minX, field.frame.maxX, file: file, line: line)
+        XCTAssertFalse(context.app.descendants(matching: .any).matching(identifier: "composerDivider").firstMatch.exists, file: file, line: line)
+    }
     func submitDraft() { context.app.buttons["sendButton"].tap() }
     func sendPrompt(_ text: String) {
         enterDraft(text)

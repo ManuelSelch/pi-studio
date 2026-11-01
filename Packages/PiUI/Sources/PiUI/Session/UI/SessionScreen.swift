@@ -92,7 +92,6 @@ public struct SessionScreen: View {
                               followTail: presentation.followTail, anchor: presentation.scrollAnchor,
                               onFollowTailChanged: onFollowTailChanged,
                               onAnchorChanged: onScrollAnchorChanged)
-            Divider()
             SessionComposer(draft: presentation.draft, hint: presentation.hint,
                             canEdit: presentation.canEditMessage, canSend: presentation.canSend,
                             canStop: presentation.canStop, isStopping: presentation.isStopping, focus: $messageFocused,
@@ -105,6 +104,7 @@ public struct SessionScreen: View {
                             }, onStop: onStop)
         }
         #if os(macOS)
+        .onAppear { messageFocused = true }
         .onKeyPress(.escape, phases: [.down, .repeat]) { press in
             stopKeyAllowed = press.phase == .down && press.modifiers.isEmpty
             return .ignored

@@ -3,6 +3,17 @@ import XCTest
 final class MultilineComposerUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
+    @MainActor func testComposerHasInlineActionWithoutDivider() throws {
+        let app = PiUIDriver.launch(for: self)
+        app.session.connect()
+
+        try app.chat.composerShouldHaveInlineActionWithoutDivider()
+        app.chat.enterDraft("Hello")
+        app.chat.submitDraft()
+        app.chat.waitForReply(1)
+        app.chat.userMessageShouldBe(1, "Hello")
+    }
+
     #if os(macOS)
     @MainActor func testReturnSubmitsAndFocusReturnsAfterRun() {
         let app = PiUIDriver.launch(for: self)

@@ -35,6 +35,9 @@ struct WorkspaceConversation: View {
                           onFollowTailChanged: onFollowTailChanged,
                           onScrollAnchorChanged: onScrollAnchorChanged,
                           showsHeader: false, maxContentWidth: 760)
+            #if os(macOS)
+                .id(selection.tabId)
+            #endif
         }
     }
 }
