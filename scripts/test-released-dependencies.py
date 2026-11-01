@@ -62,6 +62,29 @@ class ReleasedDependencyTests(unittest.TestCase):
                              ["package", "--package-path", str(root / "Packages/PiUI"),
                               "--scratch-path", str(root / "products/swiftpm"), "resolve"])
 
+    def test_prepare_defaults_to_main_sdk_even_if_feature_worktree_exists(self):
+        with tempfile.TemporaryDirectory(prefix="pi-prepare-default-") as directory:
+            root = Path(directory).resolve()
+            home = root / "home"
+            main = home / "Documents/A_Personal/40 Projekte/47 Agents/Pi Agent/pi-sdk-swift"
+            feature = home / ".worktrees/pi-sdk-swift/feat-close-session"
+            for sdk in (main, feature):
+                sdk.mkdir(parents=True)
+                (sdk / "Package.swift").write_text("// fixture")
+            (root / "scripts").mkdir()
+            (root / "bin").mkdir()
+            for script in ("prepare.sh", "build-paths.sh"):
+                shutil.copyfile(ROOT / "scripts" / script, root / "scripts" / script)
+            swift = root / "bin/swift"
+            swift.write_text("#!/bin/bash\nexit 0\n")
+            swift.chmod(0o755)
+            env = {**os.environ, "HOME": str(home), "PATH": str(root / "bin") + ":" + os.environ["PATH"],
+                   "PI_STUDIO_BUILD_ROOT": str(root / "products")}
+            env.pop("PI_SDK_SWIFT_PATH", None)
+            result = subprocess.run(["bash", "scripts/prepare.sh"], cwd=root, text=True, capture_output=True, env=env)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual((root / ".dependencies/pi-sdk-swift").resolve(), main)
+
     def test_both_lockfiles_record_releases(self):
         for path in ("Packages/PiUI/Package.resolved",
                      "pi-studio.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"):

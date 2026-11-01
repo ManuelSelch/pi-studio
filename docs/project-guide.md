@@ -52,7 +52,7 @@ See the dedicated [architecture document](architecture.md) for component ownersh
 - Verified stable toolchain: **Xcode 26.1.1 (17B100), Swift 6.2.1**.
 - PiSDK is imported from the local `.dependencies/pi-sdk-swift` checkout so the app
   can use and test SDK changes directly. `scripts/prepare.sh` links the sibling
-  `~/.worktrees/pi-sdk-swift/feat-close-session` checkout by default; set
+  PiSDK main checkout under `~/Documents/A_Personal/40 Projekte/47 Agents/Pi Agent/pi-sdk-swift` by default; set
   `PI_SDK_SWIFT_PATH` to select another SDK checkout. Flux **2.0.1**, Router
   **2.0.0**, and FactoryKit are resolved through SwiftPM.
 - Run `bash scripts/prepare.sh` before opening Xcode or testing on a fresh

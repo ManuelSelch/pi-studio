@@ -2,10 +2,7 @@
 # Link the local PiSDK and resolve remote dependencies; never start a server.
 set -euo pipefail
 source "$(dirname "$0")/build-paths.sh"
-default_sdk="${HOME}/.worktrees/pi-sdk-swift/feat-close-session"
-if [[ ! -f "$default_sdk/Package.swift" ]]; then
-  default_sdk="${HOME}/Documents/A_Personal/40 Projekte/47 Agents/Pi Agent/pi-sdk-swift"
-fi
+default_sdk="${HOME}/Documents/A_Personal/40 Projekte/47 Agents/Pi Agent/pi-sdk-swift"
 sdk_source="${PI_SDK_SWIFT_PATH:-$default_sdk}"
 if [[ ! -f "$sdk_source/Package.swift" ]]; then
   echo "Swift PiSDK package not found at: $sdk_source" >&2
