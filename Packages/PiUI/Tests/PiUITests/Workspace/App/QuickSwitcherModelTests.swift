@@ -35,6 +35,29 @@ import PiSDK
         #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "%pi-studio").count == 1)
     }
 
+    @Test func missingFoldersAndWorktreesAreHiddenFromSearch() {
+        let catalogue = PiCatalogue(projects: [
+            .init(path: "/present", name: "present"),
+            .init(path: "/missing", name: "missing", exists: false),
+            .init(path: "/present-tree", name: "present-tree", worktree: .init(branch: "present-branch", primary: false)),
+            .init(path: "/missing-tree", name: "missing-tree", exists: false,
+                  worktree: .init(branch: "missing-branch", primary: false))
+        ])
+
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "#").map(\.title) == ["present"])
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "%").map(\.title) == ["present-branch"])
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "missing").isEmpty)
+    }
+
+    @Test func sessionsFromMissingFoldersRemainSearchable() {
+        let catalogue = PiCatalogue(projects: [
+            .init(path: "/missing", name: "missing", exists: false,
+                  sessions: [.init(path: "/history", title: "Saved conversation")])
+        ])
+
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "@Saved").map(\.title) == ["Saved conversation"])
+    }
+
     @Test func searchesAbbreviationsAndSingleTypos() {
         let catalogue = PiCatalogue(projects: [
             .init(path: "/studio", name: "pi-studio"),
