@@ -681,13 +681,13 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		B00000000000000000000002 /* XCLocalSwiftPackageReference "Packages/PiUI" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/PiUI;
-		};
 		A00000000000000000000002 /* XCLocalSwiftPackageReference ".dependencies/pi-sdk-swift" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ".dependencies/pi-sdk-swift";
+		};
+		B00000000000000000000002 /* XCLocalSwiftPackageReference "Packages/PiUI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/PiUI;
 		};
 /* End XCLocalSwiftPackageReference section */
 

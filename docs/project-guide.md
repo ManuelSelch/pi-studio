@@ -5,10 +5,13 @@ Native SwiftUI for **macOS 26** (Pi Studio) and **iPhone/iPad iOS 26.1**
 select **My Mac** for a native desktop app, not Catalyst. The mobile product is
 still a Simulator/local-server demo, not a remotely deployed phone controller.
 
-One screen shows connection state, explicit Connect/Disconnect, a plain-text
-transcript, multiline message field, icon-only ↑ Send and errors. macOS Esc stops
-an active run; iOS replaces Send with a stop icon while running. No connection
-opens on launch. The approved layouts are preserved in
+The app opens to a Home screen with a centered quick-switcher field; the existing
+session inbox remains available for navigation. Launch automatically
+connects to the configured server and takes control without creating or attaching
+to a session. A failed connection is shown on Home with a retry action. Conversations
+use a plain-text transcript, multiline message field, icon-only ↑ Send and errors.
+macOS Esc stops an active run; iOS replaces Send with a stop icon while running.
+The approved layouts are preserved in
 [mockups/session](../mockups/session/DESIGN.md), [mockups/settings](../mockups/settings/DESIGN.md)
 and [mockups/multiline-composer](../mockups/multiline-composer/DESIGN.md).
 
@@ -52,7 +55,7 @@ See the dedicated [architecture document](architecture.md) for component ownersh
   Hosted CI must check out the matching PiSDK API before this branch is merged.
 - AppContainer owns the settings modal scope through Router; inbox/session
   selection and phone navigation remain workspace state. Both platform shells
-  use the session inbox sidebar; iPhone retains its open-sessions overview.
+  use the session inbox sidebar; iPhone opens it from Home and retains its open-sessions overview.
 
 [SessionConfiguration](../Packages/PiUI/Sources/PiUI/Session/App/SessionConfiguration.swift)
 defaults to `ws://127.0.0.1:8787/ws` and the dedicated **server-side** directory
@@ -69,10 +72,10 @@ the server-side working directory remains development configuration.
   and trimming surrounding whitespace. Credentials, fragments and invalid URLs
   are rejected. Nothing probes the server or appends a path.
 - Saved endpoints persist per installation in UserDefaults (`pi.serverEndpoint`).
-  Missing/invalid stored values fall back to `ws://127.0.0.1:8787/ws`.
-- Save changes the **next explicit Connect** only. Active/in-flight connections
-  keep their endpoint snapshot and are not disconnected or restarted. The header
-  distinguishes current and next endpoints when they differ.
+  Missing/invalid stored values fall back to `ws://127.0.0.1:8787/ws`. The launch
+  connection uses the saved endpoint loaded by the settings store.
+- Save changes the next connection only. Active/in-flight connections keep their
+  endpoint snapshot and are not disconnected or restarted.
 - [Settings](../Packages/PiUI/Sources/PiUI/Settings) is a vertical Flux feature.
   SettingsMiddleware uses `@Injected` for the small `EndpointSettingsService`
   protocol. Its factory binds FactoryKit's task-local container during construction
@@ -94,15 +97,16 @@ iPhone, loopback refers to the phone, not your Mac.
 
 ## Behavior
 
-- Connect asks for takeover consent: initialization replaces the existing server
+- Launch automatically takes control: initialization replaces the existing server
   controller. **Single-controller handoff is intentional**; simultaneous Studio
-  and Pocket control is not required.
-- Connect initializes the server without creating or selecting a session. The
-  server catalogue drives the inbox: blocked sessions appear under Needs you,
+  and Pocket control is not required. Retry after a failed connection also takes
+  control directly. Neither launch connection nor retry creates or selects a session.
+- The server catalogue drives the inbox: blocked sessions appear under Needs you,
   unarchived idle saved sessions under Ready, and working sessions under Running.
   Later is a local, endpoint-scoped UserDefaults state for idle saved sessions;
   parking closes a loaded runtime with `closeSession`, and resuming reopens its
-  saved history path. Archiving remains independent.
+  saved history path. Archiving remains independent. Launch/retry do not attach to
+  existing runtimes or abort/close them.
 - The editor wraps and grows from two to five lines, then scrolls internally.
   macOS Enter sends and Shift+Enter inserts a newline at the caret. iOS Return
   inserts a newline; only the ↑ button submits. No routine composer hints are shown.
