@@ -1,5 +1,6 @@
 import XCTest
 
+#if os(iOS)
 /// Slice 3 on iPhone: open sessions are switched through the overview sheet, with no tab strip.
 final class PhoneSessionOverviewUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
@@ -51,3 +52,4 @@ final class PhoneSessionOverviewUITests: XCTestCase {
         app.projects.recordAppearance("iPhone sessions overview")
     }
 }
+#endif
