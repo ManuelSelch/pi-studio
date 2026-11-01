@@ -27,8 +27,7 @@ struct WorkspaceConversation: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16).padding(.vertical, 8)
             Divider()
-            SessionScreen(presentation: session, onDraftChanged: onDraftChanged,
-                          onConnect: {}, onDisconnect: {}, onSend: onSend, onStop: onStop,
+            SessionScreen(presentation: session, onDraftChanged: onDraftChanged, onConnect: {}, onDisconnect: {}, onSend: onSend, onStop: onStop,
                           onFollowTailChanged: onFollowTailChanged,
                           onScrollAnchorChanged: onScrollAnchorChanged,
                           showsHeader: false, maxContentWidth: 760)

@@ -48,14 +48,15 @@ struct MacWorkspaceComposerTests {
     private struct WorkspaceContainerProbe: View {
         @ObservedObject var store: FluxStore<WorkspaceFeature>
         @ObservedObject var session: FluxStore<SessionFeature>
+        @State private var draft = ""
         var body: some View {
             var presentation = SessionPresentation()
-            presentation.draft = store.state.draft
+            presentation.draft = draft
             presentation.canEditMessage = session.state.canEditMessage
             presentation.canSend = session.state.canSend
             presentation.placeholder = "Start a conversation."
             return SessionScreen(presentation: presentation,
-                                 onDraftChanged: { store.dispatch(.draftChanged($0)) },
+                                 onDraftChanged: { draft = $0 },
                                  onConnect: {}, onDisconnect: {}, onSend: { _ in }, onStop: {},
                                  showsHeader: false, maxContentWidth: 760)
         }
@@ -74,7 +75,6 @@ struct MacWorkspaceComposerTests {
         try hosting.editingShouldBeEnabled(true)
         try hosting.wholeWidthShouldAcceptClicks()
         try await hosting.type("hello")
-        #expect(fixture.workspace.state.draft == "hello")
         try hosting.textShouldBe("hello")
     }
 }

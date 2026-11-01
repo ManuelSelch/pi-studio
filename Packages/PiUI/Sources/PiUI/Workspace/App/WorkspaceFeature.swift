@@ -3,7 +3,7 @@ import Flux
 import PiSDK
 
 /// Navigation and transport: the connection, the catalogue, the ordered open sessions and the
-/// tab-level local state. It owns no transcript; the conversation lives in `SessionFeature`,
+/// tab-level reading state. Composer text is transient UI state, not Flux state. It owns no transcript; the conversation lives in `SessionFeature`,
 /// which observes the runtime this store reports as `observedRuntimeId`.
 public struct WorkspaceFeature: Feature {
     public struct State: Equatable, Sendable {
@@ -61,8 +61,6 @@ public struct WorkspaceFeature: Feature {
             case .connected, .ready: return isOpening ? "Opening…" : "Connected"
             }
         }
-        /// Draft text of the selected tab, the source of the composer's text.
-        public var draft: String { selectedSession?.draft ?? "" }
         public var followTail: Bool { selectedSession?.followTail ?? true }
         public var scrollAnchor: String? { selectedSession?.scrollAnchor }
 
@@ -106,9 +104,6 @@ public struct WorkspaceFeature: Feature {
         case observedRuntimeChanged(UUID, String?)
         case failed(UUID, PiError)
         case back
-        case draftChanged(String)
-        /// A send was admitted, so the matching per-tab draft can be dropped.
-        case draftCleared(matching: String)
         case followTailChanged(Bool)
         case scrollAnchorChanged(String?)
         case unreadChanged(String, Bool)
@@ -183,13 +178,6 @@ public struct WorkspaceFeature: Feature {
         case .back:
             guard !state.isOpening else { return }
             state.selectedSessionId = nil; state.error = nil
-        case .draftChanged(let draft):
-            guard let index = state.openSessions.firstIndex(where: { $0.id == state.selectedSessionId }) else { return }
-            state.openSessions[index].draft = draft
-        case .draftCleared(let matching):
-            guard let index = state.openSessions.firstIndex(where: { $0.id == state.selectedSessionId }) else { return }
-            guard state.openSessions[index].draft == matching else { return }
-            state.openSessions[index].draft = ""
         case .followTailChanged(let follow):
             guard let index = state.openSessions.firstIndex(where: { $0.id == state.selectedSessionId }) else { return }
             state.openSessions[index].followTail = follow

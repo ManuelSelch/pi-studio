@@ -67,44 +67,21 @@ struct WorkspaceFeatureTests {
         #expect(store.state.openSessionIds == [quick.id, running.id])
     }
 
-    @Test func switchingTabsKeepsEachDraftIsolated() {
+    @Test func switchingSessionsPreservesOnlyReadingPosition() {
         let first = tab("one", title: "One")
         let second = tab("two", title: "Two")
-
         store.dispatch(.opened(token, first))
         store.dispatch(.opened(token, second))
-
-        // The visible tab owns the composer text and the reading position.
         store.dispatch(.followTailChanged(false))
         store.dispatch(.scrollAnchorChanged("message-1"))
-        store.dispatch(.draftChanged("Keep for two"))
 
         store.dispatch(.selectRequested(id: first.id))
 
-        #expect(store.state.selectedSession?.draft == "")
-        #expect(store.state.openSessions.first { $0.id == second.id }?.draft == "Keep for two")
-
-        store.dispatch(.draftChanged("Keep for one"))
-
-        #expect(store.state.openSessions.first { $0.id == first.id }?.draft == "Keep for one")
-        #expect(store.state.openSessions.first { $0.id == first.id }?.followTail == true)
-        #expect(store.state.openSessions.first { $0.id == first.id }?.scrollAnchor == nil)
         #expect(store.state.openSessions.first { $0.id == second.id }?.followTail == false)
         #expect(store.state.openSessions.first { $0.id == second.id }?.scrollAnchor == "message-1")
     }
 
-    @Test func aLateClearForSubmittedTextDoesNotEraseANewerDraft() {
-        let session = tab("one", title: "One")
-        store.dispatch(.opened(token, session))
-        store.dispatch(.draftChanged("Submitted prompt"))
-        store.dispatch(.draftChanged("Draft typed while running"))
-
-        store.dispatch(.draftCleared(matching: "Submitted prompt"))
-
-        #expect(store.state.draft == "Draft typed while running")
-    }
-
-    @Test func closingASelectedTabSelectsTheAdjacentTabAndDropsItsDraft() {
+    @Test func closingASelectedSessionSelectsItsNeighbour() {
         let first = tab("one", title: "One")
         let second = tab("two", title: "Two")
         let third = tab("three", title: "Three")
@@ -112,7 +89,6 @@ struct WorkspaceFeatureTests {
         store.dispatch(.connectionChanged(token, .connected))
         for value in [first, second, third] { store.dispatch(.opened(token, value)) }
         store.dispatch(.selectRequested(id: second.id))
-        store.dispatch(.draftChanged("Discard me"))
 
         store.dispatch(.closeSession(second.id))
 
@@ -120,13 +96,10 @@ struct WorkspaceFeatureTests {
         #expect(store.state.selectedSessionId == third.id)
 
         store.dispatch(.selectRequested(id: first.id))
-        store.dispatch(.draftChanged("Keep me"))
 
         store.dispatch(.closeSession(first.id))
 
         #expect(store.state.selectedSessionId == third.id)
-
-        store.dispatch(.draftChanged("Last"))
 
         store.dispatch(.closeSession(third.id))
 
@@ -167,19 +140,16 @@ struct WorkspaceFeatureTests {
         #expect(store.state.openSessionIds == [running.id, other.id])
     }
 
-    @Test func aReplacedRuntimeKeepsTabIdentityDraftAndOrder() {
+    @Test func aReplacedRuntimeKeepsSessionIdentityAndOrder() {
         let first = tab("one", title: "One")
         let second = tab("two", title: "Two")
-
         store.dispatch(.opened(token, first))
-        store.dispatch(.draftChanged("Typed before the swap"))
         store.dispatch(.opened(token, second))
 
         store.dispatch(.sessionReplaced(first.id, "one-replacement"))
 
         #expect(store.state.openSessionIds == [first.id, second.id])
         #expect(store.state.openSessions.first?.runtimeId == "one-replacement")
-        #expect(store.state.openSessions.first?.draft == "Typed before the swap")
         #expect(store.state.selectedSessionId == second.id)
     }
 

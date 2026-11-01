@@ -6,7 +6,7 @@ public struct SessionPresentation: Equatable, Sendable {
     public var status = "Disconnected"
     public var details = ""
     public var error: String?
-    /// The selected tab's draft: the workspace owns it, the composer only edits it.
+    /// UI-owned composer value supplied by the shell.
     public var draft = ""
     /// Why the composer is locked right now, if it is.
     public var hint = ""

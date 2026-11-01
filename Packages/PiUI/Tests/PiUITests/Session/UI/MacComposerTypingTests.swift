@@ -18,15 +18,16 @@ struct MacComposerTypingTests {
     private struct Harness: View {
         @ObservedObject var workspace: FluxStore<WorkspaceFeature>
         @ObservedObject var state: ComposerState
+        @State private var draft = ""
 
         var body: some View {
             var presentation = SessionPresentation()
-            presentation.draft = workspace.state.draft
+            presentation.draft = draft
             presentation.canEditMessage = !state.pending
             presentation.canSend = !state.pending && !state.running
             presentation.canStop = state.running
             return SessionScreen(presentation: presentation,
-                onDraftChanged: { workspace.dispatch(.draftChanged($0)) },
+                onDraftChanged: { draft = $0 },
                 onConnect: {}, onDisconnect: {},
                 onSend: { text in state.sent.append(text); state.pending = true },
                 onStop: { state.stops += 1 }, showsHeader: false)
@@ -55,30 +56,20 @@ struct MacComposerTypingTests {
         try widthApp.wholeWidthShouldAcceptClicks()
     }
 
-    @Test func typingReachesTheStoreBackedDraftAndSurvivesRendering() async throws {
-        try await app.type("hello")
-        #expect(workspace.state.draft == "hello")
-        try await app.type(" world")
-        #expect(workspace.state.draft == "hello world")
+    @Test func typingRemainsLocalInsteadOfUpdatingWorkspaceState() async throws {
+        let before = workspace.state
+        try await app.type("hello world")
         try app.textShouldBe("hello world")
+        #expect(workspace.state == before)
     }
 
-    @Test func anExternalDraftChangeIsAdopted() async throws {
-        try await app.type("draft")
-        workspace.dispatch(.draftChanged("other tab"))
-        try await app.settle()
-        try app.textShouldBe("other tab")
-        workspace.dispatch(.draftChanged(""))
-        try await app.settle()
-        try app.textShouldBe("")
-    }
 
     @Test func aLockedComposerRetainsFocusWithoutChangingItsDraft() async throws {
         state.pending = true
         try await app.type("ignored")
         try app.editingShouldBeEnabled(true)
         try app.composerShouldBeFocused()
-        #expect(workspace.state.draft.isEmpty)
+        #expect(workspace.state.selectedSession != nil)
         try app.textShouldBe("")
     }
 
@@ -96,7 +87,6 @@ struct MacComposerTypingTests {
         try await app.select(NSRange(location: 5, length: 1))
         try await app.pressReturn(shift: true)
         #expect(state.sent.isEmpty)
-        #expect(workspace.state.draft == "hello\nworld")
         try app.textShouldBe("hello\nworld")
         try await app.undo()
         try app.textShouldBe("hello world")

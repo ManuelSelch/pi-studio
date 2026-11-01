@@ -5,7 +5,7 @@ import XCTest
 final class PhoneSessionOverviewUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
-    @MainActor func testOverviewSwitchesSessionsIsolatesDraftsAndClosesTheLastView() {
+    @MainActor func testOverviewSwitchesSessionsDiscardsDraftAndClosesTheLastView() {
         let app = PiUIDriver.launch(for: self)
         app.projects.connect()
         app.overview.shouldNotRenderATabStrip()
@@ -24,9 +24,9 @@ final class PhoneSessionOverviewUITests: XCTestCase {
         app.overview.rowsShouldBeFullHeight("Saved quick chat")
         app.overview.statusShouldSay("Pocket navigation", "Running")
 
-        // Switching restores that session's own draft.
+        // Drafts are composer-local and switching sessions discards them.
         app.overview.select("Saved quick chat")
-        app.chat.draftShouldBe("Draft for the saved one")
+        app.chat.draftShouldBe("")
 
         // Leaving the conversation for the projects keeps both sessions open.
         app.overview.open()

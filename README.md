@@ -50,9 +50,10 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   tests register their debug connection through the same dependency graph.
 - [SessionFeature](Packages/PiUI/Sources/PiUI/Session/App/SessionFeature.swift) holds app-owned
   interaction state and typed reducer actions. FluxStore is the sole observable
-  source of session interaction state. Workspace state owns per-tab editable drafts;
-  the session feature receives only submitted snapshots and consumable matching-clear
-  instructions. Typing dispatches no session actions.
+  source of session interaction state. The workspace container owns the composer draft
+  as transient SwiftUI state; switching sessions clears it. The session feature receives
+  only submitted snapshots and consumable matching-clear instructions. Typing dispatches
+  no Flux actions.
 - [SessionMiddleware](Packages/PiUI/Sources/PiUI/Session/Middleware/SessionMiddleware.swift)
   owns SDK effects, observation tasks and disposal. Containers only dispatch
   `connectRequested`, `sendRequested(text:)`, `stopRequested`, `disconnectRequested`
@@ -252,7 +253,7 @@ separate derived-data directories alone do not isolate Simulator installations.
   identity/isolation, configuration/connection overrides, FluxTestStore reducer
   transitions, draft admission/retention, duplicate guards, stale callbacks,
   setup/pending-send disconnect, connection errors and deallocation disposal;
-  workspace tab/draft isolation; and off-screen Mac composer width/hit testing,
+  workspace session selection and reading-position isolation; and off-screen Mac composer width/hit testing,
   typing, selection newline, undo/redo, submit guards and Escape focus transitions.
 - The settings connection integration scenario and semantic driver also compile
   into both native unit-test targets; their source is shared, not copied.

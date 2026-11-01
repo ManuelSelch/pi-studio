@@ -67,6 +67,7 @@ public struct WorkspaceActions {
     public var connection: @MainActor () -> Void
     public var settings: @MainActor () -> Void
     public var back: @MainActor () -> Void
+    /// Updates the shell-local composer draft; never dispatched to Flux.
     public var draftChanged: @MainActor (String) -> Void
     public var send: @MainActor (String) -> Void
     public var stop: @MainActor () -> Void

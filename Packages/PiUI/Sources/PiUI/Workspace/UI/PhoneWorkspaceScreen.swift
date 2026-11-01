@@ -43,8 +43,7 @@ struct PhoneWorkspaceScreen: View {
     @ViewBuilder private var conversation: some View {
         if let selection = presentation.selection {
             WorkspaceConversation(selection: selection, session: session,
-                                  onDraftChanged: actions.draftChanged,
-                                  onSend: actions.send, onStop: actions.stop,
+                                  onDraftChanged: actions.draftChanged, onSend: actions.send, onStop: actions.stop,
                                   onFollowTailChanged: actions.followTailChanged,
                                   onScrollAnchorChanged: actions.scrollAnchorChanged)
                 .phoneConnectionToolbar(connection: actions.connection, settings: actions.settings,

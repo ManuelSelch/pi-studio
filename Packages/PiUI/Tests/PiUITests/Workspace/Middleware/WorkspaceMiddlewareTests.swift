@@ -59,19 +59,15 @@ import Testing
         }
     }
 
-    @Test func backDoesNotDisconnectAndDraftsDoNotLeakAcrossSessions() async throws {
+    @Test func backDoesNotDisconnectAndSessionsCanBeOpenedAgain() async throws {
         try await WorkspaceIntegrationDriver.run { app in
             try await app.projects.connect()
             try await app.projects.newQuickChat()
-            app.tabs.enterDraft("Keep here")
             app.projects.back()
             await app.server.shouldBeConnected()
             try await app.projects.openHistory()
-            app.tabs.draftShouldBe("")
             try await app.projects.openRunningSession()
-            app.tabs.draftShouldBe("")
-            // The first tab still owns the text it was left with.
-            app.tabs.draftShouldBeRetained("Keep here", for: "New chat")
+            app.tabs.shouldShow(["New chat", "Saved", "Working"])
         }
     }
 

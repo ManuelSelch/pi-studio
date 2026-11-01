@@ -246,10 +246,6 @@ final class WorkspaceTabsDriver {
     func shouldHaveNoTabs(sourceLocation: SourceLocation = #_sourceLocation) {
         #expect(context.workspace.state.openSessions.isEmpty, sourceLocation: sourceLocation)
     }
-    func enterDraft(_ text: String) { context.workspace.dispatch(.draftChanged(text)) }
-    func draftShouldBe(_ text: String, sourceLocation: SourceLocation = #_sourceLocation) {
-        #expect(context.workspace.state.draft == text, sourceLocation: sourceLocation)
-    }
     func reportReadingPosition(followTail: Bool, anchor: String?) {
         context.workspace.dispatch(.followTailChanged(followTail))
         context.workspace.dispatch(.scrollAnchorChanged(anchor))
@@ -261,10 +257,6 @@ final class WorkspaceTabsDriver {
     func anchorShouldBe(_ anchor: String?, for title: String, sourceLocation: SourceLocation = #_sourceLocation) {
         let tab = context.workspace.state.openSessions.first { $0.title == title }
         #expect(tab?.scrollAnchor == anchor, sourceLocation: sourceLocation)
-    }
-    func draftShouldBeRetained(_ text: String, for title: String, sourceLocation: SourceLocation = #_sourceLocation) {
-        let tab = context.workspace.state.openSessions.first { $0.title == title }
-        #expect(tab?.draft == text, sourceLocation: sourceLocation)
     }
     func runtimeShouldBe(_ runtimeId: String, for title: String, sourceLocation: SourceLocation = #_sourceLocation) {
         let tab = context.workspace.state.openSessions.first { $0.title == title }

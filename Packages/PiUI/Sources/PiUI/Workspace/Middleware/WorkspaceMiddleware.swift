@@ -277,7 +277,6 @@ public final class WorkspaceMiddleware: Middleware {
         let existing = state.openSessions.first { $0.matches(identity) }
         var tab = OpenSession(identity: identity, title: existing?.title ?? title,
                               activity: activity(for: session.sessionId, in: state))
-        tab.draft = existing?.draft ?? ""
         tab.followTail = existing?.followTail ?? true
         tab.scrollAnchor = existing?.scrollAnchor
         tab.unread = existing?.unread ?? false

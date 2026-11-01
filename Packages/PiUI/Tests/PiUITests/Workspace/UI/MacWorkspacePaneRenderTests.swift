@@ -28,7 +28,6 @@ struct MacWorkspacePaneRenderTests {
         value.title = "Working"
         value.status = "Generating…"
         value.details = "/repo"
-        value.draft = ""
         value.canEditMessage = false
         value.canStop = true
         value.messages = [TranscriptMessage(id: "1", role: "You", text: "Summarise the layout work."),
@@ -41,8 +40,8 @@ struct MacWorkspacePaneRenderTests {
     private func render() throws -> Data {
         let pane = WorkspacePane(presentation: presentation(), session: session(),
                                  actions: WorkspaceActions(open: { _, _ in }, create: { _ in },
-                                                           connection: {}, settings: {}, back: {},
-                                                           draftChanged: { _ in }, send: { _ in }, stop: {},
+                                                           connection: {}, settings: {}, back: {}, draftChanged: { _ in },
+                                                           send: { _ in }, stop: {},
                                                            selectTab: { _ in }, closeTab: { _ in },
                                                            followTailChanged: { _ in },
                                                            scrollAnchorChanged: { _ in }))

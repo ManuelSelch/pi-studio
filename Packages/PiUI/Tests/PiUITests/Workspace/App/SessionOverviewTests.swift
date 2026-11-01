@@ -3,15 +3,13 @@ import Testing
 /// Slice 3: the iPhone switches open sessions through an overview sheet, with no tab strip.
 /// Every scenario drives the workspace, and the rows come from the container's own mapping.
 @Suite @MainActor struct SessionOverviewTests {
-    @Test func switchingThreeSessionsThroughTheOverviewKeepsDraftsAndTranscriptsApart() async throws {
+    @Test func switchingThreeSessionsThroughTheOverviewShowsTheSelectedTranscript() async throws {
         try await WorkspaceIntegrationDriver.run { app in
             try await app.projects.connect()
             try await app.tabs.openQuickChat()
-            app.tabs.enterDraft("Draft for the new chat")
             app.overview.backToProjects()
 
             try await app.tabs.openHistory()
-            app.tabs.enterDraft("Draft for the saved one")
             app.overview.backToProjects()
 
             try await app.tabs.openRunningSession()
@@ -29,10 +27,8 @@ import Testing
             app.overview.shouldShow(["New chat", "Saved", "Working"])
 
             try await app.overview.select("Saved")
-            app.tabs.draftShouldBe("Draft for the saved one")
             app.tabs.transcriptShouldBe(["Answer from saved"])
             try await app.overview.select("New chat")
-            app.tabs.draftShouldBe("Draft for the new chat")
             app.tabs.transcriptShouldBe(["Answer from new-1"])
 
             // Switching and browsing are local: nothing reaches the server.

@@ -11,6 +11,7 @@ public struct WorkspaceContainer: View {
     @InjectedObject(\.sessionStore) private var session
     @State private var confirmConnect = false
     @State private var confirmDisconnect = false
+    @State private var composerDraft = ""
 
     private let onOpenSettings: @MainActor () -> Void
     private let isSettingsPresented: Bool
@@ -35,11 +36,13 @@ public struct WorkspaceContainer: View {
             } message: {
                 Text("Server work may continue. Disconnecting does not stop or close the session.")
             }
-            // A per-tab draft is only dropped once the send was admitted.
             .onChange(of: session.state.clearDraftMatching) { _, matching in
                 guard let matching else { return }
-                store.dispatch(.draftCleared(matching: matching))
+                if composerDraft == matching { composerDraft = "" }
                 session.dispatch(.clearDraftConsumed)
+            }
+            .onChange(of: store.state.selectedSessionId) { _, _ in
+                composerDraft = ""
             }
     }
 
@@ -61,7 +64,7 @@ public struct WorkspaceContainer: View {
             connection: requestConnectionChange,
             settings: onOpenSettings,
             back: { store.dispatch(.back) },
-            draftChanged: { store.dispatch(.draftChanged($0)) },
+            draftChanged: { composerDraft = $0 },
             send: { text in session.dispatch(.sendRequested(text: text)) },
             stop: { session.dispatch(.stopRequested()) },
             selectTab: { id in store.dispatch(.selectRequested(id: id)) },
@@ -131,10 +134,11 @@ public struct WorkspaceContainer: View {
         let tab = store.state.selectedSession
         var value = SessionPresentation()
         value.title = tab?.title ?? "Pi Studio"
+        value.draft = composerDraft
         value.status = state.statusText
         value.details = tab?.projectPath ?? ""
         value.error = state.errorMessage
-        value.draft = store.state.draft
+        value.draft = composerDraft
         value.followTail = store.state.followTail
         value.scrollAnchor = store.state.scrollAnchor
         value.placeholder = state.connection == .disconnected ? "Open a session to start." : "Start a conversation."
