@@ -28,10 +28,12 @@ enum QuickSwitcherModel {
         for project in catalogue.projects {
             let worktree = project.worktree?.primary == false
             let repository = project.repositoryName ?? catalogue.projects.first { $0.path == project.repositoryPath }?.name ?? project.name
-            items.append(Item(id: "project:\(project.path)", kind: worktree ? .worktree : .folder,
-                              title: worktree ? (project.worktree?.branch ?? project.name) : project.name,
-                              detail: worktree ? repository : "", modified: 0, target: nil,
-                              projectPath: project.path, enabled: project.exists))
+            if project.exists {
+                items.append(Item(id: "project:\(project.path)", kind: worktree ? .worktree : .folder,
+                                  title: worktree ? (project.worktree?.branch ?? project.name) : project.name,
+                                  detail: worktree ? repository : "", modified: 0, target: nil,
+                                  projectPath: project.path, enabled: true))
+            }
             for history in project.sessions where history.archivedAt == nil {
                 let runtime = catalogue.sessions.first { $0.sessionPath == history.path }
                 items.append(Item(id: "history:\(history.path)", kind: .session,

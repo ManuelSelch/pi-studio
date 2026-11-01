@@ -12,7 +12,7 @@ iOS also provides a search button. Filters use # for folders, % for worktrees,
 creates a session there; selecting a session opens or focuses it. Folder and worktree
 rows omit paths; worktrees show their repository and branch. Tab and Shift+Tab cycle
 filters in opposite directions. Escape or a click/tap outside dismisses the switcher.
-Archived history is excluded. The session inbox remains available for navigation. Launch automatically
+Folders and worktrees reported missing by the server are hidden, while their saved sessions remain searchable. Archived history is excluded. The session inbox remains available for navigation. Launch automatically
 connects to the configured server and takes control without creating or attaching
 to a session. A failed connection is shown on Home with a retry action. Conversations
 use a Markdown transcript, multiline message field, icon-only ↑ Send and errors.
