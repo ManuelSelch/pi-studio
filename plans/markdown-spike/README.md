@@ -5,8 +5,13 @@ Standalone macOS SwiftUI experiment. It does not change Pi Studio or connect to 
 Run from the repository root:
 
 ```sh
-swift run --package-path plans/markdown-spike --scratch-path /tmp/pi-studio-markdown-spike-build MarkdownSpike
+cd plans/markdown-spike
+xcodebuild -scheme MarkdownSpike -destination 'platform=macOS' \
+  -derivedDataPath /tmp/pi-studio-markdown-spike-xcode -skipMacroValidation build
+/tmp/pi-studio-markdown-spike-xcode/Build/Products/Debug/MarkdownSpike
 ```
+
+The build command trusts the dependency's Equatable compiler macro (`-skipMacroValidation`). Review the dependency before using that option. It uses Xcode to compile the library's asset catalog; `swift run` copied the raw `.xcassets` without an `Assets.car` in our build and may make the text invisible. The Xcode build contains the compiled catalog, but its on-screen result still needs user verification.
 
 The user prompt is static; the response streams one character at a time. Replay restarts it. Inspect incomplete and completed formatting, links, code, tables and text selection. This does not test iOS, real Pi events, reconnection, auto-scroll or performance.
 
