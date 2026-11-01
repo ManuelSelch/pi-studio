@@ -71,7 +71,9 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
   `@InjectedObject`, not `@Injected`, so SwiftUI observes state publications. Future navigation/router wiring
   belongs here or in the host shell. [Router](https://github.com/ManuelSelch/Router)
   **2.0.0** drives settings presentation through an app-scoped `ModalRouter`;
-  workspace session tabs and phone navigation remain workspace state.
+  workspace session selection and phone navigation remain workspace state. On Mac,
+  conversations are selected from the project/history sidebar rather than a tab strip
+  or open-sessions toolbar.
 - [Components](Packages/PiUI/Sources/PiUI/Session/UI) take plain display values and
   callbacks. The Mac composer uses a vertical SwiftUI TextField, selection/focus bindings
   and SwiftUI keyboard/exit commands, without an AppKit editor/event adapter.
@@ -94,7 +96,8 @@ Validate the legacy icon slots, PNG sizes and opaque iOS format with
 - Keep both Package.resolved files checked in; they pin all four released
   dependencies.
 - AppContainer owns the settings modal scope through Router; workspace session
-  tabs and phone navigation remain workspace state. See the
+  selection and phone navigation remain workspace state. Mac session switching uses
+  the project/history sidebar; iPhone retains its open-sessions overview. See the
   [integration design](plans/router-integration/DESIGN.md).
 
 [SessionConfiguration](Packages/PiUI/Sources/PiUI/Session/App/SessionConfiguration.swift)

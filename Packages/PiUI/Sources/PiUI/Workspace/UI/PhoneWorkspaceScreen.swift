@@ -58,7 +58,7 @@ struct PhoneWorkspaceScreen: View {
 }
 
 private extension View {
-    /// The overview entry point exists on iPhone only; macOS switches through its tab strip.
+    /// The overview entry point exists on iPhone only; macOS switches through its sidebar.
     @ViewBuilder func phoneOverviewToolbar(isConnected: Bool,
                                            open: @escaping @MainActor () -> Void) -> some View {
         #if os(iOS)

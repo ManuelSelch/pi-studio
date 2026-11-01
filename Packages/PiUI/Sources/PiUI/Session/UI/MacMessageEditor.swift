@@ -16,7 +16,7 @@ struct MacMessageEditor: View {
     var body: some View {
         TextField("Say hello", text: $text, selection: $selection, axis: .vertical)
             .lineLimit(2...5)
-            .textFieldStyle(.roundedBorder)
+            .textFieldStyle(.plain)
             .focused(focus)
             .disabled(!canEdit)
             .accessibilityLabel("Message")

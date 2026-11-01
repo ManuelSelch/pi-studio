@@ -26,6 +26,13 @@ struct SessionComposer: View {
             #if os(macOS)
             MacMessageEditor(text: text, canEdit: canEdit, canSend: sendEnabled,
                              focus: focus, onSend: submit)
+                .padding(10)
+                .background(Color(nsColor: .textBackgroundColor),
+                            in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .stroke(Color(nsColor: .separatorColor).opacity(0.45), lineWidth: 1)
+                }
             #else
             TextField("Say hello", text: text, axis: .vertical)
                 .lineLimit(2...5).textFieldStyle(.roundedBorder).focused(focus)
