@@ -10,6 +10,8 @@ let package = Package(
         .package(path: "../../.dependencies/pi-sdk-swift"),
         .package(url: "https://github.com/hmlongco/Factory.git", from: "2.5.3"),
         .package(url: "https://github.com/ManuelSelch/Flux.git", exact: "2.0.1"),
+        // v0.7.0 declares revision-based dependencies, so SwiftPM requires a revision here.
+        .package(url: "https://github.com/microsoft/SwiftStreamingMarkdown", revision: "5f7c04e0558df6146f90d482edb62cb456986bda"),
     ],
     targets: [
         .target(name: "PiUI", dependencies: [
@@ -17,6 +19,7 @@ let package = Package(
             .product(name: "PiSDK", package: "pi-sdk-swift"),
             .product(name: "Flux", package: "Flux"),
             .product(name: "FactoryKit", package: "Factory"),
+            .product(name: "SwiftStreamingMarkdown", package: "SwiftStreamingMarkdown"),
         ]),
         .testTarget(name: "PiUITests", dependencies: [
             "PiUI", .product(name: "FluxTestStore", package: "Flux"),
