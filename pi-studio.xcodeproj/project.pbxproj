@@ -672,20 +672,20 @@
 				version = 0.1.0;
 			};
 		};
-		F00000000000000000000002 /* XCRemoteSwiftPackageReference "Flux" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ManuelSelch/Flux.git";
-			requirement = {
-				kind = exactVersion;
-				version = 2.0.1;
-			};
-		};
 		D00000000000000000000002 /* XCRemoteSwiftPackageReference "Factory" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/hmlongco/Factory.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 2.5.3;
+			};
+		};
+		F00000000000000000000002 /* XCRemoteSwiftPackageReference "Flux" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ManuelSelch/Flux.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.0.1;
 			};
 		};
 		G00000000000000000000002 /* XCRemoteSwiftPackageReference "Router" */ = {
