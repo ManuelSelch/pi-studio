@@ -25,9 +25,17 @@ import XCTest
         XCTAssertFalse(app.staticTexts["Projects & history"].exists, file: file, line: line)
     }
     func shouldBeBrowsing(file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssertTrue(app.staticTexts["Sessions"].waitForExistence(timeout: 5), file: file, line: line)
+        XCTAssertTrue(app.buttons["inbox-/history/quick"].waitForExistence(timeout: 5), file: file, line: line)
         XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "messageField").firstMatch.exists, file: file, line: line)
     }
+    func shouldShowNewSessionWithoutHeading(file: StaticString = #filePath, line: UInt = #line) throws {
+        XCTAssertTrue(app.buttons["newInboxSession"].waitForExistence(timeout: 5), file: file, line: line)
+        XCTAssertFalse(app.staticTexts["Sessions"].exists, file: file, line: line)
+        #if os(macOS)
+        XCTAssertFalse(app.staticTexts["Pi Studio"].exists, file: file, line: line)
+        #endif
+    }
+
     func shouldHaveCompactHeader(file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertFalse(app.staticTexts["Pi Pocket"].exists, file: file, line: line)
         XCTAssertFalse(app.staticTexts["Development server"].exists, file: file, line: line)

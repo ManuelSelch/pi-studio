@@ -16,7 +16,6 @@ struct WorkspaceSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
             if let error = presentation.error {
                 Text(verbatim: error)
                     .font(.caption).foregroundStyle(.red)
@@ -42,7 +41,6 @@ struct WorkspaceSidebar: View {
                 .padding(.vertical, 8)
             }
             if !presentation.sessions(in: .later).isEmpty {
-                Divider()
                 VStack(spacing: 0) {
                     disclosure("Later", count: presentation.sessions(in: .later).count,
                                expanded: $laterExpanded)
@@ -53,14 +51,11 @@ struct WorkspaceSidebar: View {
             Divider()
             footer
         }
+        .background(sidebarBackground)
     }
 
     private var header: some View {
         HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Pi Studio").font(.caption).foregroundStyle(.secondary)
-                Text("Sessions").font(.headline)
-            }
             Spacer()
             Button {
                 if let path = presentation.newSessionPath { onCreate(path) }
@@ -70,6 +65,14 @@ struct WorkspaceSidebar: View {
                 .accessibilityIdentifier("newInboxSession")
         }
         .padding(.horizontal, 12).frame(minHeight: 54)
+    }
+
+    private var sidebarBackground: Color {
+        #if os(macOS)
+        Color(nsColor: .controlBackgroundColor)
+        #else
+        Color(uiColor: .secondarySystemBackground)
+        #endif
     }
 
     @ViewBuilder private func statusSection(_ title: String, status: InboxSession.Status) -> some View {
@@ -113,8 +116,6 @@ struct WorkspaceSidebar: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading, 10).padding(.trailing, 4).frame(minHeight: 46)
-                    .background(isSelected(session.row) ? Color.accentColor.opacity(0.15) : .clear,
-                                in: RoundedRectangle(cornerRadius: 6))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -143,8 +144,7 @@ struct WorkspaceSidebar: View {
                 else if hoveredSession == session.id { hoveredSession = nil }
             }
             .padding(.horizontal, 6)
-            .background(isSelected(session.row) ? Color.accentColor.opacity(0.08) : .clear,
-                        in: RoundedRectangle(cornerRadius: 6))
+            .background(rowBackground(session.row), in: RoundedRectangle(cornerRadius: 6))
         }
     }
 
@@ -157,17 +157,23 @@ struct WorkspaceSidebar: View {
             Button(action: onConnection) {
                 Image(systemName: presentation.canConnect ? "bolt" : "bolt.slash").frame(width: 32, height: 40)
             }
-            .buttonStyle(.plain).foregroundStyle(.tint)
+            .buttonStyle(.plain).foregroundStyle(.primary)
             .accessibilityLabel(presentation.canConnect ? "Connect" : "Disconnect")
             .accessibilityIdentifier("connectButton")
             Button(action: onSettings) {
                 Image(systemName: "gearshape").frame(width: 32, height: 40)
             }
-            .buttonStyle(.plain).foregroundStyle(.tint)
+            .buttonStyle(.plain).foregroundStyle(.primary)
             .accessibilityLabel("Connection settings")
             .accessibilityIdentifier("settingsButton")
         }
         .padding(.horizontal, 10)
+    }
+
+    private func rowBackground(_ row: ProjectSessionRow) -> Color {
+        if isSelected(row) { return Color.primary.opacity(0.09) }
+        if hoveredSession == row.id { return Color.primary.opacity(0.04) }
+        return .clear
     }
 
     private func laterActionVisible(_ id: String) -> Bool {
