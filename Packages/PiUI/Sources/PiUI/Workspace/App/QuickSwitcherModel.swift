@@ -27,15 +27,16 @@ enum QuickSwitcherModel {
         var items: [Item] = []
         for project in catalogue.projects {
             let worktree = project.worktree?.primary == false
+            let repository = project.repositoryName ?? catalogue.projects.first { $0.path == project.repositoryPath }?.name ?? project.name
             items.append(Item(id: "project:\(project.path)", kind: worktree ? .worktree : .folder,
                               title: worktree ? (project.worktree?.branch ?? project.name) : project.name,
-                              detail: project.displayPath, modified: 0, target: nil,
+                              detail: worktree ? repository : "", modified: 0, target: nil,
                               projectPath: project.path, enabled: project.exists))
             for history in project.sessions where history.archivedAt == nil {
                 let runtime = catalogue.sessions.first { $0.sessionPath == history.path }
                 items.append(Item(id: "history:\(history.path)", kind: .session,
                                   title: runtime?.title ?? history.title,
-                                  detail: [project.name, project.worktree?.branch].compactMap { $0 }.joined(separator: " · "),
+                                  detail: [repository, project.worktree?.branch].compactMap { $0 }.joined(separator: " · "),
                                   modified: history.modified,
                                   target: runtime.map { .runtime($0.sessionId) } ?? .history(history.path),
                                   projectPath: project.path, enabled: runtime?.status != "closing"))
@@ -44,8 +45,14 @@ enum QuickSwitcherModel {
         for runtime in catalogue.sessions where !catalogue.projects.contains(where: { project in
             project.sessions.contains { $0.path == runtime.sessionPath }
         }) {
+            let project = catalogue.projects.first { $0.path == runtime.projectPath }
+            let repository = project?.repositoryName ?? project.flatMap { project in
+                catalogue.projects.first { $0.path == project.repositoryPath }?.name
+            } ?? runtime.projectName
+            let detail = [repository, project?.worktree?.primary == false ? project?.worktree?.branch : nil]
+                .compactMap { $0 }.joined(separator: " · ")
             items.append(Item(id: "runtime:\(runtime.sessionId)", kind: .session, title: runtime.title,
-                              detail: runtime.projectName, modified: 0, target: .runtime(runtime.sessionId),
+                              detail: detail, modified: 0, target: .runtime(runtime.sessionId),
                               projectPath: runtime.projectPath, enabled: runtime.status != "closing"))
         }
         let ranked = items.compactMap { item -> (Item, Double)? in

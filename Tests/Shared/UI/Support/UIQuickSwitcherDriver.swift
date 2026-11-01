@@ -33,9 +33,11 @@ final class UIQuickSwitcherDriver {
         XCTAssertTrue(app.buttons["quickSwitcherResult-history:/history/quick"].waitForExistence(timeout: 5), file: file, line: line)
     }
     func dismiss(file: StaticString = #filePath, line: UInt = #line) throws {
-        let button = app.buttons["quickSwitcherDismiss"]
-        XCTAssertTrue(button.waitForExistence(timeout: 5), file: file, line: line)
-        button.tap()
+        #if os(macOS)
+        app.typeKey(XCUIKeyboardKey.escape.rawValue, modifierFlags: [])
+        #else
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).tap()
+        #endif
         XCTAssertFalse(searchField.waitForExistence(timeout: 1), file: file, line: line)
     }
     func homeSearchShouldBeCollapsed(file: StaticString = #filePath, line: UInt = #line) throws {
@@ -78,6 +80,42 @@ final class UIQuickSwitcherDriver {
         XCTAssertTrue(result.waitForExistence(timeout: 5), file: file, line: line)
         XCTAssertTrue(result.label.contains(title), file: file, line: line)
     }
+    func shouldHideKeyboardHints(file: StaticString = #filePath, line: UInt = #line) throws {
+        XCTAssertFalse(app.buttons["quickSwitcherDismiss"].exists, file: file, line: line)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Tab filters")).firstMatch.exists, file: file, line: line)
+    }
+    func shouldHideResultsHeading(file: StaticString = #filePath, line: UInt = #line) throws {
+        XCTAssertFalse(app.staticTexts["RESULTS"].exists, file: file, line: line)
+    }
+    func dismissWithoutCloseButton(file: StaticString = #filePath, line: UInt = #line) throws {
+        try dismiss(file: file, line: line)
+    }
+    func folderResultShouldHidePath(_ name: String, file: StaticString = #filePath, line: UInt = #line) throws {
+        let result = app.buttons["quickSwitcherResult-project:/home/pi"]
+        XCTAssertTrue(result.waitForExistence(timeout: 5), file: file, line: line)
+        XCTAssertTrue(result.label.contains(name), file: file, line: line)
+        XCTAssertFalse(result.label.contains("/home/pi"), file: file, line: line)
+    }
+    func worktreeResultShouldShowRepository(_ name: String, branch: String, file: StaticString = #filePath, line: UInt = #line) throws {
+        let result = app.buttons["quickSwitcherResult-project:/worktree/pocket"]
+        XCTAssertTrue(result.waitForExistence(timeout: 5), file: file, line: line)
+        XCTAssertTrue(result.label.contains(name), file: file, line: line)
+        XCTAssertTrue(result.label.contains(branch), file: file, line: line)
+    }
+    func worktreeResultShouldHidePath(_ branch: String, file: StaticString = #filePath, line: UInt = #line) throws {
+        let result = app.buttons["quickSwitcherResult-project:/worktree/pocket"]
+        XCTAssertTrue(result.label.contains(branch), file: file, line: line)
+        XCTAssertFalse(result.label.contains("/worktree/pocket"), file: file, line: line)
+    }
+    #if os(macOS)
+    func pressTab() throws { searchField.typeKey(XCUIKeyboardKey.tab.rawValue, modifierFlags: []) }
+    func pressShiftTab() throws { searchField.typeKey(XCUIKeyboardKey.tab.rawValue, modifierFlags: .shift) }
+    func filterShouldBe(_ name: String, search: String, file: StaticString = #filePath, line: UInt = #line) throws {
+        let prefixes = ["All": "", "Folders": "#", "Worktrees": "%", "Sessions": "@", "Actions": "/"]
+        XCTAssertEqual(searchField.value as? String, (prefixes[name] ?? "") + search, file: file, line: line)
+    }
+    #endif
+
     func shouldShowNoActions(file: StaticString = #filePath, line: UInt = #line) throws {
         XCTAssertTrue(element("quickSwitcherEmpty").waitForExistence(timeout: 5), file: file, line: line)
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "quickSwitcherResult-")).count, 0, file: file, line: line)

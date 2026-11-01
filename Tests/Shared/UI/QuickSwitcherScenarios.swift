@@ -58,6 +58,40 @@ final class QuickSwitcherScenarios: XCTestCase {
         try switcher.shouldShowNoActions()
     }
 
+    func testSwitcherOmitsKeyboardHintLabels() throws {
+        try switcher.openFromHomeSearch()
+
+        try switcher.shouldHideKeyboardHints()
+        try switcher.search("studio")
+        try switcher.shouldHideResultsHeading()
+        try switcher.dismissWithoutCloseButton()
+    }
+
+    func testFolderAndWorktreeResultsShowNamesWithoutPaths() throws {
+        try switcher.openFromHomeSearch()
+        try switcher.filter("Folders")
+        try switcher.folderResultShouldHidePath("Quick Chats")
+
+        try switcher.filter("Worktrees")
+        try switcher.worktreeResultShouldShowRepository("pi-studio", branch: "feat/pocket")
+        try switcher.worktreeResultShouldHidePath("feat/pocket")
+    }
+
+    #if os(macOS)
+    func testShiftTabCyclesFiltersBackwards() throws {
+        try switcher.openFromHomeSearch()
+        try switcher.search("studio")
+        try switcher.pressTab()
+        try switcher.filterShouldBe("Folders", search: "studio")
+        try switcher.pressShiftTab()
+        try switcher.filterShouldBe("All", search: "studio")
+        try switcher.pressShiftTab()
+        try switcher.filterShouldBe("Actions", search: "studio")
+        try switcher.pressTab()
+        try switcher.filterShouldBe("All", search: "studio")
+    }
+    #endif
+
     func testSelectingFolderCreatesNewSession() throws {
         try switcher.openFromHomeSearch()
         try switcher.selectFolder("Quick Chats")

@@ -56,7 +56,11 @@ struct WorkspaceHome: View {
         }
         .padding(.horizontal, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(surface)
+        .background {
+            surface.contentShape(Rectangle()).onTapGesture {
+                if presentation.quickSwitcherOpen { actions.dismissQuickSwitcher() }
+            }
+        }
     }
 
     private var surface: Color {

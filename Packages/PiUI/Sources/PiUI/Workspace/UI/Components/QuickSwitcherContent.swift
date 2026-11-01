@@ -30,12 +30,12 @@ struct QuickSwitcherContent: View {
                     #if os(macOS)
                     .onKeyPress(.downArrow) { moveSelection(1); return .handled }
                     .onKeyPress(.upArrow) { moveSelection(-1); return .handled }
-                    .onKeyPress(.tab, phases: .down) { press in cycleScope(press.modifiers.contains(.shift) ? -1 : 1); return .handled }
+                    .onKeyPress(phases: .down) { press in
+                        guard press.key == .tab || press.characters == "\u{19}" else { return .ignored }
+                        cycleScope(press.modifiers.contains(.shift) || press.characters == "\u{19}" ? -1 : 1)
+                        return .handled
+                    }
                     #endif
-                Button("esc", action: actions.dismissQuickSwitcher)
-                    .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
-                    .accessibilityLabel("Close quick switcher")
-                    .accessibilityIdentifier("quickSwitcherDismiss")
             }
             .padding(.horizontal, 16).frame(height: 52)
             ScrollView(.horizontal, showsIndicators: false) {
@@ -54,9 +54,11 @@ struct QuickSwitcherContent: View {
             }
             Divider()
             VStack(alignment: .leading, spacing: 4) {
-                Text(prefix.isEmpty && presentation.quickSwitcherQuery.isEmpty ? "RECENT SESSIONS" : "RESULTS")
-                    .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                    .padding(.horizontal, 12).padding(.top, 12)
+                if prefix.isEmpty && presentation.quickSwitcherQuery.isEmpty {
+                    Text("RECENT SESSIONS")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                        .padding(.horizontal, 12).padding(.top, 12)
+                }
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 2) {
@@ -72,7 +74,9 @@ struct QuickSwitcherContent: View {
                                         Image(systemName: icon(for: item.kind)).foregroundStyle(.secondary).frame(width: 20)
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text(item.title).font(.callout.weight(.medium)).lineLimit(1)
-                                            Text(item.detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                            if !item.detail.isEmpty {
+                                                Text(item.detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                            }
                                         }
                                         Spacer(minLength: 0)
                                     }.padding(.horizontal, 12).padding(.vertical, 9).contentShape(Rectangle())
@@ -91,11 +95,6 @@ struct QuickSwitcherContent: View {
                     }
                 }
             }.padding(.bottom, 8)
-            Divider()
-            HStack {
-                Text("Tab filters · ↑↓ navigate · Enter open · Esc close")
-                Spacer(minLength: 0)
-            }.font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.vertical, 10)
         }
         .background(.background, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary))

@@ -16,6 +16,25 @@ import PiSDK
         #expect(items.map(\.title) == ["Recent", "Older"])
     }
 
+    @Test func folderAndWorktreeResultsShowNoPathsAndUseRepositoryName() throws {
+        let catalogue = PiCatalogue(projects: [
+            .init(path: "/repos/pi-studio", name: "pi-studio"),
+            .init(path: "/worktrees/feat-markdown", name: "feat-markdown", repositoryPath: "/repos/pi-studio",
+                  repositoryName: "pi-studio", worktree: .init(branch: "feat/markdown", primary: false),
+                  sessions: [.init(path: "/history/markdown", title: "Markdown")])
+        ])
+
+        let folder = try #require(QuickSwitcherModel.results(catalogue: catalogue, query: "#").first)
+        let worktree = try #require(QuickSwitcherModel.results(catalogue: catalogue, query: "%").first)
+        let session = try #require(QuickSwitcherModel.results(catalogue: catalogue, query: "@markdown").first)
+
+        #expect(folder.detail.isEmpty)
+        #expect(worktree.title == "feat/markdown")
+        #expect(worktree.detail == "pi-studio")
+        #expect(session.detail == "pi-studio · feat/markdown")
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "%pi-studio").count == 1)
+    }
+
     @Test func searchesAbbreviationsAndSingleTypos() {
         let catalogue = PiCatalogue(projects: [
             .init(path: "/studio", name: "pi-studio"),

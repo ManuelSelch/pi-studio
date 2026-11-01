@@ -73,6 +73,16 @@ final class MacComposerDriver {
         try await settle()
     }
 
+    func pressTab(shift: Bool = false) async throws {
+        _ = try editor()
+        let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero,
+            modifierFlags: shift ? .shift : [], timestamp: 0, windowNumber: window.windowNumber,
+            context: nil, characters: shift ? "\u{19}" : "\t", charactersIgnoringModifiers: "\t",
+            isARepeat: false, keyCode: 48))
+        window.sendEvent(event)
+        try await settle()
+    }
+
     func undo() async throws {
         window.undoManager?.undo()
         try await settle()
