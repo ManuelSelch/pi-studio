@@ -38,26 +38,81 @@ final class PiUIDriver {
         // Appearance tests rotate the simulator; functional scenarios own orientation.
         XCUIDevice.shared.orientation = .portrait
         #endif
-        app.launch()
-        #if os(macOS)
-        // XCUITest launches the app behind whatever is frontmost, and a non-key window gets no
-        // keystrokes and an empty accessibility tree. Activate it instead of clicking the Dock.
-        app.activate()
-        #endif
         test.addTeardownBlock { @MainActor in
             app.terminate()
             app.launchArguments.append("--ui-reset-settings")
             app.launch()
             app.terminate()
         }
+        #if os(macOS)
+        recordLaunchState(app, stage: "before launch")
+        #endif
+        app.launch()
+        #if os(macOS)
+        recordLaunchState(app, stage: "after launch, before activation")
+        app.activate()
+        recordLaunchState(app, stage: "after activation")
+        checkLaunchReadiness(app, stage: "initial launch")
+        #endif
         return PiUIDriver(UIContext(app))
     }
 
     func relaunch() {
         context.app.terminate()
         context.app.launchArguments.removeAll { $0 == "--ui-reset-settings" }
+        #if os(macOS)
+        Self.recordLaunchState(context.app, stage: "before relaunch")
+        #endif
         context.app.launch()
+        #if os(macOS)
+        // Preserve the existing relaunch behavior while diagnosing it: no extra activation.
+        Self.recordLaunchState(context.app, stage: "after relaunch")
+        Self.checkLaunchReadiness(context.app, stage: "relaunch")
+        #endif
     }
+
+    #if os(macOS)
+    private static func checkLaunchReadiness(_ app: XCUIApplication, stage: String) {
+        let foreground = app.wait(for: .runningForeground, timeout: 5)
+        let window = app.windows.firstMatch.waitForExistence(timeout: 5)
+        let control = app.buttons["settingsButton"].firstMatch.waitForExistence(timeout: 5)
+        let ready = foreground && window && control
+        recordLaunchState(app, stage: "\(stage) readiness", details: """
+        foreground within 5s: \(foreground)
+        window within 5s: \(window)
+        settings control within 5s: \(control)
+        """, includeHierarchy: !ready)
+        XCTAssertTrue(ready, "macOS \(stage) not ready: foreground=\(foreground), window=\(window), settings=\(control). See launch diagnostics in the test log and xcresult attachments.")
+    }
+
+    private static func recordLaunchState(_ app: XCUIApplication, stage: String,
+                                          details: String = "", includeHierarchy: Bool = false) {
+        let frontmost = NSWorkspace.shared.frontmostApplication
+        let state = app.state
+        // Accessibility queries against a terminated app can themselves fail the test.
+        let running = state == .runningForeground || state == .runningBackground
+        let windows = running ? String(app.windows.count) : "not queried (app not running)"
+        let report = """
+        [macOS launch diagnostics] \(stage)
+        time: \(Date().ISO8601Format())
+        XCTest app state: \(state) (\(state.rawValue))
+        app windows: \(windows)
+        frontmost bundle: \(frontmost?.bundleIdentifier ?? "none")
+        frontmost PID: \(frontmost?.processIdentifier ?? -1)
+        test runner PID: \(ProcessInfo.processInfo.processIdentifier)
+        launch arguments: \(app.launchArguments)
+        \(details)
+        """
+        let output = includeHierarchy && running ? report + "\nAccessibility hierarchy:\n" + app.debugDescription : report
+        print(output)
+        XCTContext.runActivity(named: "macOS launch: \(stage)") { activity in
+            let attachment = XCTAttachment(string: output)
+            attachment.name = "macOS launch: \(stage)"
+            attachment.lifetime = .keepAlways
+            activity.add(attachment)
+        }
+    }
+    #endif
 }
 
 @MainActor

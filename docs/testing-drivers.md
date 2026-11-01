@@ -77,8 +77,14 @@ while automation is paused. iOS `pressSoftwareReturn` taps the software Return k
 `typeText` newline events do not prove physical hardware-keyboard behavior.
 `delayedAdmission` uses only the injected debug fixture, never a live server.
 
-The root registers app termination with XCTest teardown and selects portrait on
-iOS. Named send-outcome options hide debug launch arguments. The context hides
+The root registers app termination with XCTest teardown before launching and selects
+portrait on iOS. On macOS, shared launch/relaunch records app state, window count,
+frontmost application/PID and launch arguments as text in the test log and retained
+xcresult attachments. Readiness checks allow up to five seconds each for foreground
+state, a window and the Settings control; failure also retains the accessibility
+hierarchy. Initial launch still calls `activate()`; relaunch deliberately does not
+add an activation workaround. These diagnostics do not capture screenshots or fix
+window presentation. Named send-outcome options hide debug launch arguments. The context hides
 macOS sheets versus iOS alerts and native static-text representation. Assertions
 forward file/line to the scenario. Reply handles are semantic turn numbers, not
 accessibility identifiers.
