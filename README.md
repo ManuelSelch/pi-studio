@@ -189,7 +189,7 @@ A push or PR is needed to verify the workflow on hosted runners.
 
 ## Test pipeline
 
-[.pi/pipeline.json](.pi/pipeline.json) configures once-per-worktree preparation and
+[.pi/pipeline.yaml](.pi/pipeline.yaml) configures once-per-worktree preparation and
 seven independent suites. Only fast `piui` tests opt into after-agent execution;
 UI automation is manual because it takes control of the Simulator/desktop.
 **Current user instruction: do not run macOS automation tests until authorized.**
