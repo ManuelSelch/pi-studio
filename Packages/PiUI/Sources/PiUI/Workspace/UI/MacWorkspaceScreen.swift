@@ -13,6 +13,23 @@ struct MacWorkspaceScreen: View {
         } detail: {
             WorkspacePane(presentation: presentation, session: session, actions: actions)
         }
+        .navigationTitle(presentation.selection == nil ? "Pi Studio" : "")
+        .toolbar {
+            if let selection = presentation.selection {
+                ToolbarItem(placement: .navigation) {
+                    HStack(spacing: 8) {
+                        Text(selection.projectName).foregroundStyle(.secondary).lineLimit(1)
+                            .accessibilityIdentifier("sessionContext")
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                        Text(selection.title).font(.headline).lineLimit(1)
+                            .accessibilityIdentifier("sessionTitle")
+                    }
+                }
+                .sharedBackgroundVisibility(.hidden)
+                SessionWindowActions(selection: selection, status: session.status, actions: actions)
+            }
+        }
     }
 
     private var sidebar: some View {

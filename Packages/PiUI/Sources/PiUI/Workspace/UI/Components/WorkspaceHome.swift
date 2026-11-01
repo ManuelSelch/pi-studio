@@ -29,9 +29,9 @@ struct WorkspaceHome: View {
                 .background(.background, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.quaternary))
                 .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
-                .onChange(of: homeSearchFocused) { _, focused in
-                    if focused && !presentation.quickSwitcherOpen { actions.openQuickSwitcher() }
-                }
+                .simultaneousGesture(TapGesture().onEnded {
+                    if !presentation.quickSwitcherOpen { actions.openQuickSwitcher() }
+                })
 
                 if presentation.quickSwitcherOpen {
                     QuickSwitcherContent(presentation: presentation, actions: actions)

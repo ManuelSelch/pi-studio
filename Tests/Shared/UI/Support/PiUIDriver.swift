@@ -28,7 +28,7 @@ final class PiUIDriver {
     static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted,
                        rejectOpen: Bool = false, delayedAdmission: Bool = false,
                        automaticallyConnect: Bool = false, failFirstConnection: Bool = false,
-                       markdownResponse: Bool = false) -> PiUIDriver {
+                       markdownResponse: Bool = false, rejectArchive: Bool = false) -> PiUIDriver {
         let app = XCUIApplication()
         // Keep fixture configuration out of AppKit's command-line/defaults parsing.
         app.launchEnvironment = [
@@ -46,6 +46,7 @@ final class PiUIDriver {
         }
         if delayedAdmission { app.launchEnvironment["PI_UI_SEND_DELAYED"] = "1" }
         if markdownResponse { app.launchEnvironment["PI_UI_MARKDOWN_RESPONSE"] = "1" }
+        if rejectArchive { app.launchEnvironment["PI_UI_ARCHIVE_REJECTED"] = "1" }
         #if os(macOS)
         // A prior windowless launch must not restore into the next UI test.
         app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]
