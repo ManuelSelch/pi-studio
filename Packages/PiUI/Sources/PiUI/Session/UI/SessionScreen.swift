@@ -42,7 +42,6 @@ public struct SessionScreen: View {
     @State private var confirmDisconnect = false
     @State private var stopKeyAllowed = false
     @FocusState private var messageFocused: Bool
-    @FocusState private var conversationFocused: Bool
 
     public init(presentation: SessionPresentation,
                 onDraftChanged: @escaping @MainActor (String) -> Void,
@@ -99,18 +98,6 @@ public struct SessionScreen: View {
                             }, onStop: onStop)
         }
         #if os(macOS)
-        // Keep an eligible run's Escape command reachable when its editor becomes disabled.
-        // Only transfer focus if the user was in this composer, never from another control.
-        .focusable(!presentation.canEditMessage)
-        .focusEffectDisabled()
-        .focused($conversationFocused)
-        .onChange(of: presentation.canEditMessage) { _, editable in
-            if !editable && messageFocused { conversationFocused = true }
-            else if editable && conversationFocused {
-                conversationFocused = false
-                messageFocused = true
-            }
-        }
         .onKeyPress(.escape, phases: [.down, .repeat]) { press in
             stopKeyAllowed = press.phase == .down && press.modifiers.isEmpty
             return .ignored
