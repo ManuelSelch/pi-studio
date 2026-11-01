@@ -5,7 +5,7 @@ Native SwiftUI for **macOS 26** (Pi Studio) and **iPhone/iPad iOS 26.1**
 select **My Mac** for a native desktop app, not Catalyst. The mobile product is
 still a Simulator/local-server demo, not a remotely deployed phone controller.
 
-One screen shows connection state, explicit Connect/Disconnect, a plain-text
+One screen shows connection state, explicit Connect/Disconnect, a Markdown
 transcript, multiline message field, icon-only ↑ Send and errors. macOS Esc stops
 an active run; iOS replaces Send with a stop icon while running. No connection
 opens on launch. The approved layouts are preserved in
@@ -113,7 +113,11 @@ iPhone, loopback refers to the phone, not your Mac.
   unsupported. Drafts clear only after admission when they still match the submitted
   text, remain on rejection/unknown outcome, and are never replayed.
 - SDK-owned complete projections deliver incremental text, ordered messages and
-  finalized answers without duplicate drafts. Admission is not answer completion.
+  finalized answers without duplicate drafts. The transcript renders user prompts
+  and assistant replies as Markdown as snapshots arrive; sending preserves the raw
+  prompt. Leading spaces in ordinary top-level prompt paragraphs and trailing
+  newlines after them remain visible; Markdown block indentation retains its syntax.
+  Admission is not answer completion.
 - macOS Esc (no separate Stop button) and the iOS running-state stop icon invoke
   the same guarded cancellation effect. Stop retains partial text and shows
   Stopping until authoritative settlement.
@@ -149,6 +153,9 @@ not yet verified; an Accessibility failure remains a failed test run, not a skip
 After the workflow reaches the default branch, run it from **Actions → macOS UI
 tests → Run workflow**, or with `gh workflow run macos-ui.yml`.
 
+The Xcode build jobs explicitly use `-skipMacroValidation` for the Equatable
+macro dependency. This skips validation for every compiler macro in those builds;
+local Xcode builds can instead use **Trust & Enable** for the specific macro.
 SwiftPM fetches Flux 2.0.1 and Router 2.0.0; the local PiSDK path dependency
 requires configuring the SDK checkout in each worktree before preparation. The
 hosted dependency workflow must use the corresponding SDK change before merging
@@ -257,7 +264,7 @@ user's development server. Failure logs are retained in a temporary directory.
 ## Limitations
 
 Controlled **real-model Pi acceptance is still outstanding**; fake-runtime tests
-are not model-provider proof. Dialog answers, Markdown, tool/thinking rendering,
+are not model-provider proof. Dialog answers, tool/thinking rendering,
 archive editing, reconnect/gap recovery, optional extension UI and secure remote
 access remain out of scope. Sequence gaps fail
 explicitly instead of attempting recovery. This remains a subset of the parent

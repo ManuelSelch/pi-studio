@@ -15,15 +15,16 @@ actor UITestConnection: PiSessionConnection {
     private let unknownSend: Bool
     private let rejectOpen: Bool
     private let delayedAdmission: Bool
+    private let markdownResponse: Bool
     private var stateObservers: [UUID: AsyncStream<PiConnectionState>.Continuation] = [:]
     private var projectionObservers: [UUID: AsyncStream<DemoSessionProjection>.Continuation] = [:]
     private var catalogueObservers: [UUID: AsyncStream<PiCatalogue>.Continuation] = [:]
     private var runtimes: [PiRuntimeSummary] = [.init(sessionId: "ui-running", title: "Pocket navigation", projectPath: "/repo", projectName: "pi-studio", status: "running")]
 
     init(rejectSend: Bool = false, unknownSend: Bool = false, rejectOpen: Bool = false,
-         delayedAdmission: Bool = false) {
+         delayedAdmission: Bool = false, markdownResponse: Bool = false) {
         self.rejectSend = rejectSend; self.unknownSend = unknownSend; self.rejectOpen = rejectOpen
-        self.delayedAdmission = delayedAdmission
+        self.delayedAdmission = delayedAdmission; self.markdownResponse = markdownResponse
     }
     func states() async -> AsyncStream<PiConnectionState> {
         let id = UUID(); let (stream, updates) = AsyncStream<PiConnectionState>.makeStream(bufferingPolicy: .bufferingNewest(1))
@@ -136,8 +137,19 @@ actor UITestConnection: PiSessionConnection {
         let currentTurn = turn
         var messages = projection!.messages
         messages.append(.init(id: "user-\(turn)", role: "user", text: text))
-        messages.append(.init(id: "assistant-\(turn)", role: "assistant", text: "Hello", isPartial: true))
+        messages.append(.init(id: "assistant-\(turn)", role: "assistant", text: markdownResponse ? "## Example\n\n**Par" : "Hello", isPartial: true))
         publish(.running, messages: messages)
+        if markdownResponse {
+            streaming = Task { [weak self] in
+                do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                await self?.append("tial text**", turn: currentTurn)
+                do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                let received = Data(text.utf8).base64EncodedString()
+                await self?.append("\n\n```swift\nlet example = 1\n```\n\n```\n\(received)\n```", turn: currentTurn)
+                await self?.complete(turn: currentTurn)
+            }
+            return
+        }
         streaming = Task { [weak self] in
             for word in " from the demo. This reply is streaming a little at a time.".split(separator: " ") {
                 do { try await Task.sleep(for: .milliseconds(350)) } catch { return }

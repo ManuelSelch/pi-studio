@@ -14,6 +14,10 @@ case "$platform" in
 esac
 args=(-project "$project_root/pi-studio.xcodeproj" -scheme pi-studio -destination "$destination"
       -derivedDataPath "$build_root/xcode-$platform" -parallel-testing-enabled NO)
+# CI opts in because its ephemeral runner cannot approve the Equatable compiler macro interactively.
+if [[ "${PI_STUDIO_SKIP_MACRO_VALIDATION:-0}" == 1 ]]; then
+  args+=(-skipMacroValidation)
+fi
 if [[ "$platform" == macos ]]; then
   # macOS UI-test runners must be signed to bootstrap. Ad-hoc signing needs no account.
   args+=(CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=)

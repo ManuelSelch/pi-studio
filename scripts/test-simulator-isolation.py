@@ -13,7 +13,7 @@ PRIVATE_NAME = f"PiStudio-{WORKTREE}"
 
 
 class SimulatorIsolationTests(unittest.TestCase):
-    def run_script(self, devices, override=None, platform="ios"):
+    def run_script(self, devices, override=None, platform="ios", skip_macro_validation=False):
         with tempfile.TemporaryDirectory(prefix="pi-simulator-test-") as directory:
             path = Path(directory)
             bin_path = path / "bin"
@@ -29,6 +29,9 @@ class SimulatorIsolationTests(unittest.TestCase):
                    "PI_STUDIO_BUILD_ROOT": str(path / "products"), "TEST_CALLS": str(path / "calls"),
                    "TEST_DEVICES": json.dumps({"devices": {"runtime-26": devices}})}
             env.pop("PI_STUDIO_TEST_DESTINATION", None)
+            env.pop("PI_STUDIO_SKIP_MACRO_VALIDATION", None)
+            if skip_macro_validation:
+                env["PI_STUDIO_SKIP_MACRO_VALIDATION"] = "1"
             if override:
                 env["PI_STUDIO_TEST_DESTINATION"] = override
             result = subprocess.run(["bash", "scripts/test-app.sh", platform, "release"],
@@ -51,6 +54,12 @@ class SimulatorIsolationTests(unittest.TestCase):
         output, calls = self.run_script([], "platform=iOS Simulator,id=OVERRIDE")
         self.assertIn("platform=iOS Simulator,id=OVERRIDE", output)
         self.assertEqual(calls, "")
+
+    def test_macro_validation_is_skipped_only_when_explicitly_requested(self):
+        normal, _ = self.run_script([], platform="macos")
+        ci, _ = self.run_script([], platform="macos", skip_macro_validation=True)
+        self.assertNotIn("-skipMacroValidation", normal)
+        self.assertIn("-skipMacroValidation", ci)
 
     def test_macos_does_not_query_simulators(self):
         _, calls = self.run_script([], platform="macos")

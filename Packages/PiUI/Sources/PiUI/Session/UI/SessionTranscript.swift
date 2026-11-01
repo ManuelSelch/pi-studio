@@ -28,7 +28,8 @@ struct SessionTranscript: View {
                     ForEach(messages) { message in
                         VStack(alignment: .leading, spacing: 5) {
                             Text(message.role).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                            Text(verbatim: message.text).textSelection(.enabled)
+                            MarkdownMessageView(text: message.text, preservePromptWhitespace: message.role == "You")
+                                .textSelection(.enabled)
                                 .accessibilityIdentifier("message-\(message.id)")
                         }
                         .id(message.id)

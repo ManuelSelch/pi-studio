@@ -24,7 +24,8 @@ final class PiUIDriver {
     }
 
     static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted,
-                       rejectOpen: Bool = false, delayedAdmission: Bool = false) -> PiUIDriver {
+                       rejectOpen: Bool = false, delayedAdmission: Bool = false,
+                       markdownResponse: Bool = false) -> PiUIDriver {
         let app = XCUIApplication()
         // Keep fixture configuration out of AppKit's command-line/defaults parsing.
         app.launchEnvironment = [
@@ -39,6 +40,7 @@ final class PiUIDriver {
         case .unknown: app.launchEnvironment["PI_UI_SEND_UNKNOWN"] = "1"
         }
         if delayedAdmission { app.launchEnvironment["PI_UI_SEND_DELAYED"] = "1" }
+        if markdownResponse { app.launchEnvironment["PI_UI_MARKDOWN_RESPONSE"] = "1" }
         #if os(macOS)
         // A prior windowless launch must not restore into the next UI test.
         app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]
@@ -260,7 +262,9 @@ final class UISettingsDriver {
 final class UIChatDriver {
     private let context: UIContext
     fileprivate init(_ context: UIContext) { self.context = context }
-    private func reply(_ number: Int) -> XCUIElement { context.app.staticTexts["message-assistant-\(number)"] }
+    private func reply(_ number: Int) -> XCUIElement {
+        context.app.descendants(matching: .any).matching(identifier: "message-assistant-\(number)").firstMatch
+    }
 
     func enterDraft(_ text: String) {
         let field = context.messageField
@@ -317,7 +321,7 @@ final class UIChatDriver {
     }
     func userMessageShouldBe(_ number: Int, _ text: String,
                              file: StaticString = #filePath, line: UInt = #line) {
-        let message = context.app.staticTexts["message-user-\(number)"]
+        let message = context.app.descendants(matching: .any).matching(identifier: "message-user-\(number)").firstMatch
         context.waitFor(message, file: file, line: line)
         XCTAssertEqual(context.renderedText(message), text, file: file, line: line)
     }
@@ -362,6 +366,54 @@ final class UIChatDriver {
     func replyShouldBe(_ number: Int, _ text: String, file: StaticString = #filePath, line: UInt = #line) {
         shouldContainReply(number, file: file, line: line)
         XCTAssertEqual(context.renderedText(reply(number)), text, file: file, line: line)
+    }
+    private func markdownText(_ id: String, containing text: String) -> XCUIElement {
+        let predicate = NSPredicate(format: "identifier == %@ AND (label CONTAINS %@ OR value CONTAINS %@)", id, text, text)
+        return context.app.descendants(matching: .any).matching(predicate).firstMatch
+    }
+    private func waitForMarkdownText(_ id: String, _ text: String, timeout: TimeInterval = 12,
+                                     file: StaticString = #filePath, line: UInt = #line) {
+        context.waitFor(markdownText(id, containing: text), timeout: timeout, file: file, line: line)
+    }
+    private func codeBlockText(containing text: String) -> XCUIElement {
+        context.app.scrollViews.matching(identifier: "message-assistant-1")
+            .descendants(matching: .staticText)
+            .matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+    }
+    func submittedPromptShouldBe(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+        // The fixture returns the received UTF-8 bytes as base64, preserving all whitespace.
+        let received = Data(text.utf8).base64EncodedString()
+        context.waitFor(codeBlockText(containing: received), timeout: 12, file: file, line: line)
+    }
+    func userMessageShouldRenderMarkdown(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+        waitForMarkdownText("message-user-1", text, file: file, line: line)
+    }
+    func streamResponseThrough(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+        let visibleText = text.contains("Partial text") ? "Partial text" : "Par"
+        waitForMarkdownText("message-assistant-1", visibleText, file: file, line: line)
+    }
+    func assistantMessageShouldShowReadablePartial(_ heading: String, _ text: String,
+                                                   file: StaticString = #filePath, line: UInt = #line) {
+        waitForMarkdownText("message-assistant-1", heading, file: file, line: line)
+        waitForMarkdownText("message-assistant-1", text, file: file, line: line)
+    }
+    func finishMarkdownResponse(file: StaticString = #filePath, line: UInt = #line) {
+        context.waitFor(context.app.staticTexts["Ready"], timeout: 12, file: file, line: line)
+    }
+    func assistantMessageShouldRenderHeadingAndCodeBlock(file: StaticString = #filePath, line: UInt = #line) {
+        waitForMarkdownText("message-assistant-1", "Example", file: file, line: line)
+        waitForMarkdownText("message-assistant-1", "swift", file: file, line: line)
+        context.waitFor(codeBlockText(containing: "let example = 1"), file: file, line: line)
+    }
+    func userAndAssistantTextShouldBeSelectable(file: StaticString = #filePath, line: UInt = #line) {
+        for id in ["message-user-1", "message-assistant-1"] {
+            let element = context.app.textViews.matching(identifier: id).firstMatch
+            context.waitFor(element, file: file, line: line)
+            element.press(forDuration: 1.2)
+            let copy = context.app.menuItems["Copy"].firstMatch
+            XCTAssertTrue(copy.waitForExistence(timeout: 4), "Expected selection and Copy for \(id)", file: file, line: line)
+            copy.tap()
+        }
     }
     func draftShouldBe(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertEqual(context.messageField.value as? String, text, file: file, line: line)

@@ -57,6 +57,7 @@ import XCTest
         #endif
     }
     func shouldShowSavedAnswer(file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssertTrue(app.staticTexts["message-saved-answer"].waitForExistence(timeout: 4), file: file, line: line)
+        let answer = app.descendants(matching: .any).matching(identifier: "message-saved-answer").firstMatch
+        XCTAssertTrue(answer.waitForExistence(timeout: 4), file: file, line: line)
     }
 }

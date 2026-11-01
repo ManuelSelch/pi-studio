@@ -70,6 +70,8 @@ jobs:
     name: iOS tests and Release build
     runs-on: macos-26
     timeout-minutes: 45
+    env:
+      PI_STUDIO_SKIP_MACRO_VALIDATION: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -139,6 +141,8 @@ jobs:
     name: macOS Release build
     runs-on: macos-26
     timeout-minutes: 20
+    env:
+      PI_STUDIO_SKIP_MACRO_VALIDATION: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
