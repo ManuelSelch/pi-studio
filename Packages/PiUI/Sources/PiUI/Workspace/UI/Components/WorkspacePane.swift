@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The conversation pane or deliberate empty workspace. Session switching stays in
-/// the project/history sidebar; this pane owns no lifecycle or second connection.
+/// The conversation pane or home screen. Session switching stays in the
+/// project/history sidebar; this pane owns no lifecycle or second connection.
 struct WorkspacePane: View {
     let presentation: WorkspacePresentation
     let session: SessionPresentation
@@ -14,9 +14,7 @@ struct WorkspacePane: View {
                                       onFollowTailChanged: actions.followTailChanged,
                                       onScrollAnchorChanged: actions.scrollAnchorChanged)
             } else {
-                WorkspaceEmptyState(status: presentation.status, error: presentation.error,
-                                    canConnect: presentation.canConnect, isBusy: presentation.isBusy,
-                                    onConnect: actions.connection, onSettings: actions.settings)
+                WorkspaceHome(presentation: presentation, actions: actions)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

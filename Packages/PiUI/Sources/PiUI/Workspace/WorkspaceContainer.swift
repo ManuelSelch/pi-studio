@@ -4,14 +4,16 @@ import PiSDK
 import SwiftUI
 
 /// Bridges the workspace and its conversation for one platform shell.
-/// Consent and cross-feature signals stay here; app-level settings presentation is a callback.
+/// Launch connection, cross-feature signals and app-level settings presentation stay here.
 /// Screens receive plain values and callbacks, and every effect goes to a store.
 public struct WorkspaceContainer: View {
     @InjectedObject(\.workspaceStore) private var store
     @InjectedObject(\.sessionStore) private var session
-    @State private var confirmConnect = false
     @State private var confirmDisconnect = false
     @State private var composerDraft = ""
+    @State private var didRequestLaunchConnection = false
+    @State private var quickSwitcherOpen = false
+    @State private var quickSwitcherQuery = ""
 
     private let onOpenSettings: @MainActor () -> Void
     private let isSettingsPresented: Bool
@@ -24,11 +26,26 @@ public struct WorkspaceContainer: View {
 
     public var body: some View {
         screen
-            .alert("Connect and take control?", isPresented: $confirmConnect) {
-                Button("Cancel", role: .cancel) {}
-                Button("Connect and take control") { store.dispatch(.connectRequested(takingControl: true)) }
-            } message: {
-                Text("This replaces any current server controller. Connecting does not create or close sessions.")
+            .overlay {
+                if quickSwitcherOpen && store.state.selectedSessionId != nil {
+                    QuickSwitcherDialog(presentation: presentation, actions: actions)
+                }
+            }
+            .background {
+                #if os(macOS)
+                Group {
+                    Button("Quick Switcher", action: showQuickSwitcher).keyboardShortcut("k", modifiers: .command)
+                    Button("Open Quick Switcher", action: showQuickSwitcher).keyboardShortcut("o", modifiers: .command)
+                }.frame(width: 0, height: 0).opacity(0.001).allowsHitTesting(false)
+                #endif
+            }
+            .task {
+                guard !didRequestLaunchConnection else { return }
+                didRequestLaunchConnection = true
+                #if DEBUG
+                guard ProcessInfo.processInfo.environment["PI_UI_DISABLE_AUTO_CONNECT"] != "1" else { return }
+                #endif
+                store.dispatch(.connectRequested(takingControl: true))
             }
             .alert("Disconnect?", isPresented: $confirmDisconnect) {
                 Button("Cancel", role: .cancel) {}
@@ -55,7 +72,7 @@ public struct WorkspaceContainer: View {
     }
 
     private var actions: WorkspaceActions {
-        WorkspaceActions(
+        var value = WorkspaceActions(
             open: { target, title in store.dispatch(.openRequested(target: target, title: title)) },
             create: { path in
                 let quick = store.state.catalogue.projects.first { $0.path == path }?.quickChats == true
@@ -72,10 +89,30 @@ public struct WorkspaceContainer: View {
             closeTab: { store.dispatch(.closeSession($0)) },
             followTailChanged: { store.dispatch(.followTailChanged($0)) },
             scrollAnchorChanged: { store.dispatch(.scrollAnchorChanged($0)) })
+        value.openQuickSwitcher = showQuickSwitcher
+        value.dismissQuickSwitcher = { quickSwitcherOpen = false }
+        value.quickSwitcherQueryChanged = { quickSwitcherQuery = $0 }
+        value.chooseQuickSwitcherItem = { item in
+            guard item.enabled else { return }
+            quickSwitcherOpen = false
+            if let target = item.target {
+                store.dispatch(.openRequested(target: target, title: item.title))
+            } else {
+                let quick = store.state.catalogue.projects.first { $0.path == item.projectPath }?.quickChats == true
+                store.dispatch(.createRequested(projectPath: item.projectPath, title: quick ? "New chat" : "New session"))
+            }
+        }
+        return value
+    }
+
+    private func showQuickSwitcher() {
+        guard !isSettingsPresented && !confirmDisconnect else { return }
+        quickSwitcherQuery = ""
+        quickSwitcherOpen = true
     }
 
     private func requestConnectionChange() {
-        if store.state.canConnect { confirmConnect = true }
+        if store.state.canConnect { store.dispatch(.connectRequested(takingControl: true)) }
         else if requiresDisconnectWarning { confirmDisconnect = true }
         else { store.dispatch(.disconnectRequested()) }
     }
@@ -97,6 +134,9 @@ public struct WorkspaceContainer: View {
         value.groups = ProjectListModel.groups(workspace.catalogue)
         value.inboxSessions = SessionInboxModel.sessions(workspace.catalogue, laterPaths: workspace.laterSessionPaths)
         value.isConnected = workspace.isConnected
+        value.quickSwitcherOpen = quickSwitcherOpen
+        value.quickSwitcherQuery = quickSwitcherQuery
+        value.quickSwitcherItems = QuickSwitcherModel.results(catalogue: workspace.catalogue, query: quickSwitcherQuery)
         value.openSessions = Self.openSessions(workspace)
         value.newSessionPath = Self.newSessionPath(workspace.catalogue)
         value.selection = workspace.selectedSession.map {
@@ -148,7 +188,8 @@ public struct WorkspaceContainer: View {
         value.canConnect = false
         value.canEditMessage = state.canEditMessage
         value.canSend = state.canSend
-        value.canStop = state.canStop && !isSettingsPresented
+        value.canStop = state.canStop && !isSettingsPresented && !quickSwitcherOpen
+        value.isQuickSwitcherPresented = quickSwitcherOpen
         value.isStopping = state.isStopping || state.projection?.status == .aborting
         value.requiresDisconnectWarning = requiresDisconnectWarning
         value.messages = (state.projection?.messages ?? []).map {

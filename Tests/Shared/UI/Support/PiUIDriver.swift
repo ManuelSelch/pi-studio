@@ -12,6 +12,7 @@ final class PiUIDriver {
     let settings: UISettingsDriver
     let projects: UIProjectsDriver
     let overview: UISessionOverviewDriver
+    let quickSwitcher: UIQuickSwitcherDriver
     private let context: UIContext
 
     private init(_ context: UIContext) {
@@ -21,10 +22,12 @@ final class PiUIDriver {
         settings = UISettingsDriver(context)
         projects = UIProjectsDriver(context.app)
         overview = UISessionOverviewDriver(context.app)
+        quickSwitcher = UIQuickSwitcherDriver(context.app)
     }
 
     static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted,
                        rejectOpen: Bool = false, delayedAdmission: Bool = false,
+                       automaticallyConnect: Bool = false, failFirstConnection: Bool = false,
                        markdownResponse: Bool = false) -> PiUIDriver {
         let app = XCUIApplication()
         // Keep fixture configuration out of AppKit's command-line/defaults parsing.
@@ -33,7 +36,9 @@ final class PiUIDriver {
             "PI_UI_RESET_SETTINGS": "1",
             "PI_UI_SETTINGS_SUITE": "PiStudio.UITests." + UUID().uuidString
         ]
+        if !automaticallyConnect { app.launchEnvironment["PI_UI_DISABLE_AUTO_CONNECT"] = "1" }
         if rejectOpen { app.launchEnvironment["PI_UI_OPEN_REJECTED"] = "1" }
+        if failFirstConnection { app.launchEnvironment["PI_UI_CONNECT_FAIL_FIRST"] = "1" }
         switch sendOutcome {
         case .accepted: break
         case .rejected: app.launchEnvironment["PI_UI_SEND_REJECTED"] = "1"
@@ -160,18 +165,16 @@ final class UISessionDriver {
     private let context: UIContext
     fileprivate init(_ context: UIContext) { self.context = context }
 
-    func requestConnect() { context.app.buttons["connectButton"].tap() }
-    func cancelConnect(file: StaticString = #filePath, line: UInt = #line) {
-        let cancel = context.alert.buttons["Cancel"]
-        context.waitFor(cancel, file: file, line: line)
-        cancel.tap()
+    func requestConnect() {
+        let connect = context.app.buttons["connectButton"].firstMatch
+        if !connect.exists, context.app.buttons["projectsButton"].exists {
+            context.app.buttons["projectsButton"].tap()
+        }
+        context.app.buttons["connectButton"].firstMatch.tap()
     }
     /// Connect and list projects without opening a session: browsing creates nothing.
     func connectToServer(file: StaticString = #filePath, line: UInt = #line) {
         requestConnect()
-        let consent = context.alert.buttons["Connect and take control"]
-        context.waitFor(consent, file: file, line: line)
-        consent.tap()
         context.waitFor(context.app.staticTexts["Connected"], timeout: 5, file: file, line: line)
     }
     func connect(file: StaticString = #filePath, line: UInt = #line) {
@@ -194,7 +197,11 @@ final class UISessionDriver {
     }
     func confirmDisconnect() { context.alert.buttons["Disconnect"].tap() }
     func shouldBeDisconnected(file: StaticString = #filePath, line: UInt = #line) {
-        statusShouldBe("Disconnected", file: file, line: line)
+        let status = context.app.staticTexts["Disconnected"]
+        if !status.exists, context.app.buttons["projectsButton"].exists {
+            context.app.buttons["projectsButton"].tap()
+        }
+        context.waitFor(status, file: file, line: line)
     }
     func statusShouldBe(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
         context.waitFor(context.app.staticTexts[text], file: file, line: line)
@@ -217,6 +224,10 @@ final class UISettingsDriver {
     private var field: XCUIElement { context.app.textFields["endpointField"].firstMatch }
 
     func open(file: StaticString = #filePath, line: UInt = #line) {
+        if !context.app.buttons["settingsButton"].firstMatch.exists,
+           context.app.buttons["projectsButton"].exists {
+            context.app.buttons["projectsButton"].tap()
+        }
         context.app.buttons["settingsButton"].firstMatch.tap()
         context.waitFor(field, file: file, line: line)
     }

@@ -7,15 +7,22 @@ struct PhoneWorkspaceScreen: View {
     let session: SessionPresentation
     let actions: WorkspaceActions
     @State private var showsOverview = false
+    @State private var showsProjects = false
 
     var body: some View {
         NavigationStack {
-            sidebar
+            WorkspaceHome(presentation: presentation, actions: actions)
                 .navigationTitle("Pi Studio")
                 .phoneTitleDisplayMode()
-                .phoneOverviewToolbar(isConnected: presentation.isConnected) { showsOverview = true }
+                .phoneHomeToolbar(openProjects: { showsProjects = true }, openSettings: actions.settings,
+                                   isConnected: presentation.isConnected,
+                                   openOverview: { showsOverview = true })
                 .navigationDestination(isPresented: showsConversation) { conversation }
         }
+        .sheet(isPresented: $showsProjects) { sidebar }
+            .onChange(of: presentation.selection) { _, selection in
+                if selection != nil { showsProjects = false }
+            }
         .sheet(isPresented: $showsOverview) {
             SessionOverviewSheet(sessions: presentation.openSessions,
                                  newSessionPath: presentation.newSessionPath,
@@ -48,27 +55,37 @@ struct PhoneWorkspaceScreen: View {
                                   onFollowTailChanged: actions.followTailChanged,
                                   onScrollAnchorChanged: actions.scrollAnchorChanged)
                 .phoneConnectionToolbar(connection: actions.connection, settings: actions.settings,
-                                       openOverview: { showsOverview = true })
+                                       openOverview: { showsOverview = true }, openQuickSwitcher: actions.openQuickSwitcher)
         } else {
-            WorkspaceEmptyState(status: presentation.status, error: presentation.error,
-                                canConnect: presentation.canConnect, isBusy: presentation.isBusy,
-                                onConnect: actions.connection, onSettings: actions.settings)
+            WorkspaceHome(presentation: presentation, actions: actions)
         }
     }
 }
 
 private extension View {
-    /// The overview entry point exists on iPhone only; macOS switches through its sidebar.
-    @ViewBuilder func phoneOverviewToolbar(isConnected: Bool,
-                                           open: @escaping @MainActor () -> Void) -> some View {
+    /// The project navigator remains the existing sidebar, presented separately on iPhone.
+    @ViewBuilder func phoneHomeToolbar(openProjects: @escaping @MainActor () -> Void,
+                                        openSettings: @escaping @MainActor () -> Void,
+                                        isConnected: Bool,
+                                        openOverview: @escaping @MainActor () -> Void) -> some View {
         #if os(iOS)
         toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button(action: openProjects) { Image(systemName: "line.3.horizontal") }
+                    .accessibilityLabel("Projects")
+                    .accessibilityIdentifier("projectsButton")
+            }
             if isConnected {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: open) { Image(systemName: "rectangle.stack") }
+                    Button(action: openOverview) { Image(systemName: "rectangle.stack") }
                         .accessibilityLabel("Open sessions")
                         .accessibilityIdentifier("sessionsButton")
                 }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: openSettings) { Image(systemName: "gearshape") }
+                    .accessibilityLabel("Connection settings")
+                    .accessibilityIdentifier("settingsButton")
             }
         }
         #else
@@ -89,9 +106,15 @@ private extension View {
     /// the sidebar footer is off screen.
     @ViewBuilder func phoneConnectionToolbar(connection: @escaping @MainActor () -> Void,
                                             settings: @escaping @MainActor () -> Void,
-                                            openOverview: @escaping @MainActor () -> Void) -> some View {
+                                            openOverview: @escaping @MainActor () -> Void,
+                                            openQuickSwitcher: @escaping @MainActor () -> Void) -> some View {
         #if os(iOS)
         toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: openQuickSwitcher) { Image(systemName: "magnifyingglass") }
+                    .accessibilityLabel("Quick switcher")
+                    .accessibilityIdentifier("openQuickSwitcher")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: openOverview) { Image(systemName: "rectangle.stack") }
                     .accessibilityLabel("Open sessions")

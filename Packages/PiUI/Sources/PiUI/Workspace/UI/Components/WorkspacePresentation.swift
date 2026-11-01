@@ -54,6 +54,9 @@ public struct WorkspacePresentation: Equatable, Sendable {
     /// Project the overview's new-session action targets: Quick Chats first, like the sidebar.
     public var newSessionPath: String?
     public var isConnected = false
+    var quickSwitcherOpen = false
+    var quickSwitcherQuery = ""
+    var quickSwitcherItems: [QuickSwitcherModel.Item] = []
     public init() {}
     public func sessions(in status: InboxSession.Status) -> [InboxSession] { inboxSessions.filter { $0.status == status } }
 
@@ -78,6 +81,10 @@ public struct WorkspaceActions {
     public var closeTab: @MainActor (String) -> Void
     public var followTailChanged: @MainActor (Bool) -> Void
     public var scrollAnchorChanged: @MainActor (String?) -> Void
+    var openQuickSwitcher: @MainActor () -> Void = {}
+    var dismissQuickSwitcher: @MainActor () -> Void = {}
+    var quickSwitcherQueryChanged: @MainActor (String) -> Void = { _ in }
+    var chooseQuickSwitcherItem: @MainActor (QuickSwitcherModel.Item) -> Void = { _ in }
 
     public init(open: @escaping @MainActor (ProjectSessionTarget, String) -> Void,
                 create: @escaping @MainActor (String) -> Void,

@@ -16,15 +16,17 @@ actor UITestConnection: PiSessionConnection {
     private let rejectOpen: Bool
     private let delayedAdmission: Bool
     private let markdownResponse: Bool
+    private var failNextConnect: Bool
     private var stateObservers: [UUID: AsyncStream<PiConnectionState>.Continuation] = [:]
     private var projectionObservers: [UUID: AsyncStream<DemoSessionProjection>.Continuation] = [:]
     private var catalogueObservers: [UUID: AsyncStream<PiCatalogue>.Continuation] = [:]
     private var runtimes: [PiRuntimeSummary] = [.init(sessionId: "ui-running", title: "Pocket navigation", projectPath: "/repo", projectName: "pi-studio", status: "running")]
 
     init(rejectSend: Bool = false, unknownSend: Bool = false, rejectOpen: Bool = false,
-         delayedAdmission: Bool = false, markdownResponse: Bool = false) {
+         delayedAdmission: Bool = false, failFirstConnection: Bool = false, markdownResponse: Bool = false) {
         self.rejectSend = rejectSend; self.unknownSend = unknownSend; self.rejectOpen = rejectOpen
-        self.delayedAdmission = delayedAdmission; self.markdownResponse = markdownResponse
+        self.delayedAdmission = delayedAdmission; self.failNextConnect = failFirstConnection
+        self.markdownResponse = markdownResponse
     }
     func states() async -> AsyncStream<PiConnectionState> {
         let id = UUID(); let (stream, updates) = AsyncStream<PiConnectionState>.makeStream(bufferingPolicy: .bufferingNewest(1))
@@ -57,6 +59,8 @@ actor UITestConnection: PiSessionConnection {
             .init(path: "/home/pi", name: "Quick Chats", quickChats: true,
                   sessions: [.init(path: "/history/quick", title: "Saved quick chat")]),
             .init(path: "/repo", name: "pi-studio", worktree: .init(branch: "feat/pocket")),
+            .init(path: "/worktree/pocket", name: "pi-studio", repositoryPath: "/repo",
+                  repositoryName: "pi-studio", worktree: .init(branch: "feat/pocket", primary: false)),
         ] : [], sessions: runtimes)
     }
     private func publishCatalogue() { for observer in catalogueObservers.values { observer.yield(catalogue) } }
@@ -65,7 +69,12 @@ actor UITestConnection: PiSessionConnection {
     }
     func connect(takingControl: Bool) async throws {
         try await Task.sleep(for: .milliseconds(100))
-        guard !closed, takingControl else { throw PiError.disconnected }
+        closed = false
+        guard takingControl else { throw PiError.disconnected }
+        if failNextConnect {
+            failNextConnect = false
+            throw PiError.disconnected
+        }
         publishState(.connected)
         Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(150))

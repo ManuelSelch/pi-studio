@@ -71,11 +71,11 @@ import XCTest
                       "A new session did not open", file: file, line: line)
     }
 
-    /// Leaves the conversation for the project list without disconnecting.
+    /// Leaves the conversation for Home without disconnecting.
     func returnToProjects(file: StaticString = #filePath, line: UInt = #line) {
         overview.buttons["overviewProjects"].tap()
-        XCTAssertTrue(app.staticTexts["Sessions"].waitForExistence(timeout: 5),
-                      "The project list is not visible", file: file, line: line)
+        XCTAssertTrue(app.staticTexts["homeGreeting"].waitForExistence(timeout: 5),
+                      "Home is not visible", file: file, line: line)
     }
 
     /// Every row is a full-size touch target, as the iPhone layout requires.

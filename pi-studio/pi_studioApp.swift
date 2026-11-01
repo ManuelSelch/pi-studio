@@ -28,9 +28,10 @@ struct pi_studioApp: App {
             let delayed = environment["PI_UI_SEND_DELAYED"] == "1"
             let rejectOpen = environment["PI_UI_OPEN_REJECTED"] == "1"
             let markdown = environment["PI_UI_MARKDOWN_RESPONSE"] == "1"
+            let failFirstConnection = environment["PI_UI_CONNECT_FAIL_FIRST"] == "1"
             let connection = UITestConnection(rejectSend: rejected, unknownSend: unknown,
                                               rejectOpen: rejectOpen, delayedAdmission: delayed,
-                                              markdownResponse: markdown)
+                                              failFirstConnection: failFirstConnection, markdownResponse: markdown)
             Container.shared.makeSessionConnection.onDebug(factory: { { _ in connection } })
         }
         #endif

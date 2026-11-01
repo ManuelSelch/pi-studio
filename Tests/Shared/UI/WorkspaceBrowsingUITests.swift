@@ -2,10 +2,12 @@ import XCTest
 
 /// Session inbox navigation: all status groups replace project/history browsing.
 final class WorkspaceBrowsingUITests: XCTestCase {
+    private var rejectOpen = false
+    @MainActor private lazy var app = PiUIDriver.launch(for: self, rejectOpen: rejectOpen)
+
     override func setUpWithError() throws { continueAfterFailure = false }
 
     @MainActor func testConnectShowsSessionGroupsWithoutProjectHistory() {
-        let app = PiUIDriver.launch(for: self)
         app.projects.connect()
         app.projects.shouldBeBrowsing()
         app.projects.shouldHaveInboxGroup("Ready")
@@ -15,8 +17,16 @@ final class WorkspaceBrowsingUITests: XCTestCase {
         app.projects.recordAppearance("Session inbox")
     }
 
+    @MainActor func testInboxShowsSessionsAndRetainsNewSessionButtonWithoutHeading() throws {
+        app.projects.connect()
+
+        try app.projects.shouldShowNewSessionWithoutHeading()
+        app.projects.shouldHaveInboxGroup("Ready")
+        app.projects.openSavedQuickChat()
+        app.projects.shouldShowSavedAnswer()
+    }
+
     @MainActor func testReadyAndRunningSessionsOpenFromTheirInboxGroups() {
-        let app = PiUIDriver.launch(for: self)
         app.projects.connect()
         app.projects.openSavedQuickChat()
         app.projects.shouldShowSavedAnswer()
@@ -33,7 +43,6 @@ final class WorkspaceBrowsingUITests: XCTestCase {
     }
 
     @MainActor func testSavedReadySessionCanMoveToLaterAndResume() {
-        let app = PiUIDriver.launch(for: self)
         app.projects.connect()
         app.projects.moveQuickChatToLater()
         app.projects.expandLater()
@@ -43,7 +52,7 @@ final class WorkspaceBrowsingUITests: XCTestCase {
     }
 
     @MainActor func testRejectedOpenKeepsTheInboxVisible() {
-        let app = PiUIDriver.launch(for: self, rejectOpen: true)
+        rejectOpen = true
         app.projects.connect()
         app.projects.openSavedQuickChat()
         app.session.shouldShowError()
