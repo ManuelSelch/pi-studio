@@ -107,6 +107,7 @@ private actor DependencyConnectionStub: PiSessionConnection {
     func attachSession(sessionId: String) async throws -> DemoSession { throw PiError.invalidState }
     func openSession(sessionPath: String) async throws -> DemoSession { throw PiError.invalidState }
     func createSession(projectPath: String) async throws -> DemoSession { throw PiError.invalidState }
+    func archiveSession(path: String) async throws { throw PiError.invalidState }
     func closeSession(sessionId: String) async throws {}
     func connectDemo(projectPath: String, takingControl: Bool) async throws -> DemoSession { throw PiError.invalidState }
     func states() async -> AsyncStream<PiConnectionState> { AsyncStream { $0.finish() } }

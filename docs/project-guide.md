@@ -275,7 +275,7 @@ user's development server. Failure logs are retained in a temporary directory.
 
 Controlled **real-model Pi acceptance is still outstanding**; fake-runtime tests
 are not model-provider proof. Dialog answers, tool/thinking rendering,
-archive editing, reconnect/gap recovery, optional extension UI and secure remote
+archive browsing and unarchiving, reconnect/gap recovery, optional extension UI and secure remote
 access remain out of scope. Sequence gaps fail
 explicitly instead of attempting recovery. This remains a subset of the parent
 SDK Swift vertical slice, not full parity or a complete Pi Chat replacement.

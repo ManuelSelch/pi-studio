@@ -10,6 +10,7 @@ actor UITestConnection: PiSessionConnection {
     private var turn = 0
     private var created = 0
     private var catalogueReady = false
+    private var archivedPaths: Set<String> = []
     private var streaming: Task<Void, Never>?
     private let rejectSend: Bool
     private let unknownSend: Bool
@@ -57,7 +58,7 @@ actor UITestConnection: PiSessionConnection {
     private var catalogue: PiCatalogue {
         .init(projects: catalogueReady ? [
             .init(path: "/home/pi", name: "Quick Chats", quickChats: true,
-                  sessions: [.init(path: "/history/quick", title: "Saved quick chat")]),
+                  sessions: archivedPaths.contains("/history/quick") ? [] : [.init(path: "/history/quick", title: "Saved quick chat")]),
             .init(path: "/repo", name: "pi-studio", worktree: .init(branch: "feat/pocket")),
             .init(path: "/worktree/pocket", name: "pi-studio", repositoryPath: "/repo",
                   repositoryName: "pi-studio", worktree: .init(branch: "feat/pocket", primary: false)),
@@ -106,6 +107,12 @@ actor UITestConnection: PiSessionConnection {
                               projectPath: "/home/pi", projectName: "Quick Chats", status: "idle"))
         publishCatalogue()
         return session
+    }
+    func archiveSession(path: String) async throws {
+        guard !closed else { throw PiError.disconnected }
+        archivedPaths.insert(path)
+        runtimes.removeAll { $0.sessionPath == path }
+        publishCatalogue()
     }
     func closeSession(sessionId: String) async throws {
         guard !closed else { throw PiError.disconnected }

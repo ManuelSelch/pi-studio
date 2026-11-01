@@ -166,6 +166,12 @@ final class WorkspaceProjectsDriver {
         context.workspace.dispatch(.openRequested(target: .history(path), title: title))
         try await tabs.settle()
     }
+    func archive(_ path: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        context.workspace.dispatch(.archiveRequested(path: path))
+        try await context.wait("session archived", sourceLocation: sourceLocation) {
+            await self.context.stub.archivedPaths.contains(path) && self.context.workspace.state.openSessions.allSatisfy { $0.sessionPath != path }
+        }
+    }
     func moveToLater(_ path: String) { context.workspace.dispatch(.moveToLaterRequested(path: path)) }
     func waitForLater(_ path: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
         try await context.wait("session moved to Later", sourceLocation: sourceLocation) {
@@ -617,6 +623,20 @@ fileprivate actor WorkspaceConnectionStub: PiSessionConnection {
         if holding { await withCheckedContinuation { waiter = $0 } }
         if let error { throw error }
         return select("saved", "/repo")
+    }
+    private(set) var archivedPaths: Set<String> = []
+    func archiveSession(path: String) async throws {
+        guard !closed else { throw PiError.disconnected }
+        if let error { throw error }
+        archivedPaths.insert(path)
+        catalogue = .init(projects: catalogue.projects.map { project in
+            .init(path: project.path, name: project.name, displayPath: project.displayPath, exists: project.exists,
+                  pinned: project.pinned, quickChats: project.quickChats, repositoryPath: project.repositoryPath,
+                  repositoryName: project.repositoryName, worktree: project.worktree,
+                  sessions: project.sessions.map { $0.path == path ? .init(path: $0.path, title: $0.title, modified: $0.modified, archivedAt: 1) : $0 })
+        }, sessions: catalogue.sessions.filter { $0.sessionPath != path },
+        projectRevision: catalogue.projectRevision + 1, inventoryRevision: catalogue.inventoryRevision + 1)
+        publishCatalogue()
     }
     func closeSession(sessionId: String) async throws {
         guard !closed else { throw PiError.disconnected }

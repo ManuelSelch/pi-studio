@@ -47,6 +47,21 @@ import PiUI
         }
     }
 
+    @Test func archiveSavedSessionRemovesItFromInboxAndClosesItsTab() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.connect()
+            let path = "/history/parkable"
+            await app.server.publishIdleSavedSession(path: path)
+            try await app.projects.waitForInboxSession(path: path)
+            try await app.projects.openSaved(path, title: "Parkable")
+
+            try await app.projects.archive(path)
+
+            #expect(SessionInboxModel.sessions(app.workspace.catalogue, laterPaths: []).allSatisfy { $0.row.sessionPath != path })
+            #expect(app.workspace.openSessions.allSatisfy { $0.sessionPath != path })
+        }
+    }
+
     @Test func historyAndRuntimeOpenThroughDifferentIdentities() async throws {
         try await WorkspaceIntegrationDriver.run { app in
             try await app.projects.connect()

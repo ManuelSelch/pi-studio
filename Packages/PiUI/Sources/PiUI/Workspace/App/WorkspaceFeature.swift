@@ -100,6 +100,9 @@ public struct WorkspaceFeature: Feature {
         case selectRequested(UUID = UUID(), id: String)
         case closeSession(String)
         case laterLoaded(Set<String>)
+        case archiveRequested(path: String)
+        case archived(path: String)
+        case archiveFailed(error: String, outcomeUnknown: Bool)
         case moveToLaterRequested(path: String)
         case movedToLater(path: String)
         case moveToLaterFailed(path: String, error: String, outcomeUnknown: Bool)
@@ -168,6 +171,13 @@ public struct WorkspaceFeature: Feature {
             state.close(id)
         case .laterLoaded(let paths):
             state.laterSessionPaths = paths
+        case .archiveRequested:
+            state.error = nil
+        case .archived(let path):
+            for id in state.openSessions.filter({ $0.sessionPath == path }).map(\.id) { state.close(id) }
+        case .archiveFailed(let error, let outcomeUnknown):
+            state.error = error
+            if outcomeUnknown { state.unknownOutcome = true }
         case .moveToLaterRequested:
             break
         case .movedToLater(let path):

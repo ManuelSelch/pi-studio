@@ -12,7 +12,7 @@ struct WorkspacePane: View {
                 WorkspaceConversation(selection: selection, session: session,
                                       onDraftChanged: actions.draftChanged, onSend: actions.send, onStop: actions.stop,
                                       onFollowTailChanged: actions.followTailChanged,
-                                      onScrollAnchorChanged: actions.scrollAnchorChanged)
+                                      onScrollAnchorChanged: actions.scrollAnchorChanged, actions: actions)
             } else {
                 WorkspaceHome(presentation: presentation, actions: actions)
             }

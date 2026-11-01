@@ -89,6 +89,7 @@ public struct WorkspaceContainer: View {
             closeTab: { store.dispatch(.closeSession($0)) },
             followTailChanged: { store.dispatch(.followTailChanged($0)) },
             scrollAnchorChanged: { store.dispatch(.scrollAnchorChanged($0)) })
+        value.archive = { store.dispatch(.archiveRequested(path: $0)) }
         value.openQuickSwitcher = showQuickSwitcher
         value.dismissQuickSwitcher = { quickSwitcherOpen = false }
         value.quickSwitcherQueryChanged = { quickSwitcherQuery = $0 }
@@ -139,9 +140,15 @@ public struct WorkspaceContainer: View {
         value.quickSwitcherItems = QuickSwitcherModel.results(catalogue: workspace.catalogue, query: quickSwitcherQuery)
         value.openSessions = Self.openSessions(workspace)
         value.newSessionPath = Self.newSessionPath(workspace.catalogue)
-        value.selection = workspace.selectedSession.map {
-            WorkspaceSelection(title: $0.title, runtimeId: $0.runtimeId,
-                               sessionPath: $0.sessionPath, context: $0.projectPath)
+        value.selection = workspace.selectedSession.map { tab in
+            let projectName = workspace.catalogue.projects.first { $0.path == tab.projectPath }?.name
+                ?? workspace.catalogue.sessions.first { $0.sessionId == tab.runtimeId }?.projectName
+                ?? URL(fileURLWithPath: tab.projectPath).lastPathComponent
+            let canMoveLater = value.inboxSessions.contains { $0.row.sessionPath == tab.sessionPath && $0.canMoveLater }
+            return WorkspaceSelection(title: tab.title, runtimeId: tab.runtimeId,
+                                      sessionPath: tab.sessionPath, context: tab.projectPath,
+                                      projectName: projectName, activity: tab.activity,
+                                      canMoveLater: canMoveLater, tabId: tab.id)
         }
         return value
     }
@@ -179,7 +186,7 @@ public struct WorkspaceContainer: View {
         value.draft = composerDraft
         value.status = state.statusText
         value.details = tab?.projectPath ?? ""
-        value.error = state.errorMessage
+        value.error = state.errorMessage ?? store.state.error
         value.draft = composerDraft
         value.followTail = store.state.followTail
         value.scrollAnchor = store.state.scrollAnchor

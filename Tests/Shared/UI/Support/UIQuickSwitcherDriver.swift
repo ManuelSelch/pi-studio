@@ -143,8 +143,15 @@ final class UIQuickSwitcherDriver {
     func shouldShowNewSession(in context: String, file: StaticString = #filePath, line: UInt = #line) throws {
         let title = app.staticTexts["sessionTitle"]
         XCTAssertTrue(title.waitForExistence(timeout: 5), file: file, line: line)
-        XCTAssertEqual(title.label, context == "Quick Chats" ? "New chat" : "New session", file: file, line: line)
-        XCTAssertEqual(app.staticTexts["sessionContext"].label, context == "Quick Chats" ? "/home/pi" : "/worktree/pocket", file: file, line: line)
+        #if os(macOS)
+        let titleText = title.value as? String ?? title.label
+        let projectText = app.staticTexts["sessionContext"].value as? String ?? app.staticTexts["sessionContext"].label
+        #else
+        let titleText = title.label
+        let projectText = app.staticTexts["sessionContext"].label
+        #endif
+        XCTAssertEqual(titleText, context == "Quick Chats" ? "New chat" : "New session", file: file, line: line)
+        XCTAssertEqual(projectText, context == "Quick Chats" ? "Quick Chats" : "pi-studio", file: file, line: line)
     }
     func openFromSession(file: StaticString = #filePath, line: UInt = #line) throws {
         #if os(macOS)

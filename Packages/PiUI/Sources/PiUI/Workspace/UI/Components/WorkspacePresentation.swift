@@ -8,9 +8,15 @@ public struct WorkspaceSelection: Equatable, Sendable {
     public var sessionPath: String?
     /// Project and optional branch shown as the conversation context.
     public var context: String
+    public var projectName: String
+    public var activity: SessionActivity?
+    public var canMoveLater: Bool
+    public var tabId: String
 
-    public init(title: String, runtimeId: String, sessionPath: String? = nil, context: String) {
+    public init(title: String, runtimeId: String, sessionPath: String? = nil, context: String,
+                projectName: String = "", activity: SessionActivity? = nil, canMoveLater: Bool = false, tabId: String = "") {
         self.title = title; self.runtimeId = runtimeId; self.sessionPath = sessionPath; self.context = context
+        self.projectName = projectName; self.activity = activity; self.canMoveLater = canMoveLater; self.tabId = tabId
     }
 
     /// A row is selected when either identity matches: the same history and the runtime
@@ -70,6 +76,7 @@ public struct WorkspaceActions {
     public var open: @MainActor (ProjectSessionTarget, String) -> Void
     public var create: @MainActor (String) -> Void
     public var moveToLater: @MainActor (String) -> Void
+    var archive: @MainActor (String) -> Void = { _ in }
     public var connection: @MainActor () -> Void
     public var settings: @MainActor () -> Void
     public var back: @MainActor () -> Void

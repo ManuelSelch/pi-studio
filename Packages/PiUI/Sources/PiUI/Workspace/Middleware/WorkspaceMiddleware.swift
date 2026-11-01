@@ -107,6 +107,17 @@ public final class WorkspaceMiddleware: Middleware {
             // The open response already observed this runtime: adopt it without a second attach.
             observedKey = tab.id
             return .opened(token, tab)
+        case .archiveRequested(let path):
+            guard let connection, state.canOpen, !path.isEmpty else { return nil }
+            do {
+                try await connection.archiveSession(path: path)
+                guard store.getState()?.generation == state.generation else { return nil }
+                return .archived(path: path)
+            } catch {
+                guard store.getState()?.generation == state.generation else { return nil }
+                let failure = Self.normalize(error)
+                return .archiveFailed(error: failure.localizedDescription, outcomeUnknown: failure.isOutcomeUnknown)
+            }
         case .moveToLaterRequested(let path):
             await moveToLater(path: path, state: state, store: store)
         case .catalogueChanged:
@@ -128,7 +139,7 @@ public final class WorkspaceMiddleware: Middleware {
                                   title: title, activity: activity(for: created.sessionId, in: live))
             observedKey = tab.id
             return .opened(token, tab)
-        case .selectRequested, .closeSession, .movedToLater, .sessionClosed, .sessionReplaced, .opened, .failed:
+        case .selectRequested, .closeSession, .movedToLater, .archived, .sessionClosed, .sessionReplaced, .opened, .failed:
             // Selection changed: make the observed runtime match the selected tab.
             enqueueSelection()
         default:
