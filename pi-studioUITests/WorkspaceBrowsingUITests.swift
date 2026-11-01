@@ -19,8 +19,14 @@ final class WorkspaceBrowsingUITests: XCTestCase {
         app.projects.openSavedQuickChat()
         app.projects.shouldShowSavedAnswer()
         app.projects.recordAppearance("Saved Quick Chat")
+        #if os(iOS)
         app.projects.back()
         app.projects.shouldBeBrowsing()
+        #else
+        // Desktop projects remain beside the selected conversation; no phone Back journey.
+        app.projects.shouldShowProject("pi-studio")
+        app.projects.shouldShowSavedAnswer()
+        #endif
         app.projects.expandProject("pi-studio")
         app.projects.openRunningSession()
         app.session.statusShouldBe("Generating…")

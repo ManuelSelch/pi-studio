@@ -78,15 +78,19 @@ while automation is paused. iOS `pressSoftwareReturn` taps the software Return k
 `delayedAdmission` uses only the injected debug fixture, never a live server.
 
 The root registers app termination with XCTest teardown before launching and selects
-portrait on iOS. On macOS, shared launch/relaunch records app state, window count,
+portrait on iOS. macOS UI-test launches pass `-ApplePersistenceIgnoreState YES` to
+ignore saved window restoration state, which can otherwise leave a running app
+without a workspace window. Normal app launches retain their restoration behavior.
+`MacStartupUITests` covers shared launch/relaunch with usable workspace controls;
+launch/appearance tests also assert window/control readiness before capturing.
+On macOS, shared launch/relaunch records app state, window count,
 frontmost application/PID and launch arguments as text in the test log and retained
 xcresult attachments. Readiness checks allow up to five seconds each for foreground
 state, a window and the Settings control; failure also retains the accessibility
-hierarchy. Initial launch still calls `activate()`; relaunch deliberately does not
-add an activation workaround. These diagnostics do not capture screenshots or fix
-window presentation. Named send-outcome options hide debug launch arguments. The context hides
-macOS sheets versus iOS alerts and native static-text representation. Assertions
-forward file/line to the scenario. Reply handles are semantic turn numbers, not
+hierarchy. Both initial launch and relaunch call XCTest's `activate()`. These
+diagnostics do not capture screenshots or fix window presentation. Named send-outcome options hide debug fixture configuration.
+The context hides macOS sheets versus iOS alerts and native static-text
+representation. Assertions forward file/line to the scenario. Reply handles are semantic turn numbers, not
 accessibility identifiers.
 
 Keep integration and UI implementations independent: their boundary, scheduling
@@ -95,7 +99,10 @@ force a generic protocol or expose framework objects just to reuse test code.
 Reducer unit tests intentionally continue to use FluxTestStore directly.
 
 Settings UI scenarios use a unique `PiStudio.UITests.*` UserDefaults suite passed
-through debug-only launch arguments. Initial launch resets only that suite;
+through the debug-only `PI_UI_SETTINGS_SUITE` launch environment variable. All
+fixture options use `PI_UI_*` environment variables rather than command-line flags,
+which interfered with macOS window presentation in startup probes.
+Initial launch resets only that suite;
 relaunch preserves it, and teardown resets it again. All launches use injected
 connections. Integration scenarios use an in-memory settings service and record
 connection-builder endpoints separately from app assertions. Production adapter

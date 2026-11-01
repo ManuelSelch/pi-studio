@@ -9,25 +9,22 @@ struct pi_studioApp: App {
     
     init() {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
-            let arguments = ProcessInfo.processInfo.arguments
-            let suiteIndex = arguments.firstIndex(of: "--ui-settings-suite")
-            let suite = suiteIndex.flatMap { index in
-                arguments.indices.contains(index + 1) ? arguments[index + 1] : nil
-            }
+        let environment = ProcessInfo.processInfo.environment
+        if environment["PI_UI_TESTING"] == "1" {
+            let suite = environment["PI_UI_SETTINGS_SUITE"]
             let suiteName = suite?.hasPrefix("PiStudio.UITests.") == true ? suite! : "PiStudio.UITests." + UUID().uuidString
             let defaults = UserDefaults(suiteName: suiteName)!
-            if arguments.contains("--ui-reset-settings") {
+            if environment["PI_UI_RESET_SETTINGS"] == "1" {
                 defaults.removePersistentDomain(forName: suiteName)
             }
             let service = UserDefaultsEndpointSettingsService(defaults: defaults)
             Container.shared.endpointSettingsService.onDebug(factory: { service })
             
             
-            let rejected = arguments.contains("--ui-send-rejected")
-            let unknown = arguments.contains("--ui-send-unknown")
-            let delayed = arguments.contains("--ui-send-delayed")
-            let rejectOpen = arguments.contains("--ui-open-rejected")
+            let rejected = environment["PI_UI_SEND_REJECTED"] == "1"
+            let unknown = environment["PI_UI_SEND_UNKNOWN"] == "1"
+            let delayed = environment["PI_UI_SEND_DELAYED"] == "1"
+            let rejectOpen = environment["PI_UI_OPEN_REJECTED"] == "1"
             let connection = UITestConnection(rejectSend: rejected, unknownSend: unknown,
                                               rejectOpen: rejectOpen, delayedAdmission: delayed)
             Container.shared.makeSessionConnection.onDebug(factory: { { _ in connection } })

@@ -26,21 +26,30 @@ final class PiUIDriver {
     static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted,
                        rejectOpen: Bool = false, delayedAdmission: Bool = false) -> PiUIDriver {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--ui-settings-suite", "PiStudio.UITests." + UUID().uuidString, "--ui-reset-settings"]
-        if rejectOpen { app.launchArguments.append("--ui-open-rejected") }
+        // Keep fixture configuration out of AppKit's command-line/defaults parsing.
+        app.launchEnvironment = [
+            "PI_UI_TESTING": "1",
+            "PI_UI_RESET_SETTINGS": "1",
+            "PI_UI_SETTINGS_SUITE": "PiStudio.UITests." + UUID().uuidString
+        ]
+        if rejectOpen { app.launchEnvironment["PI_UI_OPEN_REJECTED"] = "1" }
         switch sendOutcome {
         case .accepted: break
-        case .rejected: app.launchArguments.append("--ui-send-rejected")
-        case .unknown: app.launchArguments.append("--ui-send-unknown")
+        case .rejected: app.launchEnvironment["PI_UI_SEND_REJECTED"] = "1"
+        case .unknown: app.launchEnvironment["PI_UI_SEND_UNKNOWN"] = "1"
         }
-        if delayedAdmission { app.launchArguments.append("--ui-send-delayed") }
+        if delayedAdmission { app.launchEnvironment["PI_UI_SEND_DELAYED"] = "1" }
+        #if os(macOS)
+        // A prior windowless launch must not restore into the next UI test.
+        app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]
+        #endif
         #if os(iOS)
         // Appearance tests rotate the simulator; functional scenarios own orientation.
         XCUIDevice.shared.orientation = .portrait
         #endif
         test.addTeardownBlock { @MainActor in
             app.terminate()
-            app.launchArguments.append("--ui-reset-settings")
+            app.launchEnvironment["PI_UI_RESET_SETTINGS"] = "1"
             app.launch()
             app.terminate()
         }
@@ -59,14 +68,15 @@ final class PiUIDriver {
 
     func relaunch() {
         context.app.terminate()
-        context.app.launchArguments.removeAll { $0 == "--ui-reset-settings" }
+        context.app.launchEnvironment.removeValue(forKey: "PI_UI_RESET_SETTINGS")
         #if os(macOS)
         Self.recordLaunchState(context.app, stage: "before relaunch")
         #endif
         context.app.launch()
         #if os(macOS)
-        // Preserve the existing relaunch behavior while diagnosing it: no extra activation.
-        Self.recordLaunchState(context.app, stage: "after relaunch")
+        Self.recordLaunchState(context.app, stage: "after relaunch, before activation")
+        context.app.activate()
+        Self.recordLaunchState(context.app, stage: "after relaunch activation")
         Self.checkLaunchReadiness(context.app, stage: "relaunch")
         #endif
     }
