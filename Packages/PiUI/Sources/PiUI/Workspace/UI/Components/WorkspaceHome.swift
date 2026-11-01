@@ -1,52 +1,54 @@
 import SwiftUI
 
-/// Empty-workspace landing screen. It receives presentation values and callbacks only.
+/// Home owns no catalogue or session lifecycle; the switcher receives values and callbacks.
 struct WorkspaceHome: View {
     let presentation: WorkspacePresentation
-    let onRetry: @MainActor () -> Void
-
-    @State private var quickSwitcherText = ""
+    let actions: WorkspaceActions
+    @FocusState private var homeSearchFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 48)
-            VStack(spacing: 10) {
-                Text(greeting)
-                    .font(.largeTitle.weight(.semibold))
-                    .accessibilityIdentifier("homeGreeting")
-                Text("Pick up where you left off, or start something new.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.bottom, 28)
+            Text("Let's cook")
+                .font(.largeTitle.weight(.semibold))
+                .accessibilityIdentifier("homeGreeting")
+                .padding(.bottom, 28)
 
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search or start a conversation…", text: $quickSwitcherText)
-                    .textFieldStyle(.plain)
-                    .accessibilityLabel("Quick switcher")
-                    .accessibilityIdentifier("quickSwitcher")
-                #if os(macOS)
-                Text("⌘ K").font(.caption).foregroundStyle(.tertiary)
-                #endif
+            ZStack(alignment: .top) {
+                HStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                    TextField("Search or start a conversation…", text: .constant(""))
+                        .textFieldStyle(.plain).focused($homeSearchFocused)
+                        .accessibilityLabel("Quick switcher")
+                        .accessibilityIdentifier("quickSwitcher")
+                    #if os(macOS)
+                    Text("⌘ K").font(.caption).foregroundStyle(.tertiary)
+                    #endif
+                }
+                .padding(.horizontal, 16).frame(height: 52)
+                .background(.background, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.quaternary))
+                .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
+                .onChange(of: homeSearchFocused) { _, focused in
+                    if focused && !presentation.quickSwitcherOpen { actions.openQuickSwitcher() }
+                }
+
+                if presentation.quickSwitcherOpen {
+                    QuickSwitcherContent(presentation: presentation, actions: actions)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .zIndex(1)
+                }
             }
-            .padding(.horizontal, 16)
-            .frame(height: 52)
-            .background(.background, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.quaternary))
-            .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
-            .frame(maxWidth: 560)
+            .frame(maxWidth: 560).frame(height: 52).zIndex(1)
 
             if let error = presentation.error {
                 VStack(spacing: 10) {
                     Text(verbatim: error).font(.callout).foregroundStyle(.red)
                         .accessibilityIdentifier("homeConnectionError")
-                    Button("Try again", action: onRetry)
+                    Button("Try again", action: actions.connection)
                         .buttonStyle(.borderedProminent)
                         .accessibilityIdentifier("homeRetryConnection")
-                }
-                .padding(.top, 20)
+                }.padding(.top, 20)
             } else if presentation.isBusy {
                 ProgressView("Connecting…").padding(.top, 20)
             }
@@ -55,12 +57,6 @@ struct WorkspaceHome: View {
         .padding(.horizontal, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(surface)
-    }
-
-    private var greeting: String {
-        let hour = Calendar.current.component(.hour, from: .now)
-        let salutation = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"
-        return "\(salutation), Manuel"
     }
 
     private var surface: Color {

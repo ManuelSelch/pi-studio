@@ -14,7 +14,7 @@ struct WorkspacePane: View {
                                       onFollowTailChanged: actions.followTailChanged,
                                       onScrollAnchorChanged: actions.scrollAnchorChanged)
             } else {
-                WorkspaceHome(presentation: presentation, onRetry: actions.connection)
+                WorkspaceHome(presentation: presentation, actions: actions)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

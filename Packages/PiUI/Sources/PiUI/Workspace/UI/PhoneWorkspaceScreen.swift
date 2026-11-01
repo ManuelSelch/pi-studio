@@ -11,7 +11,7 @@ struct PhoneWorkspaceScreen: View {
 
     var body: some View {
         NavigationStack {
-            WorkspaceHome(presentation: presentation, onRetry: actions.connection)
+            WorkspaceHome(presentation: presentation, actions: actions)
                 .navigationTitle("Pi Studio")
                 .phoneTitleDisplayMode()
                 .phoneHomeToolbar(openProjects: { showsProjects = true }, openSettings: actions.settings,
@@ -55,9 +55,9 @@ struct PhoneWorkspaceScreen: View {
                                   onFollowTailChanged: actions.followTailChanged,
                                   onScrollAnchorChanged: actions.scrollAnchorChanged)
                 .phoneConnectionToolbar(connection: actions.connection, settings: actions.settings,
-                                       openOverview: { showsOverview = true })
+                                       openOverview: { showsOverview = true }, openQuickSwitcher: actions.openQuickSwitcher)
         } else {
-            WorkspaceHome(presentation: presentation, onRetry: actions.connection)
+            WorkspaceHome(presentation: presentation, actions: actions)
         }
     }
 }
@@ -106,9 +106,15 @@ private extension View {
     /// the sidebar footer is off screen.
     @ViewBuilder func phoneConnectionToolbar(connection: @escaping @MainActor () -> Void,
                                             settings: @escaping @MainActor () -> Void,
-                                            openOverview: @escaping @MainActor () -> Void) -> some View {
+                                            openOverview: @escaping @MainActor () -> Void,
+                                            openQuickSwitcher: @escaping @MainActor () -> Void) -> some View {
         #if os(iOS)
         toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: openQuickSwitcher) { Image(systemName: "magnifyingglass") }
+                    .accessibilityLabel("Quick switcher")
+                    .accessibilityIdentifier("openQuickSwitcher")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: openOverview) { Image(systemName: "rectangle.stack") }
                     .accessibilityLabel("Open sessions")

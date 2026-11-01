@@ -16,6 +16,29 @@ import PiSDK
         #expect(items.map(\.title) == ["Recent", "Older"])
     }
 
+    @Test func searchesAbbreviationsAndSingleTypos() {
+        let catalogue = PiCatalogue(projects: [
+            .init(path: "/studio", name: "pi-studio"),
+            .init(path: "/other", name: "other")
+        ])
+
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "#pstd").map(\.title) == ["pi-studio"])
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "#studo").map(\.title) == ["pi-studio"])
+    }
+
+    @Test func archivedHistoryIsHiddenAndUnsavedRuntimesRemainSearchable() {
+        let catalogue = PiCatalogue(projects: [
+            .init(path: "/repo", name: "studio", sessions: [
+                .init(path: "/archived", title: "Archived", archivedAt: 1)
+            ])
+        ], sessions: [.init(sessionId: "live", title: "Live", projectPath: "/repo", projectName: "studio")])
+
+        let items = QuickSwitcherModel.results(catalogue: catalogue, query: "@")
+
+        #expect(items.map(\.title) == ["Live"])
+        #expect(items.first?.target == .runtime("live"))
+    }
+
     @Test func scopesFilterFoldersWorktreesAndSessions() {
         let catalogue = PiCatalogue(projects: [
             .init(path: "/repo", name: "studio"),

@@ -57,6 +57,8 @@ actor UITestConnection: PiSessionConnection {
             .init(path: "/home/pi", name: "Quick Chats", quickChats: true,
                   sessions: [.init(path: "/history/quick", title: "Saved quick chat")]),
             .init(path: "/repo", name: "pi-studio", worktree: .init(branch: "feat/pocket")),
+            .init(path: "/worktree/pocket", name: "pi-studio", repositoryPath: "/repo",
+                  repositoryName: "pi-studio", worktree: .init(branch: "feat/pocket", primary: false)),
         ] : [], sessions: runtimes)
     }
     private func publishCatalogue() { for observer in catalogueObservers.values { observer.yield(catalogue) } }

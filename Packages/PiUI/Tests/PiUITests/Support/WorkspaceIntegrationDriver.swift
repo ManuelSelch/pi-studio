@@ -14,6 +14,7 @@ import Testing
 final class WorkspaceIntegrationDriver {
     let projects: WorkspaceProjectsDriver
     let tabs: WorkspaceTabsDriver
+    let quickSwitcher: WorkspaceQuickSwitcherDriver
     let overview: WorkspaceOverviewDriver
     let settings: WorkspaceSettingsDriver
     let chat: WorkspaceConversationDriver
@@ -25,6 +26,7 @@ final class WorkspaceIntegrationDriver {
         self.context = context
         projects = WorkspaceProjectsDriver(context)
         tabs = WorkspaceTabsDriver(context)
+        quickSwitcher = WorkspaceQuickSwitcherDriver(context)
         overview = WorkspaceOverviewDriver(context)
         settings = WorkspaceSettingsDriver(context)
         chat = WorkspaceConversationDriver(context)
@@ -223,6 +225,24 @@ final class WorkspaceProjectsDriver {
         #expect(context.workspace.state.connection == .connecting, sourceLocation: sourceLocation)
     }
     var tabs: WorkspaceTabsDriver { WorkspaceTabsDriver(context) }
+}
+
+/// Exercises catalogue search and the same open request used by the switcher.
+@MainActor
+final class WorkspaceQuickSwitcherDriver {
+    private let context: WorkspaceContext
+    fileprivate init(_ context: WorkspaceContext) { self.context = context }
+
+    func openSession(_ title: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await context.wait("quick-switcher session \(title)", sourceLocation: sourceLocation) {
+            QuickSwitcherModel.results(catalogue: self.context.workspace.state.catalogue, query: "@\(title)").contains { $0.title == title }
+        }
+        let items = QuickSwitcherModel.results(catalogue: context.workspace.state.catalogue, query: "@\(title)")
+        let item = try #require(items.first { $0.title == title }, sourceLocation: sourceLocation)
+        let target = try #require(item.target, sourceLocation: sourceLocation)
+        context.workspace.dispatch(.openRequested(target: target, title: item.title))
+        try await WorkspaceTabsDriver(context).settle(sourceLocation: sourceLocation)
+    }
 }
 
 /// Open-session tabs: ordering, selection, drafts, reading position and adjacent closure.
@@ -508,6 +528,7 @@ final class WorkspaceServerDriver {
     }
     func publishLateCatalogue() async { await context.stub.publishLateCatalogue() }
     func publishIdleSavedSession(path: String) async { await context.stub.publishIdleSavedSession(path: path) }
+    func publishSavedHistory() async { await context.stub.publishSavedHistory() }
     func shouldHaveClosedRuntime(_ id: String, sourceLocation: SourceLocation = #_sourceLocation) async {
         #expect(await context.stub.closedRuntimeIds.contains(id), sourceLocation: sourceLocation)
     }
@@ -639,6 +660,13 @@ fileprivate actor WorkspaceConnectionStub: PiSessionConnection {
     func release() {
         waiter?.resume(); waiter = nil; holding = false
         attachWaiter?.resume(); attachWaiter = nil
+    }
+    func publishSavedHistory() {
+        let project = PiProjectSummary(path: "/repo", name: "pi-studio", sessions: [.init(path: "/history/saved", title: "Saved")])
+        catalogue = .init(projects: catalogue.projects.filter { $0.path != "/repo" } + [project],
+                          sessions: catalogue.sessions, projectRevision: catalogue.projectRevision + 1,
+                          inventoryRevision: catalogue.inventoryRevision + 1)
+        publishCatalogue()
     }
     func publishIdleSavedSession(path: String) {
         let project = PiProjectSummary(path: "/repo", name: "pi-studio", sessions: [.init(path: path, title: "Parkable", modified: 1)])

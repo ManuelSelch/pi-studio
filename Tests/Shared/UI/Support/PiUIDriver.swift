@@ -12,6 +12,7 @@ final class PiUIDriver {
     let settings: UISettingsDriver
     let projects: UIProjectsDriver
     let overview: UISessionOverviewDriver
+    let quickSwitcher: UIQuickSwitcherDriver
     private let context: UIContext
 
     private init(_ context: UIContext) {
@@ -21,6 +22,7 @@ final class PiUIDriver {
         settings = UISettingsDriver(context)
         projects = UIProjectsDriver(context.app)
         overview = UISessionOverviewDriver(context.app)
+        quickSwitcher = UIQuickSwitcherDriver(context.app)
     }
 
     static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted,

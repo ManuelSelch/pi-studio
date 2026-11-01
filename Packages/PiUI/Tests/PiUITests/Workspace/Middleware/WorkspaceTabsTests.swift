@@ -14,6 +14,21 @@ import Testing
         }
     }
 
+    @Test func quickSwitcherReopensSessionWithoutDuplicatingIt() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.connect()
+            await app.server.publishSavedHistory()
+            try await app.quickSwitcher.openSession("Saved")
+            try await app.tabs.openQuickChat()
+
+            try await app.quickSwitcher.openSession("Saved")
+
+            app.tabs.shouldShow(["Saved", "New chat"])
+            app.tabs.shouldSelect("Saved")
+            await app.server.shouldHaveOpens(1)
+        }
+    }
+
     @Test func eachTabKeepsItsOwnReadingPositionAndFollowPreference() async throws {
         try await WorkspaceIntegrationDriver.run { app in
             try await app.projects.connect()

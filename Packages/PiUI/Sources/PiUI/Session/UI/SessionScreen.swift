@@ -21,6 +21,7 @@ public struct SessionPresentation: Equatable, Sendable {
     public var canStop = false
     public var isStopping = false
     public var requiresDisconnectWarning = false
+    public var isQuickSwitcherPresented = false
     public init() {}
 }
 
@@ -41,6 +42,7 @@ public struct SessionScreen: View {
     @State private var confirmConnect = false
     @State private var confirmDisconnect = false
     @State private var stopKeyAllowed = false
+    @State private var restoreComposerFocus = false
     @FocusState private var messageFocused: Bool
 
     public init(presentation: SessionPresentation,
@@ -110,6 +112,16 @@ public struct SessionScreen: View {
             if allowed && !confirmConnect && !confirmDisconnect && presentation.canStop { onStop() }
         }
         #endif
+        .onChange(of: presentation.isQuickSwitcherPresented) { _, presented in
+            if presented {
+                restoreComposerFocus = messageFocused
+            } else if restoreComposerFocus && presentation.canEditMessage {
+                messageFocused = true
+                restoreComposerFocus = false
+            } else {
+                restoreComposerFocus = false
+            }
+        }
         .frame(maxWidth: maxContentWidth, maxHeight: .infinity)
         .background(contentBackground)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

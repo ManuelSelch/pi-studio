@@ -1,15 +1,15 @@
 import XCTest
 
-/// Acceptance drafts: driver mechanics deliberately fail until implementation begins.
+/// End-to-end quick-switcher journeys through the semantic UI driver.
 @MainActor
 final class QuickSwitcherScenarios: XCTestCase {
     private var app: PiUIDriver!
-    private var switcher: QuickSwitcherDraftDriver!
+    private var switcher: UIQuickSwitcherDriver!
 
     override func setUpWithError() throws {
         try super.setUpWithError()
         app = PiUIDriver.launch(for: self, automaticallyConnect: true)
-        switcher = QuickSwitcherDraftDriver(app)
+        switcher = app.quickSwitcher
     }
 
     func testHomeSearchExpandsInlineAndCollapses() throws {
@@ -32,6 +32,7 @@ final class QuickSwitcherScenarios: XCTestCase {
         try switcher.dismiss()
 
         app.projects.openSavedQuickChat()
+        try switcher.focusComposer()
         try switcher.openUsingShortcut("k")
         try switcher.shouldBeDialog()
         try switcher.dismiss()
@@ -57,12 +58,13 @@ final class QuickSwitcherScenarios: XCTestCase {
         try switcher.shouldShowNoActions()
     }
 
-    func testSelectingFolderAndWorktreeCreatesNewSessions() throws {
+    func testSelectingFolderCreatesNewSession() throws {
         try switcher.openFromHomeSearch()
         try switcher.selectFolder("Quick Chats")
         try switcher.shouldShowNewSession(in: "Quick Chats")
+    }
 
-        try switcher.returnHome()
+    func testSelectingWorktreeCreatesNewSession() throws {
         try switcher.openFromHomeSearch()
         try switcher.selectWorktree("feat/pocket")
         try switcher.shouldShowNewSession(in: "feat/pocket")
@@ -75,34 +77,10 @@ final class QuickSwitcherScenarios: XCTestCase {
 
         try switcher.openFromSession()
         try switcher.selectSession("Saved quick chat")
+        try switcher.shouldShowSession("Saved quick chat")
+        #if os(iOS)
         try switcher.shouldShowOneOpenSession("Saved quick chat")
+        #endif
+        // Mac deduplication is asserted at the workspace boundary in WorkspaceTabsTests.
     }
-}
-
-/// Explicitly incomplete; no selectors or assertions are claimed by these drafts.
-@MainActor
-private final class QuickSwitcherDraftDriver {
-    private enum DraftError: Error { case notImplemented }
-    init(_ app: PiUIDriver) {}
-    func homeShouldShowHeading(_ text: String) throws { throw DraftError.notImplemented }
-    func openFromHomeSearch() throws { throw DraftError.notImplemented }
-    func shouldBeInline() throws { throw DraftError.notImplemented }
-    func shouldBeDialog() throws { throw DraftError.notImplemented }
-    func shouldShowRecentSessions() throws { throw DraftError.notImplemented }
-    func dismiss() throws { throw DraftError.notImplemented }
-    func homeSearchShouldBeCollapsed() throws { throw DraftError.notImplemented }
-    func openUsingShortcut(_ key: String) throws { throw DraftError.notImplemented }
-    func composerShouldRegainFocus() throws { throw DraftError.notImplemented }
-    func filter(_ name: String) throws { throw DraftError.notImplemented }
-    func search(_ text: String) throws { throw DraftError.notImplemented }
-    func shouldShowResult(_ title: String, kind: String) throws { throw DraftError.notImplemented }
-    func shouldShowNoActions() throws { throw DraftError.notImplemented }
-    func selectFolder(_ name: String) throws { throw DraftError.notImplemented }
-    func selectWorktree(_ name: String) throws { throw DraftError.notImplemented }
-    func shouldShowNewSession(in context: String) throws { throw DraftError.notImplemented }
-    func returnHome() throws { throw DraftError.notImplemented }
-    func selectSession(_ title: String) throws { throw DraftError.notImplemented }
-    func openFromSession() throws { throw DraftError.notImplemented }
-    func shouldShowSession(_ title: String) throws { throw DraftError.notImplemented }
-    func shouldShowOneOpenSession(_ title: String) throws { throw DraftError.notImplemented }
 }

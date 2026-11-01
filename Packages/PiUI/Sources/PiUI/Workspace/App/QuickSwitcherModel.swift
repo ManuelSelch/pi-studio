@@ -3,11 +3,11 @@ import PiSDK
 
 /// Catalogue-derived search values. Runtime and saved-history identities remain distinct.
 enum QuickSwitcherModel {
-    enum Kind: String, CaseIterable {
+    enum Kind: String, CaseIterable, Sendable {
         case folder, worktree, session, action
     }
 
-    struct Item: Identifiable {
+    struct Item: Identifiable, Equatable, Sendable {
         let id: String
         let kind: Kind
         let title: String
@@ -48,16 +48,49 @@ enum QuickSwitcherModel {
                               detail: runtime.projectName, modified: 0, target: .runtime(runtime.sessionId),
                               projectPath: runtime.projectPath, enabled: runtime.status != "closing"))
         }
-        return items.filter { item in
-            if let scope, item.kind != scope { return false }
-            if scope == nil && text.isEmpty && item.kind != .session { return false }
-            return text.isEmpty || item.title.lowercased().contains(text) || item.detail.lowercased().contains(text)
-                || item.projectPath.lowercased().contains(text)
-        }.sorted { lhs, rhs in
-            if !text.isEmpty && (lhs.kind == .session) != (rhs.kind == .session) { return lhs.kind != .session }
-            if lhs.modified != rhs.modified { return lhs.modified > rhs.modified }
-            if lhs.title != rhs.title { return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending }
-            return lhs.id < rhs.id
-        }.prefix(20).map { $0 }
+        let ranked = items.compactMap { item -> (Item, Double)? in
+            if let scope, item.kind != scope { return nil }
+            if scope == nil && text.isEmpty && item.kind != .session { return nil }
+            if text.isEmpty { return (item, 0) }
+            let scores = [matchScore(item.title, text), matchScore(item.detail, text).map { $0 + 10 },
+                          matchScore(item.projectPath, text).map { $0 + 10 }].compactMap { $0 }
+            return scores.min().map { (item, $0) }
+        }
+        return ranked.sorted { lhs, rhs in
+            if !text.isEmpty && (lhs.0.kind == .session) != (rhs.0.kind == .session) { return lhs.0.kind != .session }
+            if !text.isEmpty && lhs.0.kind != .session && lhs.1 != rhs.1 { return lhs.1 < rhs.1 }
+            if lhs.0.modified != rhs.0.modified { return lhs.0.modified > rhs.0.modified }
+            if lhs.0.title != rhs.0.title { return lhs.0.title.localizedStandardCompare(rhs.0.title) == .orderedAscending }
+            return lhs.0.id < rhs.0.id
+        }.prefix(20).map(\.0)
+    }
+
+    private static func matchScore(_ value: String, _ needle: String) -> Double? {
+        let value = value.lowercased()
+        if value == needle { return 0 }
+        if value.hasPrefix(needle) { return 1 }
+        let words = value.split(whereSeparator: { $0.isWhitespace || "/_.-".contains($0) }).map(String.init)
+        if words.contains(where: { $0.hasPrefix(needle) }) { return 2 }
+        if value.contains(needle) { return 3 }
+        var remaining = needle[...]
+        for character in value where remaining.first == character { remaining.removeFirst() }
+        if remaining.isEmpty { return 4 }
+        if needle.count >= 4 && words.contains(where: { singleTypo($0, needle) }) { return 5 }
+        return nil
+    }
+
+    private static func singleTypo(_ lhs: String, _ rhs: String) -> Bool {
+        let left = Array(lhs), right = Array(rhs)
+        guard abs(left.count - right.count) <= 1 else { return false }
+        var index = 0
+        while index < min(left.count, right.count) && left[index] == right[index] { index += 1 }
+        if left.count == right.count {
+            if index == left.count { return true }
+            if left[(index + 1)...].elementsEqual(right[(index + 1)...]) { return true }
+            return index + 1 < left.count && left[index] == right[index + 1] && left[index + 1] == right[index]
+                && left[(index + 2)...].elementsEqual(right[(index + 2)...])
+        }
+        if left.count > right.count { return left[(index + 1)...].elementsEqual(right[index...]) }
+        return left[index...].elementsEqual(right[(index + 1)...])
     }
 }
