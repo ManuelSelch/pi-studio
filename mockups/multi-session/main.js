@@ -33,11 +33,7 @@ function renderSidebar(){
  $('#sidebar').querySelectorAll('[data-select]').forEach(b=>b.onclick=()=>select(b.dataset.select));
  $('#sidebar').querySelectorAll('[data-create]').forEach(b=>b.onclick=()=>create(b.dataset.create));
 }
-function renderTabs(){
- $('#tabs').innerHTML=sessions.filter(s=>s.open).map(s=>`<div class="tab ${active===s.id?'active':''}"><button role="tab" aria-selected="${active===s.id}" aria-controls="conversation" data-select="${s.id}">${dot(s)}<span class="tab-label">${escape(s.title)}</span>${s.unread?'<span class="unread">•</span>':''}</button><button data-close="${s.id}" aria-label="Close tab ${escape(s.title)}">×</button></div>`).join('');
- $('#tabs').querySelectorAll('[data-select]').forEach(b=>b.onclick=()=>select(b.dataset.select));
- $('#tabs').querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>close(b.dataset.close));
-}
+function renderTabs(){ $('#tabs').replaceChildren(); }
 function renderConversation(){
  const s=sessions.find(s=>s.id===active);
  $('#context').textContent=s?.project||'Pi Studio';$('#draft').value=s?.draft||'';$('#draft').disabled=!s;$('#send').disabled=!s;
@@ -65,8 +61,8 @@ $('#new').onclick=()=>create();
 function toggleOverview(mode){const already=!$('#overview').hidden&&overviewMode===mode;overviewMode=mode;renderOverview();$('#overview').hidden=already;}
 $('#overview-button').onclick=()=>toggleOverview('all');$('#activity').onclick=()=>toggleOverview('activity');
 $('#draft').oninput=e=>{const s=sessions.find(s=>s.id===active);if(s)s.draft=e.target.value;};
-$('#composer').onsubmit=e=>{e.preventDefault();const s=sessions.find(s=>s.id===active);if(!s||!s.draft.trim())return;if(s.state==='attention'){toast('Resolve the approval request before sending.');return;}s.messages.push({role:'user',text:s.draft.trim()},{role:'assistant',text:'Message received in this session only. This is a layout prototype; no agent or server was contacted.'});s.draft='';renderConversation();$('#transcript').scrollTop=$('#transcript').scrollHeight;};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#overview').hidden=true;$('#app').classList.remove('browsing');}if((e.metaKey||e.ctrlKey)&&/^[1-9]$/.test(e.key)){const s=sessions.filter(s=>s.open)[Number(e.key)-1];if(s){e.preventDefault();select(s.id);}}});
+$('#composer').onsubmit=e=>{e.preventDefault();const s=sessions.find(s=>s.id===active);if(!s||!s.draft.trim())return;if(s.state==='attention'){toast('Resolve the approval request before sending.');return;}s.messages.push({role:'user',text:s.draft.trim()},{role:'assistant',text:'Message received in this session only. This is a layout prototype; no agent or server was contacted.'});s.draft='';renderConversation();$('#transcript').scrollTop=$('#transcript').scrollHeight;$('#draft').focus();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const s=sessions.find(s=>s.id===active);if(!ios&&s?.state==='running'){s.state='idle';render();toast('Session stopped (simulated).');return;}$('#overview').hidden=true;$('#app').classList.remove('browsing');}if((e.metaKey||e.ctrlKey)&&/^[1-9]$/.test(e.key)){const s=sessions.filter(s=>s.open)[Number(e.key)-1];if(s){e.preventDefault();select(s.id);}}});
 render();
 if(params.get('state')==='attention')showAttention();
 if(params.get('state')==='overview'){overviewMode='all';renderOverview();$('#overview').hidden=false;}

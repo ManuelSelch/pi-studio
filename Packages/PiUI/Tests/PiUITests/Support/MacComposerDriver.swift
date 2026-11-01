@@ -102,6 +102,12 @@ final class MacComposerDriver {
         #expect(try input().isEnabled == expected, sourceLocation: sourceLocation)
     }
 
+    func composerShouldBeFocused(_ sourceLocation: SourceLocation = #_sourceLocation) throws {
+        let field = try input()
+        #expect(field.currentEditor() != nil && window.firstResponder === field.currentEditor(),
+                sourceLocation: sourceLocation)
+    }
+
     func wholeWidthShouldAcceptClicks(sourceLocation: SourceLocation = #_sourceLocation) throws {
         let input = try input()
         #expect(input.bounds.width > 200, sourceLocation: sourceLocation)

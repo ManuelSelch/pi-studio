@@ -47,8 +47,8 @@ public struct WorkspacePresentation: Equatable, Sendable {
     public var error: String?
     public var groups: [ProjectGroup] = []
     public var selection: WorkspaceSelection?
-    /// Ordered open sessions. Mac renders them as a tab strip, the phone as its overview;
-    /// the phone never shows a tab strip.
+    /// Ordered open sessions. Mac selects conversations from project/history rows;
+    /// the phone switches through its overview.
     public var openSessions: [OpenSessionPresentation] = []
     /// Project the overview's new-session action targets: Quick Chats first, like the sidebar.
     public var newSessionPath: String?

@@ -151,6 +151,9 @@ struct MacComposerTypingTests {
         try await app.settle()
         try await app.pressEscape()
         #expect(stops == 1)
+        run.running = false
+        try await app.settle()
+        try app.composerShouldBeFocused()
     }
 
     @Test func escapeStopsOnlyOnTheFirstUnmodifiedPress() async throws {

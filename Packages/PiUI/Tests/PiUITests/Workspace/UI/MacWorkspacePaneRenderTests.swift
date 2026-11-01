@@ -5,9 +5,8 @@ import SwiftUI
 import Testing
 @testable import PiUI
 
-/// macOS app automation is paused by user request, so the tab strip is verified by
-/// rendering the real pane off-screen instead of driving a window. This still proves
-/// the composition, labels and accessibility identifiers the Mac shell depends on.
+/// macOS app automation is paused by user request, so the real pane is rendered
+/// off-screen instead of driving a desktop window.
 @MainActor
 struct MacWorkspacePaneRenderTests {
     private func presentation() -> WorkspacePresentation {
@@ -62,7 +61,7 @@ struct MacWorkspacePaneRenderTests {
         return data
     }
 
-    @Test func theConversationPaneRendersTabsWithStatusAndOneTranscript() throws {
+    @Test func theConversationPaneRendersWithoutAnOpenSessionsToolbarOrTabStrip() throws {
         let data = try render()
         let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("pi-studio-mac-pane.png")
         try data.write(to: url)

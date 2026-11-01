@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Compact split view: project navigation beside the tab strip and one selected
-/// conversation. Open sessions are application-managed tabs, not window tabs.
+/// Compact split view: project/history navigation beside one selected conversation.
+/// Session selection remains application state, not native window-tab state.
 struct MacWorkspaceScreen: View {
     let presentation: WorkspacePresentation
     let session: SessionPresentation
