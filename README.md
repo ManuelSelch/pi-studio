@@ -175,7 +175,16 @@ manual dispatch. Three independent GitHub-hosted `macos-26` jobs select Xcode 26
 - **Package:** PiUI tests, released-dependency/lockfile checks, icon validation,
   Simulator-isolation tests and loopback-launcher tests (no actual backend).
 - **iOS:** native unit tests, native UI tests, then Simulator Release build, serially.
-- **macOS:** native Release build only; native unit/UI automation remains paused.
+- **macOS:** native Release build only; native unit automation remains paused.
+
+[macOS UI tests](.github/workflows/macos-ui.yml) is a separate, **manual-only**
+workflow on a GitHub-hosted `macos-26` runner with Xcode 26.2. It runs the existing
+native UI suite without controlling your Mac, and uploads logs and available
+`.xcresult` bundles on success or failure for seven days. It does not run on
+pushes/PRs or gate the regular CI/Sonar jobs. Hosted UI-testing authorization is
+not yet verified; an Accessibility failure remains a failed test run, not a skip.
+After the workflow reaches the default branch, run it from **Actions → macOS UI
+tests → Run workflow**, or with `gh workflow run macos-ui.yml`.
 
 SwiftPM fetches the same public PiSDK 0.1.0, Flux 2.0.1 and Router 2.0.0 releases
 used locally. FactoryKit keeps its existing version requirement and resolved pin,
@@ -190,11 +199,13 @@ A push or PR is needed to verify the workflow on hosted runners.
 ## Test pipeline
 
 [.pi/pipeline.yaml](.pi/pipeline.yaml) configures once-per-worktree preparation and
-seven independent suites. Only fast `piui` tests opt into after-agent execution;
-UI automation is manual because it takes control of the Simulator/desktop.
-**Current user instruction: do not run macOS automation tests until authorized.**
-The macOS app UI scenarios remain unexecuted. PiUI package tests drive hosted
-editors off-screen without activating windows or posting system input.
+six independent suites. Only fast `piui` tests opt into after-agent execution;
+iOS UI automation is manual because it uses the Simulator. `macos-ui` is excluded
+from the local pipeline and runs only through the manual GitHub workflow above.
+**Do not run desktop-controlling macOS automation on the development Mac.**
+The retained local `macos-unit` suite also remains paused until authorized.
+PiUI package tests drive hosted editors off-screen without activating windows or
+posting system input.
 
 Equivalent commands after preparation:
 
@@ -203,8 +214,7 @@ bash scripts/prepare.sh
 bash scripts/test-package.sh
 bash scripts/test-app.sh ios unit
 bash scripts/test-app.sh ios ui
-bash scripts/test-app.sh macos unit
-bash scripts/test-app.sh macos ui
+bash scripts/test-app.sh macos unit # paused locally; requires authorization
 bash scripts/test-app.sh ios release
 bash scripts/test-app.sh macos release
 ```

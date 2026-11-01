@@ -23,11 +23,6 @@ suites:
     cwd: .
     timeoutSeconds: 300
     auto: manual
-  macos-ui:
-    command: [bash, scripts/test-app.sh, macos, ui]
-    cwd: .
-    timeoutSeconds: 600
-    auto: manual
   ios-release:
     command: [bash, scripts/test-app.sh, ios, release]
     cwd: .

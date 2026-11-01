@@ -1,0 +1,47 @@
+name: macOS UI tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+
+jobs:
+  macos-ui:
+    name: Native macOS UI tests
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Toolchain diagnostics
+        run: |
+          mkdir -p .build/ci-logs
+          echo "PI_STUDIO_BUILD_ROOT=$RUNNER_TEMP/pi-studio-macos-ui" >> "$GITHUB_ENV"
+          { xcodebuild -version; swift --version; } 2>&1 | tee .build/ci-logs/toolchain.log
+      - name: Resolve packages
+        run: bash scripts/prepare.sh 2>&1 | tee .build/ci-logs/prepare.log
+      - name: Native UI tests
+        run: bash scripts/test-app.sh macos ui 2>&1 | tee .build/ci-logs/macos-ui.log
+      - name: Upload logs and test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: macos-ui-results
+          path: |
+            .build/ci-logs/
+            ${{ env.PI_STUDIO_BUILD_ROOT }}/xcode-macos/Logs/Test/
+          retention-days: 7
+          if-no-files-found: warn
