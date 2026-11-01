@@ -18,7 +18,7 @@ struct MacMessageEditor: View {
             .lineLimit(2...5)
             .textFieldStyle(.plain)
             .focused(focus)
-            .disabled(!canEdit)
+            .opacity(canEdit ? 1 : 0.6)
             .accessibilityLabel("Message")
             .accessibilityIdentifier("messageField")
             .onKeyPress(.return, phases: [.down, .repeat]) { press in

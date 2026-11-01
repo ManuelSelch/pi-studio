@@ -63,11 +63,13 @@ struct MacComposerTypingTests {
         try app.textShouldBe("")
     }
 
-    @Test func aLockedComposerDisablesEditing() async throws {
+    @Test func aLockedComposerRetainsFocusWithoutChangingItsDraft() async throws {
         let (workspace, app) = fixture(canEdit: false)
-        try await app.settle()
-        try app.editingShouldBeEnabled(false)
+        try await app.type("ignored")
+        try app.editingShouldBeEnabled(true)
+        try app.composerShouldBeFocused()
         #expect(workspace.state.draft.isEmpty)
+        try app.textShouldBe("")
     }
 
     @Test func returnSubmitsExactTextButRepeatDoesNotSubmit() async throws {
@@ -137,18 +139,20 @@ struct MacComposerTypingTests {
         }
     }
 
-    @Test func escapeStillWorksAfterSubmissionDisablesTheField() async throws {
+    @Test func escapeStillWorksAfterSubmissionLocksTheComposer() async throws {
         var stops = 0
         let run = RunState()
         let app = MacComposerDriver(RunHarness(run: run, onStop: { stops += 1 }))
         try await app.type("hello")
         try await app.pressReturn()
-        try app.editingShouldBeEnabled(false)
+        try app.editingShouldBeEnabled(true)
+        try app.composerShouldBeFocused()
         try await app.pressEscape()
         #expect(stops == 0) // Admission is still pending; Stop is not available yet.
         run.pending = false
         run.running = true
         try await app.settle()
+        try app.composerShouldBeFocused()
         try await app.pressEscape()
         #expect(stops == 1)
         run.running = false

@@ -14,7 +14,10 @@ struct SessionComposer: View {
     let onStop: @MainActor () -> Void
 
     private var text: Binding<String> {
-        Binding(get: { draft }, set: { value in onDraftChanged(value) })
+        Binding(get: { draft }, set: { value in
+            guard canEdit else { return }
+            onDraftChanged(value)
+        })
     }
     private var sendEnabled: Bool {
         canSend && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
