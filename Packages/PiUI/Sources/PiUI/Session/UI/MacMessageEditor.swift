@@ -12,9 +12,28 @@ struct MacMessageEditor: View {
     @Environment(\.undoManager) private var undoManager
     @State private var selection: TextSelection?
     @State private var returnModifiers: EventModifiers = []
+    @State private var rejectedEdit: String?
+
+    private var editorText: Binding<String> {
+        Binding(get: { rejectedEdit ?? text }, set: { value in
+            if canEdit {
+                rejectedEdit = nil
+                text = value
+            } else {
+                // A focused native field keeps its own edit buffer even when its binding
+                // rejects a write. Publish the rejected value, then restore the draft on
+                // the next update so SwiftUI reconciles that buffer without losing focus.
+                rejectedEdit = value
+                Task { @MainActor in
+                    await Task.yield()
+                    if rejectedEdit == value { rejectedEdit = nil }
+                }
+            }
+        })
+    }
 
     var body: some View {
-        TextField("Say hello", text: $text, selection: $selection, axis: .vertical)
+        TextField("Say hello", text: editorText, selection: $selection, axis: .vertical)
             .lineLimit(2...5)
             .textFieldStyle(.plain)
             .focused(focus)

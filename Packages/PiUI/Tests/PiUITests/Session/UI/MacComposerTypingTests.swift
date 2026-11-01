@@ -73,6 +73,18 @@ struct MacComposerTypingTests {
         try app.textShouldBe("")
     }
 
+    @Test func autoFocusedComposerRejectsEditsWhenLocked() async throws {
+        let focusedApp = MacComposerDriver(Harness(workspace: workspace, state: state))
+        try await focusedApp.settle()
+        try focusedApp.composerShouldBeFocused()
+
+        state.pending = true
+        try await focusedApp.type("ignored")
+
+        try focusedApp.textShouldBe("")
+        try focusedApp.composerShouldBeFocused()
+    }
+
     @Test func returnSubmitsExactTextButRepeatDoesNotSubmit() async throws {
         try await app.type(" hello\nworld ")
         try await app.pressReturn(repeating: true)
