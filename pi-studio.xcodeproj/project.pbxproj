@@ -54,22 +54,22 @@
 			path = "pi-studio";
 			sourceTree = "<group>";
 		};
-		972B0B483087E5CF0068614C /* iOS Integration Tests */ = {
+		972B0B483087E5CF0068614C /* Tests/iOS/Integration */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Tests/iOS/Integration;
 			sourceTree = "<group>";
 		};
-		972B0B523087E5CF0068614C /* pi-studioUITests (macOS-only tests pending step 3) */ = {
+		972B0B523087E5CF0068614C /* pi-studioUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "pi-studioUITests";
 			sourceTree = "<group>";
 		};
-		A11111111111111111111111 /* Shared UI tests */ = {
+		A11111111111111111111111 /* Tests/Shared/UI */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Tests/Shared/UI;
 			sourceTree = "<group>";
 		};
-		A22222222222222222222222 /* iOS UI tests */ = {
+		A22222222222222222222222 /* Tests/iOS/UI */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Tests/iOS/UI;
 			sourceTree = "<group>";
@@ -115,10 +115,10 @@
 			isa = PBXGroup;
 			children = (
 				972B0B3A3087E5CD0068614C /* pi-studio */,
-				972B0B483087E5CF0068614C /* iOS Integration Tests */,
-				972B0B523087E5CF0068614C /* pi-studioUITests (macOS-only tests pending step 3) */,
-				A11111111111111111111111 /* Shared UI tests */,
-				A22222222222222222222222 /* iOS UI tests */,
+				972B0B483087E5CF0068614C /* Tests/iOS/Integration */,
+				972B0B523087E5CF0068614C /* pi-studioUITests */,
+				A11111111111111111111111 /* Tests/Shared/UI */,
+				A22222222222222222222222 /* Tests/iOS/UI */,
 				972B0B393087E5CD0068614C /* Products */,
 				972B0CB3308804870068614C /* Recovered References */,
 			);
@@ -188,7 +188,7 @@
 				972B0B473087E5CF0068614C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				972B0B483087E5CF0068614C /* iOS Integration Tests */,
+				972B0B483087E5CF0068614C /* Tests/iOS/Integration */,
 			);
 			name = "pi-studioTests";
 			packageProductDependencies = (
@@ -216,9 +216,9 @@
 				972B0B513087E5CF0068614C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				972B0B523087E5CF0068614C /* pi-studioUITests (macOS-only tests pending step 3) */,
-				A11111111111111111111111 /* Shared UI tests */,
-				A22222222222222222222222 /* iOS UI tests */,
+				972B0B523087E5CF0068614C /* pi-studioUITests */,
+				A11111111111111111111111 /* Tests/Shared/UI */,
+				A22222222222222222222222 /* Tests/iOS/UI */,
 			);
 			name = "pi-studioUITests";
 			packageProductDependencies = (
@@ -377,6 +377,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 476LPWUTHD;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -403,6 +404,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -444,6 +446,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 476LPWUTHD;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -463,6 +466,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -478,6 +482,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 476LPWUTHD;
 				"ENABLE_APP_SANDBOX[sdk=macosx*]" = YES;
 				"ENABLE_OUTGOING_NETWORK_CONNECTIONS[sdk=macosx*]" = YES;
@@ -516,6 +521,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 476LPWUTHD;
 				"ENABLE_APP_SANDBOX[sdk=macosx*]" = YES;
 				"ENABLE_OUTGOING_NETWORK_CONNECTIONS[sdk=macosx*]" = YES;
@@ -551,6 +557,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 476LPWUTHD;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
@@ -573,6 +580,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 476LPWUTHD;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
@@ -594,6 +602,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 476LPWUTHD;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
@@ -614,6 +623,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 476LPWUTHD;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
