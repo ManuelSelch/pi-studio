@@ -54,14 +54,24 @@
 			path = "pi-studio";
 			sourceTree = "<group>";
 		};
-		972B0B483087E5CF0068614C /* pi-studioTests */ = {
+		972B0B483087E5CF0068614C /* iOS Integration Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "pi-studioTests";
+			path = Tests/iOS/Integration;
 			sourceTree = "<group>";
 		};
-		972B0B523087E5CF0068614C /* pi-studioUITests */ = {
+		972B0B523087E5CF0068614C /* pi-studioUITests (macOS-only tests pending step 3) */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "pi-studioUITests";
+			sourceTree = "<group>";
+		};
+		A11111111111111111111111 /* Shared UI tests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Tests/Shared/UI;
+			sourceTree = "<group>";
+		};
+		A22222222222222222222222 /* iOS UI tests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Tests/iOS/UI;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -105,8 +115,10 @@
 			isa = PBXGroup;
 			children = (
 				972B0B3A3087E5CD0068614C /* pi-studio */,
-				972B0B483087E5CF0068614C /* pi-studioTests */,
-				972B0B523087E5CF0068614C /* pi-studioUITests */,
+				972B0B483087E5CF0068614C /* iOS Integration Tests */,
+				972B0B523087E5CF0068614C /* pi-studioUITests (macOS-only tests pending step 3) */,
+				A11111111111111111111111 /* Shared UI tests */,
+				A22222222222222222222222 /* iOS UI tests */,
 				972B0B393087E5CD0068614C /* Products */,
 				972B0CB3308804870068614C /* Recovered References */,
 			);
@@ -176,7 +188,7 @@
 				972B0B473087E5CF0068614C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				972B0B483087E5CF0068614C /* pi-studioTests */,
+				972B0B483087E5CF0068614C /* iOS Integration Tests */,
 			);
 			name = "pi-studioTests";
 			packageProductDependencies = (
@@ -204,7 +216,9 @@
 				972B0B513087E5CF0068614C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				972B0B523087E5CF0068614C /* pi-studioUITests */,
+				972B0B523087E5CF0068614C /* pi-studioUITests (macOS-only tests pending step 3) */,
+				A11111111111111111111111 /* Shared UI tests */,
+				A22222222222222222222222 /* iOS UI tests */,
 			);
 			name = "pi-studioUITests";
 			packageProductDependencies = (
