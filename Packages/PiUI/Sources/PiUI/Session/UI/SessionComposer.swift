@@ -25,7 +25,9 @@ struct SessionComposer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            #if !os(macOS)
             Text("Message").font(.caption).foregroundStyle(.secondary)
+            #endif
             #if os(macOS)
             MacMessageEditor(text: text, canEdit: canEdit, canSend: sendEnabled,
                              focus: focus, onSend: submit)

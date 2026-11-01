@@ -14,6 +14,7 @@ final class QuickSwitcherScenarios: XCTestCase {
 
     func testHomeSearchExpandsInlineAndCollapses() throws {
         try switcher.homeShouldShowHeading("Let's cook")
+        try switcher.homeSearchShouldBeCollapsed()
         try switcher.openFromHomeSearch()
 
         try switcher.shouldBeInline()

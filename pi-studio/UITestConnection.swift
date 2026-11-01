@@ -15,6 +15,7 @@ actor UITestConnection: PiSessionConnection {
     private let rejectSend: Bool
     private let unknownSend: Bool
     private let rejectOpen: Bool
+    private let rejectArchive: Bool
     private let delayedAdmission: Bool
     private let markdownResponse: Bool
     private var failNextConnect: Bool
@@ -24,10 +25,11 @@ actor UITestConnection: PiSessionConnection {
     private var runtimes: [PiRuntimeSummary] = [.init(sessionId: "ui-running", title: "Pocket navigation", projectPath: "/repo", projectName: "pi-studio", status: "running")]
 
     init(rejectSend: Bool = false, unknownSend: Bool = false, rejectOpen: Bool = false,
-         delayedAdmission: Bool = false, failFirstConnection: Bool = false, markdownResponse: Bool = false) {
+         delayedAdmission: Bool = false, failFirstConnection: Bool = false, markdownResponse: Bool = false,
+         rejectArchive: Bool = false) {
         self.rejectSend = rejectSend; self.unknownSend = unknownSend; self.rejectOpen = rejectOpen
         self.delayedAdmission = delayedAdmission; self.failNextConnect = failFirstConnection
-        self.markdownResponse = markdownResponse
+        self.markdownResponse = markdownResponse; self.rejectArchive = rejectArchive
     }
     func states() async -> AsyncStream<PiConnectionState> {
         let id = UUID(); let (stream, updates) = AsyncStream<PiConnectionState>.makeStream(bufferingPolicy: .bufferingNewest(1))
@@ -110,6 +112,7 @@ actor UITestConnection: PiSessionConnection {
     }
     func archiveSession(path: String) async throws {
         guard !closed else { throw PiError.disconnected }
+        if rejectArchive { throw PiError.rejected(code: "archiveRejected", message: "Archive rejected by test server.") }
         archivedPaths.insert(path)
         runtimes.removeAll { $0.sessionPath == path }
         publishCatalogue()

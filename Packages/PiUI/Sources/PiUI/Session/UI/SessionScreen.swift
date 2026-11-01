@@ -80,9 +80,14 @@ public struct SessionScreen: View {
                     .frame(maxWidth: .infinity, alignment: .leading).padding(12)
                     .background(.red.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
                     .padding(.horizontal).padding(.bottom, 12)
+                    .padding(.top, errorTopPadding)
                     .accessibilityIdentifier("errorMessage")
             }
+            #if os(macOS)
+            if showsHeader { Divider() }
+            #else
             Divider()
+            #endif
             SessionTranscript(messages: presentation.messages, placeholder: presentation.placeholder,
                               followTail: presentation.followTail, anchor: presentation.scrollAnchor,
                               onFollowTailChanged: onFollowTailChanged,
@@ -138,6 +143,14 @@ public struct SessionScreen: View {
         } message: {
             Text("Server work may continue. Disconnecting does not stop or close the session.")
         }
+    }
+
+    private var errorTopPadding: CGFloat {
+        #if os(macOS)
+        showsHeader ? 0 : 12
+        #else
+        0
+        #endif
     }
 
     private var contentBackground: Color {
