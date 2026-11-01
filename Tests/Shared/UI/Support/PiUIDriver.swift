@@ -174,7 +174,7 @@ final class UISessionDriver {
     }
     func connect(file: StaticString = #filePath, line: UInt = #line) {
         connectToServer(file: file, line: line)
-        let newChat = context.app.buttons["newSession-/home/pi"]
+        let newChat = context.app.buttons["newInboxSession"]
         context.waitFor(newChat, timeout: 5, file: file, line: line)
         newChat.tap()
         waitUntilReady(file: file, line: line)

@@ -74,7 +74,7 @@ import XCTest
     /// Leaves the conversation for the project list without disconnecting.
     func returnToProjects(file: StaticString = #filePath, line: UInt = #line) {
         overview.buttons["overviewProjects"].tap()
-        XCTAssertTrue(app.buttons["Quick Chats"].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.staticTexts["Sessions"].waitForExistence(timeout: 5),
                       "The project list is not visible", file: file, line: line)
     }
 

@@ -58,6 +58,8 @@ fileprivate final class WorkspaceContext {
 
     init(endpoint: URL? = nil) {
         container.endpointSettingsService.register { @MainActor [settings = self] in settings.endpoint }
+        let later = MemoryLaterSessions()
+        container.laterSessionsService.register { @MainActor in later }
         if let endpoint {
             endpointLog.values.withLock { $0.append(endpoint.absoluteString) }
             container.makeSessionConnection.register { { url in
@@ -103,6 +105,13 @@ final class EndpointLog: Sendable {
 }
 
 @MainActor
+private final class MemoryLaterSessions: LaterSessionsService {
+    private var values: [String: Set<String>] = [:]
+    func load(endpoint: URL) -> Set<String> { values[endpoint.absoluteString, default: []] }
+    func save(_ paths: Set<String>, endpoint: URL) { values[endpoint.absoluteString] = paths }
+}
+
+@MainActor
 final class MemoryWorkspaceEndpointSettings: EndpointSettingsService {
     var value: String?
     init(value: String? = nil) { self.value = value }
@@ -136,6 +145,21 @@ final class WorkspaceProjectsDriver {
     func openHistory() async throws {
         context.workspace.dispatch(.openRequested(target: .history("/history/saved"), title: "Saved"))
         try await tabs.settle()
+    }
+    func openSaved(_ path: String, title: String = "Saved") async throws {
+        context.workspace.dispatch(.openRequested(target: .history(path), title: title))
+        try await tabs.settle()
+    }
+    func moveToLater(_ path: String) { context.workspace.dispatch(.moveToLaterRequested(path: path)) }
+    func waitForLater(_ path: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await context.wait("session moved to Later", sourceLocation: sourceLocation) {
+            self.context.workspace.state.laterSessionPaths.contains(path)
+        }
+    }
+    func waitForInboxSession(path: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await context.wait("session appears in inbox", sourceLocation: sourceLocation) {
+            SessionInboxModel.sessions(self.context.workspace.state.catalogue, laterPaths: []).contains { $0.row.sessionPath == path }
+        }
     }
     func openRunningSession() async throws {
         context.workspace.dispatch(.openRequested(target: .runtime("running"), title: "Working"))
@@ -468,6 +492,10 @@ final class WorkspaceServerDriver {
         try await context.wait("held attach", sourceLocation: sourceLocation) { await self.context.stub.heldAttaches > 0 }
     }
     func publishLateCatalogue() async { await context.stub.publishLateCatalogue() }
+    func publishIdleSavedSession(path: String) async { await context.stub.publishIdleSavedSession(path: path) }
+    func shouldHaveClosedRuntime(_ id: String, sourceLocation: SourceLocation = #_sourceLocation) async {
+        #expect(await context.stub.closedRuntimeIds.contains(id), sourceLocation: sourceLocation)
+    }
     /// The server ends a runtime; the app must react through its identity events.
     func closeRuntime(_ sessionId: String) async { await context.stub.closeRuntime(sessionId) }
     func replaceRuntime(_ sessionId: String, with replacement: String) async {
@@ -487,6 +515,7 @@ fileprivate actor WorkspaceConnectionStub: PiSessionConnection {
     var createdPath: String?
     var openedHistory: String?
     var attachedRuntimes: [String] = []
+    var closedRuntimeIds: [String] = []
     var closed = false
     var error: PiError?
     var connectError: PiError?
@@ -553,6 +582,14 @@ fileprivate actor WorkspaceConnectionStub: PiSessionConnection {
         if let error { throw error }
         return select("saved", "/repo")
     }
+    func closeSession(sessionId: String) async throws {
+        guard !closed else { throw PiError.disconnected }
+        if let error { throw error }
+        closedRuntimeIds.append(sessionId)
+        catalogue = .init(projects: catalogue.projects, sessions: catalogue.sessions.filter { $0.sessionId != sessionId },
+                          projectRevision: catalogue.projectRevision + 1, inventoryRevision: catalogue.inventoryRevision + 1)
+        publish(.closed(sessionId: sessionId)); publishCatalogue()
+    }
     func attachSession(sessionId: String) async throws -> DemoSession {
         guard !closed else { throw PiError.disconnected }
         attachedRuntimes.append(sessionId)
@@ -587,6 +624,13 @@ fileprivate actor WorkspaceConnectionStub: PiSessionConnection {
     func release() {
         waiter?.resume(); waiter = nil; holding = false
         attachWaiter?.resume(); attachWaiter = nil
+    }
+    func publishIdleSavedSession(path: String) {
+        let project = PiProjectSummary(path: "/repo", name: "pi-studio", sessions: [.init(path: path, title: "Parkable", modified: 1)])
+        catalogue = .init(projects: catalogue.projects.filter { $0.path != "/repo" } + [project],
+                          sessions: [.init(sessionId: "parkable", title: "Parkable", sessionPath: path,
+                                           projectPath: "/repo", projectName: "pi-studio", status: "idle")])
+        publishCatalogue()
     }
     func publishLateCatalogue() {
         catalogue = .init(projects: catalogue.projects + [.init(path: "/late", name: "late")],

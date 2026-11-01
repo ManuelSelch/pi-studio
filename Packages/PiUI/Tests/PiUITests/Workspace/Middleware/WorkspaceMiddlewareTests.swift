@@ -1,4 +1,5 @@
 import Testing
+import PiUI
 
 /// Workspace behaviour at the store level: consent, browsing, open identity and lifecycle.
 @Suite @MainActor struct WorkspaceMiddlewareTests {
@@ -12,6 +13,27 @@ import Testing
             app.projects.shouldShowSession()
             await app.server.shouldHaveCreates(1)
             await app.server.createdPathShouldBe("/home/pi")
+        }
+    }
+
+    @Test func parkingIdleSavedSessionPersistsClosesRuntimeAndResumeOpensHistory() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.connect()
+            let path = "/history/parkable"
+            await app.server.publishIdleSavedSession(path: path)
+            try await app.projects.waitForInboxSession(path: path)
+            #expect(app.workspace.laterSessionPaths.isEmpty)
+            #expect(SessionInboxModel.sessions(app.workspace.catalogue, laterPaths: []).first { $0.row.sessionPath == path }?.status == .ready)
+
+            app.projects.moveToLater(path)
+            try await app.projects.waitForLater(path)
+            await app.server.shouldHaveClosedRuntime("parkable")
+            #expect(app.workspace.openSessions.allSatisfy { $0.sessionPath != path })
+
+            try await app.projects.openSaved(path, title: "Parkable")
+            #expect(app.workspace.laterSessionPaths.contains(path) == false)
+            await app.server.openedHistoryShouldBe(path)
+            #expect(app.workspace.selectedSession?.sessionPath == path)
         }
     }
 

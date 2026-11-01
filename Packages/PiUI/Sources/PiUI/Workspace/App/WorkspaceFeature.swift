@@ -18,6 +18,7 @@ public struct WorkspaceFeature: Feature {
         public internal(set) var observedRuntimeId: String?
         public internal(set) var isOpening = false
         public internal(set) var isDisconnecting = false
+        public internal(set) var laterSessionPaths: Set<String> = []
         public internal(set) var error: String?
         internal var unknownOutcome = false
         internal var generation = UUID()
@@ -98,6 +99,11 @@ public struct WorkspaceFeature: Feature {
         case opened(UUID, OpenSession)
         case selectRequested(UUID = UUID(), id: String)
         case closeSession(String)
+        case laterLoaded(Set<String>)
+        case moveToLaterRequested(path: String)
+        case movedToLater(path: String)
+        case moveToLaterFailed(path: String, error: String, outcomeUnknown: Bool)
+        case laterResumed(path: String)
         /// The server ended this runtime: the tab cannot be reopened.
         case sessionClosed(String)
         case sessionReplaced(String, String)
@@ -160,6 +166,18 @@ public struct WorkspaceFeature: Feature {
             state.selectedSessionId = id
         case .closeSession(let id):
             state.close(id)
+        case .laterLoaded(let paths):
+            state.laterSessionPaths = paths
+        case .moveToLaterRequested:
+            break
+        case .movedToLater(let path):
+            state.laterSessionPaths.insert(path)
+            for id in state.openSessions.filter({ $0.sessionPath == path }).map(\.id) { state.close(id) }
+        case .moveToLaterFailed(let path, let error, let outcomeUnknown):
+            state.error = error
+            if outcomeUnknown { state.laterSessionPaths.insert(path) }
+        case .laterResumed(let path):
+            state.laterSessionPaths.remove(path)
         case .sessionClosed(let id):
             state.close(id)
         case .sessionReplaced(let id, let runtimeId):

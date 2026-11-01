@@ -41,17 +41,18 @@ See the dedicated [architecture document](architecture.md) for component ownersh
 ## Development wiring
 
 - Verified stable toolchain: **Xcode 26.1.1 (17B100), Swift 6.2.1**.
-- SwiftPM fetches public PiSDK **0.1.0**, Flux **2.0.1**, Router **2.0.0**, and
-  FactoryKit automatically. PiUI and the native Xcode project use the same exact
-  SDK/Flux/Router requirements; no local checkouts are required.
+- PiSDK is imported from the local `.dependencies/pi-sdk-swift` checkout so the app
+  can use and test SDK changes directly. `scripts/prepare.sh` links the sibling
+  `~/.worktrees/pi-sdk-swift/feat-close-session` checkout by default; set
+  `PI_SDK_SWIFT_PATH` to select another SDK checkout. Flux **2.0.1**, Router
+  **2.0.0**, and FactoryKit are resolved through SwiftPM.
 - Run `bash scripts/prepare.sh` before opening Xcode or testing on a fresh
-  checkout/worktree; it only resolves the released packages.
-- Keep both Package.resolved files checked in; they pin all four released
-  dependencies.
-- AppContainer owns the settings modal scope through Router; workspace session
-  selection and phone navigation remain workspace state. Mac session switching uses
-  the project/history sidebar; iPhone retains its open-sessions overview. See the
-  [integration design](../plans/router-integration/DESIGN.md).
+  checkout/worktree. The script links PiSDK and resolves the remote dependencies.
+- Xcode's Package.resolved files pin remote dependencies; PiSDK is a local path.
+  Hosted CI must check out the matching PiSDK API before this branch is merged.
+- AppContainer owns the settings modal scope through Router; inbox/session
+  selection and phone navigation remain workspace state. Both platform shells
+  use the session inbox sidebar; iPhone retains its open-sessions overview.
 
 [SessionConfiguration](../Packages/PiUI/Sources/PiUI/Session/App/SessionConfiguration.swift)
 defaults to `ws://127.0.0.1:8787/ws` and the dedicated **server-side** directory
@@ -96,8 +97,12 @@ iPhone, loopback refers to the phone, not your Mac.
 - Connect asks for takeover consent: initialization replaces the existing server
   controller. **Single-controller handoff is intentional**; simultaneous Studio
   and Pocket control is not required.
-- Each explicit connection creates one fresh demo session. Existing runtimes are
-  never attached to, aborted or closed by the app.
+- Connect initializes the server without creating or selecting a session. The
+  server catalogue drives the inbox: blocked sessions appear under Needs you,
+  unarchived idle saved sessions under Ready, and working sessions under Running.
+  Later is a local, endpoint-scoped UserDefaults state for idle saved sessions;
+  parking closes a loaded runtime with `closeSession`, and resuming reopens its
+  saved history path. Archiving remains independent.
 - The editor wraps and grows from two to five lines, then scrolls internally.
   macOS Enter sends and Shift+Enter inserts a newline at the caret. iOS Return
   inserts a newline; only the ↑ button submits. No routine composer hints are shown.
@@ -144,9 +149,10 @@ not yet verified; an Accessibility failure remains a failed test run, not a skip
 After the workflow reaches the default branch, run it from **Actions → macOS UI
 tests → Run workflow**, or with `gh workflow run macos-ui.yml`.
 
-SwiftPM fetches the same public PiSDK 0.1.0, Flux 2.0.1 and Router 2.0.0 releases
-used locally. FactoryKit keeps its existing version requirement and resolved pin,
-so preparation is fully reproducible on hosted runners.
+SwiftPM fetches Flux 2.0.1 and Router 2.0.0; the local PiSDK path dependency
+requires configuring the SDK checkout in each worktree before preparation. The
+hosted dependency workflow must use the corresponding SDK change before merging
+this app feature.
 No model credentials or development server are needed for the listed checks.
 Each job has isolated temporary build products, bounded execution and failure logs
 retained for seven days; iOS failures also upload available `.xcresult` bundles.
@@ -199,7 +205,7 @@ DYLD missing-symbol crashes and misleading macOS compatibility dialogs. Use
 separate Simulator devices via `PI_STUDIO_TEST_DESTINATION` (or run serially);
 separate derived-data directories alone do not isolate Simulator installations.
 
-- PiUI: **88 tests** (including parameterized cases), covering settings
+- PiUI: **97 tests** (including parameterized cases), covering settings
   reducers, mock-service failure/retry, isolated UserDefaults persistence,
   next-connection snapshots during setup/streaming, and dependency scope
   identity/isolation, configuration/connection overrides, FluxTestStore reducer
@@ -209,8 +215,8 @@ separate derived-data directories alone do not isolate Simulator installations.
   typing, selection newline, undo/redo, submit guards and Escape focus transitions.
 - The settings connection integration scenario and semantic driver also compile
   into both native unit-test targets; their source is shared, not copied.
-- iOS: 19 functional UI tests (including six multiline scenarios), plus four
-  launch/appearance cases. macOS has corresponding Return/Shift+Return,
+- iOS: **21 functional UI tests** (including six multiline scenarios and the
+  session-inbox move/resume scenario), plus four launch/appearance cases. macOS has corresponding Return/Shift+Return,
   paste/selection/undo, duplicate admission, Escape and retention scenarios,
   compiled but not executed during the automation pause. Debug-only injected
   connections are never selected by normal app launches; tests use public SDK
@@ -252,7 +258,7 @@ user's development server. Failure logs are retained in a temporary directory.
 
 Controlled **real-model Pi acceptance is still outstanding**; fake-runtime tests
 are not model-provider proof. Dialog answers, Markdown, tool/thinking rendering,
-session browsing/opening, public close APIs, reconnect/gap recovery, optional
-extension UI and secure remote access remain out of scope. Sequence gaps fail
+archive editing, reconnect/gap recovery, optional extension UI and secure remote
+access remain out of scope. Sequence gaps fail
 explicitly instead of attempting recovery. This remains a subset of the parent
 SDK Swift vertical slice, not full parity or a complete Pi Chat replacement.

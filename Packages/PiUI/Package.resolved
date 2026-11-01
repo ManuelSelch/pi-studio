@@ -1,5 +1,5 @@
 {
-  "originHash" : "d7367ed455b0cebd5c634e3ee98cdc40464f970374d0769d88d16947331522f9",
+  "originHash" : "e41c7b48c402039daa96909ada138288436fe6bc5b0d3cefa9fbea459512c7c9",
   "pins" : [
     {
       "identity" : "factory",
@@ -17,15 +17,6 @@
       "state" : {
         "revision" : "f5ec91329f3b42ff16fab57a378eb759e13cfd50",
         "version" : "2.0.1"
-      }
-    },
-    {
-      "identity" : "pi-sdk-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ManuelSelch/pi-sdk-swift.git",
-      "state" : {
-        "revision" : "f0a1d5c49b2c1e4ba627353689fd8d5946380ec3",
-        "version" : "0.1.0"
       }
     },
     {

@@ -14,7 +14,7 @@ struct WorkspaceEmptyState: View {
         VStack(spacing: 12) {
             Image(systemName: canConnect ? "bolt.horizontal.circle" : "rectangle.stack.badge.play")
                 .font(.system(size: 34)).foregroundStyle(.secondary)
-            Text(canConnect ? "Not connected" : isBusy ? "Loading projects…" : "Pick a session")
+            Text(canConnect ? "Not connected" : isBusy ? "Loading sessions…" : "Pick a session")
                 .font(.headline)
             Text(message).font(.subheadline).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -41,8 +41,8 @@ struct WorkspaceEmptyState: View {
 
     private var message: String {
         if error != nil { return "\(status). Fix the connection before continuing." }
-        if canConnect { return "Connect to the server to browse projects, history and Quick Chats." }
+        if canConnect { return "Connect to the server to see your session inbox." }
         if isBusy { return "Waiting for the server catalogue." }
-        return "Choose a session from the sidebar, or start a new one in a project."
+        return "Choose a session from the sidebar, or start a new conversation."
     }
 }

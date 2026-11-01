@@ -103,6 +103,7 @@ private actor MacWorkspaceConnectionStub: PiSessionConnection {
     func openSession(sessionPath: String) async throws -> DemoSession {
         DemoSession(sessionId: "saved", projectPath: "/home/pi")
     }
+    func closeSession(sessionId: String) async throws {}
     func connectDemo(projectPath: String, takingControl: Bool) async throws -> DemoSession { throw PiError.invalidState }
     func states() async -> AsyncStream<PiConnectionState> { AsyncStream { $0.finish() } }
     func projections() async -> AsyncStream<DemoSessionProjection> {

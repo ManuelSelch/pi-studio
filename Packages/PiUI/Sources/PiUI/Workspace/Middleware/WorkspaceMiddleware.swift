@@ -19,7 +19,9 @@ public final class WorkspaceMiddleware: Middleware {
     private let sessionStore: FluxStore<SessionFeature>
 
     private let endpointProvider: @MainActor () -> URL
+    private let laterSessions: any LaterSessionsService
     private let makeConnection: @Sendable (URL) -> any PiSessionConnection
+    private var connectionEndpoint: URL?
 
     private var store: StoreHandle<WorkspaceFeature>?
     private var connection: (any PiSessionConnection)?
@@ -39,10 +41,12 @@ public final class WorkspaceMiddleware: Middleware {
 
     public init(transport: SessionTransport, sessionStore: FluxStore<SessionFeature>,
                 endpointProvider: @escaping @MainActor () -> URL,
+                laterSessions: any LaterSessionsService,
                 makeConnection: @escaping @Sendable (URL) -> any PiSessionConnection) {
         self.transport = transport
         self.sessionStore = sessionStore
         self.endpointProvider = endpointProvider
+        self.laterSessions = laterSessions
         self.makeConnection = makeConnection
     }
 
@@ -77,8 +81,10 @@ public final class WorkspaceMiddleware: Middleware {
             guard state.openRequest == request, store.getState()?.openRequest == request,
                   openRequest != request else { return nil }
             openRequest = request
+            let parkedPath = laterPath(for: target, in: state)
             // Already open: select that tab instead of asking the server again.
             if let existing = store.getState()?.existingTab(for: target) {
+                if let parkedPath { removeFromLater(parkedPath, state: state, store: store) }
                 return .opened(state.generation, existing)
             }
             guard let connection else { return nil }
@@ -96,10 +102,15 @@ public final class WorkspaceMiddleware: Middleware {
             }
             guard let live = store.getState(), live.generation == token, live.openRequest == request else { return nil }
             guard let opened else { return .failed(token, failure ?? .invalidState) }
+            if let parkedPath { removeFromLater(parkedPath, state: live, store: store) }
             let tab = tab(for: opened, title: title, requested: target, in: live)
             // The open response already observed this runtime: adopt it without a second attach.
             observedKey = tab.id
             return .opened(token, tab)
+        case .moveToLaterRequested(let path):
+            await moveToLater(path: path, state: state, store: store)
+        case .catalogueChanged:
+            reconcileLater(state: state, store: store)
         case .createRequested(let request, let projectPath, let title):
             guard state.openRequest == request, store.getState()?.openRequest == request,
                   openRequest != request, let connection else { return nil }
@@ -117,7 +128,7 @@ public final class WorkspaceMiddleware: Middleware {
                                   title: title, activity: activity(for: created.sessionId, in: live))
             observedKey = tab.id
             return .opened(token, tab)
-        case .selectRequested, .closeSession, .sessionClosed, .sessionReplaced, .opened, .failed:
+        case .selectRequested, .closeSession, .movedToLater, .sessionClosed, .sessionReplaced, .opened, .failed:
             // Selection changed: make the observed runtime match the selected tab.
             enqueueSelection()
         default:
@@ -133,7 +144,10 @@ public final class WorkspaceMiddleware: Middleware {
         let pending = [connecting, catalogueObservation, stateObservation, eventObservation]
         connecting = nil; catalogueObservation = nil; stateObservation = nil; eventObservation = nil
         let previous = connection
-        let client = makeConnection(endpointProvider())
+        let endpoint = endpointProvider()
+        connectionEndpoint = endpoint
+        store.dispatch(.laterLoaded(laterSessions.load(endpoint: endpoint)))
+        let client = makeConnection(endpoint)
         connection = client; connectionGeneration = token
         transport.publish(client)
         connecting = Task {
@@ -263,9 +277,64 @@ public final class WorkspaceMiddleware: Middleware {
         }
     }
 
+    // MARK: - Later
+
+    private func moveToLater(path: String, state: WorkspaceFeature.State, store: StoreHandle<WorkspaceFeature>) async {
+        guard let endpoint = connectionEndpoint, let connection,
+              SessionInboxModel.sessions(state.catalogue, laterPaths: state.laterSessionPaths)
+                .contains(where: { $0.row.sessionPath == path && $0.canMoveLater }) else { return }
+        let runtime = state.catalogue.sessions.first(where: { $0.sessionPath == path })
+        guard runtime == nil || runtime?.status == "idle" else { return }
+        var paths = state.laterSessionPaths
+        paths.insert(path)
+        laterSessions.save(paths, endpoint: endpoint)
+        if let runtime {
+            do { try await connection.closeSession(sessionId: runtime.sessionId) }
+            catch {
+                let outcomeUnknown = (error as? PiError)?.isOutcomeUnknown ?? true
+                if !outcomeUnknown {
+                    paths.remove(path)
+                    laterSessions.save(paths, endpoint: endpoint)
+                }
+                store.dispatch(.moveToLaterFailed(path: path, error: error.localizedDescription,
+                                                  outcomeUnknown: outcomeUnknown))
+                return
+            }
+        }
+        guard store.getState()?.generation == state.generation else { return }
+        store.dispatch(.movedToLater(path: path))
+    }
+
+    private func reconcileLater(state: WorkspaceFeature.State, store: StoreHandle<WorkspaceFeature>) {
+        guard state.catalogue.projectRevision > 0, let endpoint = connectionEndpoint else { return }
+        let knownPaths = Set(state.catalogue.projects.flatMap { $0.sessions.filter { $0.archivedAt == nil }.map(\.path) })
+        let retained = state.laterSessionPaths.intersection(knownPaths)
+        guard retained != state.laterSessionPaths else { return }
+        laterSessions.save(retained, endpoint: endpoint)
+        store.dispatch(.laterLoaded(retained))
+    }
+
+    private func removeFromLater(_ path: String, state: WorkspaceFeature.State, store: StoreHandle<WorkspaceFeature>) {
+        guard state.laterSessionPaths.contains(path), let endpoint = connectionEndpoint else { return }
+        var paths = state.laterSessionPaths
+        paths.remove(path)
+        laterSessions.save(paths, endpoint: endpoint)
+        store.dispatch(.laterResumed(path: path))
+    }
+
+    private func laterPath(for target: ProjectSessionTarget, in state: WorkspaceFeature.State) -> String? {
+        switch target {
+        case .history(let path): state.laterSessionPaths.contains(path) ? path : nil
+        case .runtime(let id):
+            state.catalogue.sessions.first { $0.sessionId == id }?.sessionPath.flatMap {
+                state.laterSessionPaths.contains($0) ? $0 : nil
+            }
+        }
+    }
+
     // MARK: - Helpers
 
-    private var endpointString: String { endpointProvider().absoluteString }
+    private var endpointString: String { (connectionEndpoint ?? endpointProvider()).absoluteString }
 
     private func tab(for session: DemoSession, title: String, requested: ProjectSessionTarget,
                      in state: WorkspaceFeature.State) -> OpenSession {

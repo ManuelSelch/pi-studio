@@ -12,6 +12,10 @@ extension Container {
         self { @MainActor in UserDefaultsEndpointSettingsService() }.cached
     }
 
+    public var laterSessionsService: Factory<any LaterSessionsService> {
+        self { @MainActor in UserDefaultsLaterSessionsService() }.cached
+    }
+
     /// The workspace browses and opens sessions, so it needs the cataloguing connection.
     public var makeSessionConnection: Factory<@Sendable (URL) -> any PiSessionConnection> {
         self { { PiClient(endpoint: $0) } }
@@ -57,6 +61,7 @@ extension Container {
                     let saved = self?.settingsStore().state.savedEndpoint ?? ServerEndpoint.defaultValue
                     return URL(string: saved) ?? URL(string: ServerEndpoint.defaultValue)!
                 },
+                laterSessions: self.laterSessionsService(),
                 makeConnection: self.makeSessionConnection()
             )
             return FluxStore(state: .init(), middlewares: [middleware])

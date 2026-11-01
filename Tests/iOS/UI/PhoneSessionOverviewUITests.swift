@@ -14,7 +14,6 @@ final class PhoneSessionOverviewUITests: XCTestCase {
         app.projects.openSavedQuickChat()
         app.chat.enterDraft("Draft for the saved one")
         app.projects.back()
-        app.projects.expandProject("pi-studio")
         app.projects.openRunningSession()
         app.session.statusShouldBe("Generating…")
 

@@ -1,22 +1,20 @@
 import SwiftUI
 
-/// Compact project, Quick Chats and history navigation. Layout and disclosure
-/// state only: every action is a callback, and all data is plain presentation.
+/// Session inbox navigation. Status comes from the server catalogue; Later is explicit local intent.
 struct WorkspaceSidebar: View {
     let presentation: WorkspacePresentation
     let onOpen: @MainActor (ProjectSessionTarget, String) -> Void
     let onCreate: @MainActor (String) -> Void
-    /// One connection action: the container owns consent confirmation so the
-    /// sidebar and the empty state cannot disagree about it.
+    let onMoveToLater: @MainActor (String) -> Void
     let onConnection: @MainActor () -> Void
     let onSettings: @MainActor () -> Void
-    @State private var expanded: Set<String> = []
-    @State private var collapsedQuickChats: Set<String> = []
-    @State private var search = ""
+    @State private var runningExpanded = true
+    @State private var laterExpanded = false
 
     var body: some View {
         VStack(spacing: 0) {
-            searchField
+            header
+            Divider()
             if let error = presentation.error {
                 Text(verbatim: error)
                     .font(.caption).foregroundStyle(.red)
@@ -26,109 +24,122 @@ struct WorkspaceSidebar: View {
                     .padding(.horizontal, 6)
                     .accessibilityIdentifier("errorMessage")
             }
-            Divider()
             ScrollView {
-                LazyVStack(spacing: 2) {
-                    if let quickChats = presentation.quickChats, isVisible(quickChats) {
-                        group(quickChats)
-                        Divider().padding(.vertical, 4)
+                VStack(alignment: .leading, spacing: 8) {
+                    statusSection("Needs you", status: .needsYou)
+                    statusSection("Ready", status: .ready)
+                    if !presentation.sessions(in: .running).isEmpty {
+                        VStack(spacing: 0) {
+                            disclosure("Running", count: presentation.sessions(in: .running).count,
+                                       expanded: $runningExpanded)
+                            if runningExpanded { sessionRows(presentation.sessions(in: .running)) }
+                        }
                     }
-                    if hasProjects {
-                        sectionLabel("Projects & history")
-                        ForEach(visibleProjects) { group($0) }
-                    }
+                    Spacer(minLength: 12)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 8)
+            }
+            if !presentation.sessions(in: .later).isEmpty {
+                Divider()
+                VStack(spacing: 0) {
+                    disclosure("Later", count: presentation.sessions(in: .later).count,
+                               expanded: $laterExpanded)
+                    if laterExpanded { sessionRows(presentation.sessions(in: .later)) }
+                }
+                .padding(.vertical, 6)
             }
             Divider()
             footer
         }
     }
 
-    // MARK: - Pieces
-
-    private var searchField: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass").font(.caption).foregroundStyle(.secondary)
-            TextField("Search sessions", text: $search)
-                .textFieldStyle(.plain).font(.subheadline)
-                .accessibilityLabel("Search sessions")
-                .accessibilityIdentifier("sessionSearch")
-        }
-        .padding(.horizontal, 10)
-        .frame(minHeight: 32)
-    }
-
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2.weight(.semibold)).textCase(.uppercase).foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 2)
-    }
-
-    @ViewBuilder private func group(_ value: ProjectGroup) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Button { toggle(value) } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: isExpanded(value) ? "chevron.down" : "chevron.right")
-                            .font(.caption2).foregroundStyle(.tertiary).frame(width: 10)
-                        Image(systemName: value.quickChats ? "bubble.left" : "folder")
-                            .font(.caption).foregroundStyle(.secondary).frame(width: 16)
-                        Text(value.name).font(.subheadline.weight(.semibold)).lineLimit(1)
-                        Spacer(minLength: 4)
-                    }
-                    .frame(minHeight: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(value.name)
-                .accessibilityValue(isExpanded(value) ? "Expanded" : "Collapsed")
-                Button { onCreate(value.newSessionPath) } label: {
-                    Image(systemName: "plus").frame(width: 40, height: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).foregroundStyle(.tint)
-                .disabled(!presentation.canOpen || !value.canCreate)
-                .accessibilityLabel(value.quickChats ? "New chat" : "New session in \(value.name)")
-                .accessibilityIdentifier("newSession-\(value.newSessionPath)")
+    private var header: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Pi Studio").font(.caption).foregroundStyle(.secondary)
+                Text("Sessions").font(.headline)
             }
-            .padding(.horizontal, 10)
-            if isExpanded(value) {
-                ForEach(visibleSessions(in: value)) { row($0) }
-                if value.sessions.isEmpty {
-                    Text(value.quickChats ? "No chats yet." : "No sessions yet.")
-                        .font(.caption).foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, 36).padding(.vertical, 6)
-                }
+            Spacer()
+            Button {
+                if let path = presentation.newSessionPath { onCreate(path) }
+            } label: { Image(systemName: "plus").frame(width: 36, height: 40) }
+                .buttonStyle(.plain).disabled(!presentation.canOpen || presentation.newSessionPath == nil)
+                .accessibilityLabel("New session")
+                .accessibilityIdentifier("newInboxSession")
+        }
+        .padding(.horizontal, 12).frame(minHeight: 54)
+    }
+
+    @ViewBuilder private func statusSection(_ title: String, status: InboxSession.Status) -> some View {
+        let sessions = presentation.sessions(in: status)
+        if !sessions.isEmpty {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    .padding(.horizontal, 12).padding(.vertical, 5)
+                sessionRows(sessions)
             }
         }
     }
 
-    @ViewBuilder private func row(_ value: ProjectSessionRow) -> some View {
-        Button { onOpen(value.target, value.title) } label: {
-            HStack(spacing: 8) {
-                SessionActivityIndicator(activity: value.activity)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(value.title).font(.subheadline).lineLimit(1)
-                    if let detail = value.detail {
-                        Text(detail).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                if let activity = value.activity {
-                    Text(activity.label).font(.caption2).foregroundStyle(activity.tint)
-                }
+    private func disclosure(_ title: String, count: Int, expanded: Binding<Bool>) -> some View {
+        Button { expanded.wrappedValue.toggle() } label: {
+            HStack(spacing: 7) {
+                Image(systemName: expanded.wrappedValue ? "chevron.down" : "chevron.right")
+                    .font(.caption2).foregroundStyle(.tertiary).frame(width: 10)
+                Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Spacer()
+                Text("\(count)").font(.caption2).foregroundStyle(.tertiary)
             }
-            .padding(.leading, 36).padding(.trailing, 10)
-            .frame(minHeight: 40)
-            .background(isSelected(value) ? Color.accentColor.opacity(0.15) : .clear,
-                        in: RoundedRectangle(cornerRadius: 6))
-            .padding(.horizontal, 6)
-            .contentShape(Rectangle())
+            .frame(minHeight: 34).contentShape(Rectangle()).padding(.horizontal, 12)
         }
         .buttonStyle(.plain)
-        .disabled(!presentation.canOpen || !value.canOpen)
-        .accessibilityIdentifier("session-\(value.id)")
+        .accessibilityIdentifier("inboxToggle-\(title.lowercased().replacingOccurrences(of: " ", with: ""))")
+    }
+
+    private func sessionRows(_ sessions: [InboxSession]) -> some View {
+        ForEach(sessions) { session in
+            HStack(spacing: 0) {
+                Button { onOpen(session.row.target, session.row.title) } label: {
+                    HStack(spacing: 8) {
+                        SessionActivityIndicator(activity: session.row.activity)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(session.row.title).font(.subheadline).lineLimit(1)
+                            if let detail = session.row.detail, !detail.isEmpty {
+                                Text(detail).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            } else {
+                                Text(statusLabel(session.status)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.leading, 10).padding(.trailing, 4).frame(minHeight: 46)
+                    .background(isSelected(session.row) ? Color.accentColor.opacity(0.15) : .clear,
+                                in: RoundedRectangle(cornerRadius: 6))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!presentation.canOpen || !session.row.canOpen)
+                .accessibilityIdentifier("inbox-\(session.id)")
+                if session.canMoveLater {
+                    Button { if let path = session.row.sessionPath { onMoveToLater(path) } } label: {
+                        Image(systemName: "clock.arrow.circlepath").frame(width: 34, height: 42)
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                    .accessibilityLabel("Move \(session.row.title) to Later")
+                    .accessibilityIdentifier("moveLater-\(session.id)")
+                } else if session.status == .later {
+                    Button { onOpen(session.row.target, session.row.title) } label: {
+                        Text("Resume").font(.caption).frame(minWidth: 46, minHeight: 42)
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.tint)
+                    .disabled(!presentation.canOpen || !session.row.canOpen)
+                    .accessibilityIdentifier("resumeLater-\(session.id)")
+                }
+            }
+            .padding(.horizontal, 6)
+            .background(isSelected(session.row) ? Color.accentColor.opacity(0.08) : .clear,
+                        in: RoundedRectangle(cornerRadius: 6))
+        }
     }
 
     private var footer: some View {
@@ -153,39 +164,16 @@ struct WorkspaceSidebar: View {
         .padding(.horizontal, 10)
     }
 
-    // MARK: - Disclosure and filtering
-
-    private func toggle(_ value: ProjectGroup) {
-        if value.quickChats {
-            if collapsedQuickChats.contains(value.id) { collapsedQuickChats.remove(value.id) }
-            else { collapsedQuickChats.insert(value.id) }
-        } else if expanded.contains(value.id) { expanded.remove(value.id) }
-        else { expanded.insert(value.id) }
+    private func statusLabel(_ status: InboxSession.Status) -> String {
+        switch status {
+        case .needsYou: "Needs you"
+        case .ready: "Ready"
+        case .running: "Running"
+        case .later: "Later"
+        }
     }
 
-    private func isExpanded(_ value: ProjectGroup) -> Bool {
-        if value.quickChats { return !collapsedQuickChats.contains(value.id) }
-        return !search.isEmpty || expanded.contains(value.id)
+    private func isSelected(_ row: ProjectSessionRow) -> Bool {
+        presentation.selection?.represents(row) == true
     }
-
-    private func isVisible(_ value: ProjectGroup) -> Bool {
-        search.isEmpty || value.name.localizedCaseInsensitiveContains(search)
-            || value.sessions.contains { matches($0) }
-    }
-
-    private func visibleSessions(in value: ProjectGroup) -> [ProjectSessionRow] {
-        search.isEmpty ? value.sessions : value.sessions.filter(matches)
-    }
-
-    private func matches(_ value: ProjectSessionRow) -> Bool {
-        value.title.localizedCaseInsensitiveContains(search) || (value.detail?.localizedCaseInsensitiveContains(search) ?? false)
-    }
-
-    private var visibleProjects: [ProjectGroup] {
-        search.isEmpty ? presentation.projects : presentation.projects.filter(isVisible)
-    }
-
-    private var hasProjects: Bool { !visibleProjects.isEmpty }
-
-    private func isSelected(_ value: ProjectSessionRow) -> Bool { presentation.selection?.represents(value) == true }
 }

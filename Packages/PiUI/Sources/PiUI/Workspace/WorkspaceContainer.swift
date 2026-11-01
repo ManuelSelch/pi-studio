@@ -61,6 +61,7 @@ public struct WorkspaceContainer: View {
                 let quick = store.state.catalogue.projects.first { $0.path == path }?.quickChats == true
                 store.dispatch(.createRequested(projectPath: path, title: quick ? "New chat" : "New session"))
             },
+            moveToLater: { store.dispatch(.moveToLaterRequested(path: $0)) },
             connection: requestConnectionChange,
             settings: onOpenSettings,
             back: { store.dispatch(.back) },
@@ -94,6 +95,7 @@ public struct WorkspaceContainer: View {
         value.requiresDisconnectWarning = requiresDisconnectWarning
         value.error = workspace.selectedSessionId == nil ? workspace.error : nil
         value.groups = ProjectListModel.groups(workspace.catalogue)
+        value.inboxSessions = SessionInboxModel.sessions(workspace.catalogue, laterPaths: workspace.laterSessionPaths)
         value.isConnected = workspace.isConnected
         value.openSessions = Self.openSessions(workspace)
         value.newSessionPath = Self.newSessionPath(workspace.catalogue)

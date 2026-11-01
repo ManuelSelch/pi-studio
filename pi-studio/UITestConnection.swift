@@ -90,7 +90,22 @@ actor UITestConnection: PiSessionConnection {
         try await Task.sleep(for: .milliseconds(100))
         guard !closed else { throw PiError.disconnected }
         if rejectOpen { throw PiError.rejected(code: "notFound", message: "History unavailable") }
-        return select("ui-saved", "/home/pi", messages: [.init(id: "saved-answer", role: "assistant", text: "A saved answer from Quick Chats.")])
+        let session = select("ui-saved", "/home/pi", messages: [.init(id: "saved-answer", role: "assistant", text: "A saved answer from Quick Chats.")])
+        runtimes.removeAll { $0.sessionId == session.sessionId }
+        runtimes.append(.init(sessionId: session.sessionId, title: "Saved quick chat", sessionPath: sessionPath,
+                              projectPath: "/home/pi", projectName: "Quick Chats", status: "idle"))
+        publishCatalogue()
+        return session
+    }
+    func closeSession(sessionId: String) async throws {
+        guard !closed else { throw PiError.disconnected }
+        runtimes.removeAll { $0.sessionId == sessionId }
+        if projection?.session.sessionId == sessionId {
+            projection = nil
+            publishState(.connected)
+            publishEvent(.closed(sessionId: sessionId))
+        }
+        publishCatalogue()
     }
     func attachSession(sessionId: String) async throws -> DemoSession {
         guard !closed else { throw PiError.disconnected }

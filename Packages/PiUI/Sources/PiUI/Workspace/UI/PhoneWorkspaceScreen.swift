@@ -31,6 +31,7 @@ struct PhoneWorkspaceScreen: View {
 
     private var sidebar: some View {
         WorkspaceSidebar(presentation: presentation, onOpen: actions.open, onCreate: actions.create,
+                         onMoveToLater: actions.moveToLater,
                          onConnection: actions.connection, onSettings: actions.settings)
     }
 

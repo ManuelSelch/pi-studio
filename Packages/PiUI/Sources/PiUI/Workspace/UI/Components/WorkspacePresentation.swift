@@ -46,6 +46,7 @@ public struct WorkspacePresentation: Equatable, Sendable {
     public var requiresDisconnectWarning = false
     public var error: String?
     public var groups: [ProjectGroup] = []
+    public var inboxSessions: [InboxSession] = []
     public var selection: WorkspaceSelection?
     /// Ordered open sessions. Mac selects conversations from project/history rows;
     /// the phone switches through its overview.
@@ -54,6 +55,7 @@ public struct WorkspacePresentation: Equatable, Sendable {
     public var newSessionPath: String?
     public var isConnected = false
     public init() {}
+    public func sessions(in status: InboxSession.Status) -> [InboxSession] { inboxSessions.filter { $0.status == status } }
 
     /// Quick Chats stays above Activity and project groups, matching Pi Chat.
     public var quickChats: ProjectGroup? { groups.first { $0.quickChats } }
@@ -64,6 +66,7 @@ public struct WorkspacePresentation: Equatable, Sendable {
 public struct WorkspaceActions {
     public var open: @MainActor (ProjectSessionTarget, String) -> Void
     public var create: @MainActor (String) -> Void
+    public var moveToLater: @MainActor (String) -> Void
     public var connection: @MainActor () -> Void
     public var settings: @MainActor () -> Void
     public var back: @MainActor () -> Void
@@ -78,6 +81,7 @@ public struct WorkspaceActions {
 
     public init(open: @escaping @MainActor (ProjectSessionTarget, String) -> Void,
                 create: @escaping @MainActor (String) -> Void,
+                moveToLater: @escaping @MainActor (String) -> Void = { _ in },
                 connection: @escaping @MainActor () -> Void,
                 settings: @escaping @MainActor () -> Void,
                 back: @escaping @MainActor () -> Void,
@@ -88,7 +92,7 @@ public struct WorkspaceActions {
                 closeTab: @escaping @MainActor (String) -> Void,
                 followTailChanged: @escaping @MainActor (Bool) -> Void,
                 scrollAnchorChanged: @escaping @MainActor (String?) -> Void) {
-        self.open = open; self.create = create; self.connection = connection
+        self.open = open; self.create = create; self.moveToLater = moveToLater; self.connection = connection
         self.settings = settings; self.back = back
         self.draftChanged = draftChanged; self.send = send; self.stop = stop
         self.selectTab = selectTab; self.closeTab = closeTab

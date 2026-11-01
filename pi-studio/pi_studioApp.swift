@@ -18,7 +18,9 @@ struct pi_studioApp: App {
                 defaults.removePersistentDomain(forName: suiteName)
             }
             let service = UserDefaultsEndpointSettingsService(defaults: defaults)
+            let laterService = UserDefaultsLaterSessionsService(defaults: defaults)
             Container.shared.endpointSettingsService.onDebug(factory: { service })
+            Container.shared.laterSessionsService.onDebug(factory: { laterService })
             
             
             let rejected = environment["PI_UI_SEND_REJECTED"] == "1"
