@@ -124,9 +124,19 @@ final class WorkspaceProjectsDriver {
     private let context: WorkspaceContext
     fileprivate init(_ context: WorkspaceContext) { self.context = context }
 
+    /// Simulates the app's one-shot launch connection, including automatic control takeover.
+    func launchWorkspace(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        context.workspace.dispatch(.connectRequested(takingControl: true))
+        try await waitForCatalogue(sourceLocation: sourceLocation)
+    }
+
     /// Connect lists projects without creating a session; the catalogue must have arrived.
     func connect(sourceLocation: SourceLocation = #_sourceLocation) async throws {
         context.workspace.dispatch(.connectRequested(takingControl: true))
+        try await waitForCatalogue(sourceLocation: sourceLocation)
+    }
+
+    private func waitForCatalogue(sourceLocation: SourceLocation) async throws {
         // Succeed with a catalogue, or settle on the failure the caller wants to assert.
         try await context.wait("connection attempt", sourceLocation: sourceLocation) {
             if !self.context.workspace.state.catalogue.projects.isEmpty { return true }
@@ -136,6 +146,10 @@ final class WorkspaceProjectsDriver {
     }
     func connectWithoutConsent() { context.workspace.dispatch(.connectRequested(takingControl: false)) }
     func connectAgain() { context.workspace.dispatch(.connectRequested(takingControl: true)) }
+    func retryConnection(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        context.workspace.dispatch(.connectRequested(takingControl: true))
+        try await waitForCatalogue(sourceLocation: sourceLocation)
+    }
     func disconnect() async { context.workspace.dispatch(.disconnectRequested()) }
     func back() { context.workspace.dispatch(.back) }
     func newQuickChat() async throws {
@@ -479,6 +493,7 @@ final class WorkspaceServerDriver {
         #expect(await context.stub.attachedRuntimes.last == id, sourceLocation: sourceLocation)
     }
     func rejectConnect(_ message: String) async { await context.stub.setConnectError(.transport(message: message, outcomeUnknown: false)) }
+    func allowConnect() async { await context.stub.setConnectError(nil) }
     func rejectOpens() async { await context.stub.setError(.rejected(code: "notFound", message: "Not found")) }
     func loseOpenReceipt() async { await context.stub.setError(.requestExpired(outcomeUnknown: true)) }
     func holdOpen() async { await context.stub.holdOpen() }
@@ -617,7 +632,7 @@ fileprivate actor WorkspaceConnectionStub: PiSessionConnection {
         projectionObservers = [:]
     }
     func setError(_ value: PiError) { error = value }
-    func setConnectError(_ value: PiError) { connectError = value }
+    func setConnectError(_ value: PiError?) { connectError = value }
     func holdOpen() { holding = true }
     func holdAttach() { heldAttachCount += 1 }
     func releaseAttach() { attachWaiter?.resume(); attachWaiter = nil }

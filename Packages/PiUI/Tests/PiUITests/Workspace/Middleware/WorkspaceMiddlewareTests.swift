@@ -1,8 +1,18 @@
 import Testing
 import PiUI
 
-/// Workspace behaviour at the store level: consent, browsing, open identity and lifecycle.
+/// Workspace behaviour at the store level: launch connection, browsing, open identity and lifecycle.
 @Suite @MainActor struct WorkspaceMiddlewareTests {
+    @Test func launchTakesControlAndShowsBrowsingWithoutCreatingOrAttaching() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.launchWorkspace()
+            app.projects.shouldBeBrowsing()
+            await app.server.shouldHaveConnectionCount(1)
+            await app.server.shouldHaveCreates(0)
+            await app.server.shouldHaveAttaches(0)
+        }
+    }
+
     @Test func connectListsWithoutCreatingAndQuickChatCreationIsExplicit() async throws {
         try await WorkspaceIntegrationDriver.run { app in
             try await app.projects.connect()
@@ -119,12 +129,19 @@ import PiUI
         }
     }
 
-    @Test func connectWithoutConsentNeverReachesTheServer() async throws {
+    @Test func launchConnectionFailureCanBeRetriedWithoutCreatingASession() async throws {
         try await WorkspaceIntegrationDriver.run { app in
-            app.projects.connectWithoutConsent()
-            try await Task.sleep(for: .milliseconds(30))
-            await app.server.shouldHaveConnectionCount(0)
-            app.projects.shouldBeDisconnected()
+            await app.server.rejectConnect("Connection refused")
+            try? await app.projects.launchWorkspace()
+            app.projects.shouldShowError(containing: "Connection refused")
+            await app.server.shouldHaveConnectionCount(1)
+
+            await app.server.allowConnect()
+            try await app.projects.retryConnection()
+            app.projects.shouldBeBrowsing()
+            await app.server.shouldHaveConnectionCount(2)
+            await app.server.shouldHaveCreates(0)
+            await app.server.shouldHaveAttaches(0)
         }
     }
 

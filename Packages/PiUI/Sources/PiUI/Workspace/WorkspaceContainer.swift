@@ -4,14 +4,14 @@ import PiSDK
 import SwiftUI
 
 /// Bridges the workspace and its conversation for one platform shell.
-/// Consent and cross-feature signals stay here; app-level settings presentation is a callback.
+/// Launch connection, cross-feature signals and app-level settings presentation stay here.
 /// Screens receive plain values and callbacks, and every effect goes to a store.
 public struct WorkspaceContainer: View {
     @InjectedObject(\.workspaceStore) private var store
     @InjectedObject(\.sessionStore) private var session
-    @State private var confirmConnect = false
     @State private var confirmDisconnect = false
     @State private var composerDraft = ""
+    @State private var didRequestLaunchConnection = false
 
     private let onOpenSettings: @MainActor () -> Void
     private let isSettingsPresented: Bool
@@ -24,11 +24,13 @@ public struct WorkspaceContainer: View {
 
     public var body: some View {
         screen
-            .alert("Connect and take control?", isPresented: $confirmConnect) {
-                Button("Cancel", role: .cancel) {}
-                Button("Connect and take control") { store.dispatch(.connectRequested(takingControl: true)) }
-            } message: {
-                Text("This replaces any current server controller. Connecting does not create or close sessions.")
+            .task {
+                guard !didRequestLaunchConnection else { return }
+                didRequestLaunchConnection = true
+                #if DEBUG
+                guard ProcessInfo.processInfo.environment["PI_UI_DISABLE_AUTO_CONNECT"] != "1" else { return }
+                #endif
+                store.dispatch(.connectRequested(takingControl: true))
             }
             .alert("Disconnect?", isPresented: $confirmDisconnect) {
                 Button("Cancel", role: .cancel) {}
@@ -75,7 +77,7 @@ public struct WorkspaceContainer: View {
     }
 
     private func requestConnectionChange() {
-        if store.state.canConnect { confirmConnect = true }
+        if store.state.canConnect { store.dispatch(.connectRequested(takingControl: true)) }
         else if requiresDisconnectWarning { confirmDisconnect = true }
         else { store.dispatch(.disconnectRequested()) }
     }
