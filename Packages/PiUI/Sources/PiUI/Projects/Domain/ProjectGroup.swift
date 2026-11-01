@@ -23,6 +23,7 @@ public struct ProjectSessionRow: Identifiable, Equatable, Sendable {
     public let id: String
     public let title: String
     public let detail: String?
+    public let checkoutPath: String
     public let activity: SessionActivity?
     public let target: ProjectSessionTarget
     public let canOpen: Bool

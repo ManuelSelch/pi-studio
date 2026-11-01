@@ -10,6 +10,8 @@ struct WorkspaceSidebar: View {
     let onSettings: @MainActor () -> Void
     @State private var runningExpanded = true
     @State private var laterExpanded = false
+    @State private var hoveredSession: String?
+    @FocusState private var focusedLaterSession: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -100,18 +102,16 @@ struct WorkspaceSidebar: View {
         ForEach(sessions) { session in
             HStack(spacing: 0) {
                 Button { onOpen(session.row.target, session.row.title) } label: {
-                    HStack(spacing: 8) {
-                        SessionActivityIndicator(activity: session.row.activity)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(session.row.title).font(.subheadline).lineLimit(1)
-                            if let detail = session.row.detail, !detail.isEmpty {
-                                Text(detail).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                            } else {
-                                Text(statusLabel(session.status)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                            }
+                    VStack(alignment: .leading, spacing: 1) {
+                        HStack(spacing: 7) {
+                            SessionActivityIndicator(activity: session.row.activity)
+                            Text(session.displayLines[0]).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        ForEach(Array(session.displayLines.dropFirst().enumerated()), id: \.offset) { _, line in
+                            Text(line).font(.subheadline).lineLimit(1)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading, 10).padding(.trailing, 4).frame(minHeight: 46)
                     .background(isSelected(session.row) ? Color.accentColor.opacity(0.15) : .clear,
                                 in: RoundedRectangle(cornerRadius: 6))
@@ -127,6 +127,8 @@ struct WorkspaceSidebar: View {
                     .buttonStyle(.plain).foregroundStyle(.secondary)
                     .accessibilityLabel("Move \(session.row.title) to Later")
                     .accessibilityIdentifier("moveLater-\(session.id)")
+                    .focused($focusedLaterSession, equals: session.id)
+                    .opacity(laterActionVisible(session.id) ? 1 : 0)
                 } else if session.status == .later {
                     Button { onOpen(session.row.target, session.row.title) } label: {
                         Text("Resume").font(.caption).frame(minWidth: 46, minHeight: 42)
@@ -135,6 +137,10 @@ struct WorkspaceSidebar: View {
                     .disabled(!presentation.canOpen || !session.row.canOpen)
                     .accessibilityIdentifier("resumeLater-\(session.id)")
                 }
+            }
+            .onHover { hovering in
+                if hovering { hoveredSession = session.id }
+                else if hoveredSession == session.id { hoveredSession = nil }
             }
             .padding(.horizontal, 6)
             .background(isSelected(session.row) ? Color.accentColor.opacity(0.08) : .clear,
@@ -164,13 +170,12 @@ struct WorkspaceSidebar: View {
         .padding(.horizontal, 10)
     }
 
-    private func statusLabel(_ status: InboxSession.Status) -> String {
-        switch status {
-        case .needsYou: "Needs you"
-        case .ready: "Ready"
-        case .running: "Running"
-        case .later: "Later"
-        }
+    private func laterActionVisible(_ id: String) -> Bool {
+        #if os(macOS)
+        hoveredSession == id || focusedLaterSession == id
+        #else
+        true
+        #endif
     }
 
     private func isSelected(_ row: ProjectSessionRow) -> Bool {
