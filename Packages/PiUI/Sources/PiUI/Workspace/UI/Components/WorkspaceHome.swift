@@ -17,7 +17,12 @@ struct WorkspaceHome: View {
             ZStack(alignment: .top) {
                 HStack(spacing: 12) {
                     Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                    TextField("Search or start a conversation…", text: .constant(""))
+                    TextField("Search or start a conversation…", text: Binding(
+                        get: { presentation.quickSwitcherQuery },
+                        set: { query in
+                            actions.quickSwitcherQueryChanged(query)
+                            if !query.isEmpty && !presentation.quickSwitcherOpen { actions.openQuickSwitcher() }
+                        }))
                         .textFieldStyle(.plain).focused($homeSearchFocused)
                         .accessibilityLabel("Quick switcher")
                         .accessibilityIdentifier("quickSwitcher")
@@ -29,9 +34,6 @@ struct WorkspaceHome: View {
                 .background(.background, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.quaternary))
                 .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
-                .simultaneousGesture(TapGesture().onEnded {
-                    if !presentation.quickSwitcherOpen { actions.openQuickSwitcher() }
-                })
 
                 if presentation.quickSwitcherOpen {
                     QuickSwitcherContent(presentation: presentation, actions: actions)
@@ -56,6 +58,9 @@ struct WorkspaceHome: View {
         }
         .padding(.horizontal, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #if os(macOS)
+        .onAppear { homeSearchFocused = true }
+        #endif
         .background {
             surface.contentShape(Rectangle()).onTapGesture {
                 if presentation.quickSwitcherOpen { actions.dismissQuickSwitcher() }

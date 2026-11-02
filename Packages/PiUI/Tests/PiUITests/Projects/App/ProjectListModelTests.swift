@@ -56,6 +56,9 @@ import PiUI
         #expect(rows.first { $0.row.title == "Working" }?.status == .running)
         #expect(!rows.contains { $0.row.title == "Archived" })
         #expect(rows.first { $0.row.title == "Parked" }?.canMoveLater == false)
+        #expect(rows.first { $0.row.title == "Parked" }?.canArchive == true)
+        #expect(rows.first { $0.row.title == "Needs input" }?.canArchive == false)
+        #expect(rows.first { $0.row.title == "Working" }?.canArchive == false)
     }
 
     @Test func inboxIncludesUnopenedSavedIdleHistoryAndAllowsOnlySavedReadyToMoveLater() {
@@ -68,6 +71,7 @@ import PiUI
         #expect(row?.row.target == .history("/history/ready"))
         #expect(row?.status == .ready)
         #expect(row?.canMoveLater == true)
+        #expect(row?.canArchive == true)
     }
 
     @MainActor @Test func laterMembershipIsLocalAndScopedToNormalizedEndpoint() {

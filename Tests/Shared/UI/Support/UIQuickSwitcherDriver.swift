@@ -15,11 +15,23 @@ final class UIQuickSwitcherDriver {
         XCTAssertTrue(heading.waitForExistence(timeout: 5), file: file, line: line)
         XCTAssertEqual(heading.label, text, file: file, line: line)
     }
-    func openFromHomeSearch(file: StaticString = #filePath, line: UInt = #line) throws {
+    func clickHomeSearch(file: StaticString = #filePath, line: UInt = #line) throws {
         let field = app.textFields["quickSwitcher"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), file: file, line: line)
         field.tap()
+    }
+    func typeOnHomeSearch(_ text: String) throws { app.typeText(text) }
+    func searchShouldContain(_ text: String, file: StaticString = #filePath, line: UInt = #line) throws {
         XCTAssertTrue(searchField.waitForExistence(timeout: 5), file: file, line: line)
+        let predicate = NSPredicate(format: "value == %@", text)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: searchField)
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 5), .completed, file: file, line: line)
+    }
+    func openFromHomeSearch(file: StaticString = #filePath, line: UInt = #line) throws {
+        try clickHomeSearch(file: file, line: line)
+        app.typeText("x")
+        XCTAssertTrue(searchField.waitForExistence(timeout: 5), file: file, line: line)
+        try filter("All", file: file, line: line)
     }
     func shouldBeInline(file: StaticString = #filePath, line: UInt = #line) throws {
         XCTAssertTrue(searchField.waitForExistence(timeout: 5), file: file, line: line)
@@ -45,6 +57,12 @@ final class UIQuickSwitcherDriver {
         XCTAssertFalse(searchField.exists, file: file, line: line)
     }
     #if os(macOS)
+    func typeOnInitiallyFocusedHomeSearch(_ text: String, file: StaticString = #filePath, line: UInt = #line) throws {
+        let field = app.textFields["quickSwitcher"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), file: file, line: line)
+        XCTAssertEqual(field.value(forKey: "hasKeyboardFocus") as? Bool, true, file: file, line: line)
+        app.typeText(text)
+    }
     func openUsingShortcut(_ key: String) throws {
         app.typeKey(key, modifierFlags: .command)
     }

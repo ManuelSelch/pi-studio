@@ -6,12 +6,13 @@ struct WorkspaceSidebar: View {
     let onOpen: @MainActor (ProjectSessionTarget, String) -> Void
     let onCreate: @MainActor (String) -> Void
     let onMoveToLater: @MainActor (String) -> Void
+    let onArchive: @MainActor (String) -> Void
     let onConnection: @MainActor () -> Void
     let onSettings: @MainActor () -> Void
     @State private var runningExpanded = true
     @State private var laterExpanded = false
     @State private var hoveredSession: String?
-    @FocusState private var focusedLaterSession: String?
+    @FocusState private var focusedAction: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -128,9 +129,20 @@ struct WorkspaceSidebar: View {
                     .buttonStyle(.plain).foregroundStyle(.secondary)
                     .accessibilityLabel("Move \(session.row.title) to Later")
                     .accessibilityIdentifier("moveLater-\(session.id)")
-                    .focused($focusedLaterSession, equals: session.id)
-                    .opacity(laterActionVisible(session.id) ? 1 : 0)
-                } else if session.status == .later {
+                    .focused($focusedAction, equals: "later-\(session.id)")
+                    .opacity(actionVisible(session.id) ? 1 : 0)
+                }
+                if session.canArchive {
+                    Button { if let path = session.row.sessionPath { onArchive(path) } } label: {
+                        Image(systemName: "archivebox").frame(width: 34, height: 42)
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                    .accessibilityLabel("Archive \(session.row.title)")
+                    .accessibilityIdentifier("archive-\(session.id)")
+                    .focused($focusedAction, equals: "archive-\(session.id)")
+                    .opacity(actionVisible(session.id) ? 1 : 0)
+                }
+                if session.status == .later {
                     Button { onOpen(session.row.target, session.row.title) } label: {
                         Text("Resume").font(.caption).frame(minWidth: 46, minHeight: 42)
                     }
@@ -176,9 +188,9 @@ struct WorkspaceSidebar: View {
         return .clear
     }
 
-    private func laterActionVisible(_ id: String) -> Bool {
+    private func actionVisible(_ id: String) -> Bool {
         #if os(macOS)
-        hoveredSession == id || focusedLaterSession == id
+        hoveredSession == id || focusedAction == "later-\(id)" || focusedAction == "archive-\(id)"
         #else
         true
         #endif

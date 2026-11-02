@@ -7,4 +7,5 @@ public struct InboxSession: Identifiable, Equatable, Sendable {
     public let displayLines: [String]
     public var id: String { row.id }
     public var canMoveLater: Bool { status == .ready && row.sessionPath != nil }
+    public var canArchive: Bool { (status == .ready || status == .later) && row.sessionPath != nil }
 }
