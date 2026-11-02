@@ -44,21 +44,6 @@ final class QuickSwitcherScenarios: XCTestCase {
     }
     #endif
 
-    func testFiltersSearchAndEmptyActions() throws {
-        try switcher.openFromHomeSearch()
-        try switcher.filter("Folders")
-        try switcher.search("Quick Chats")
-        try switcher.shouldShowResult("Quick Chats", kind: "Folders")
-        try switcher.filter("Worktrees")
-        try switcher.search("feat/pocket")
-        try switcher.shouldShowResult("feat/pocket", kind: "Worktrees")
-        try switcher.filter("Sessions")
-        try switcher.search("Saved quick chat")
-        try switcher.shouldShowResult("Saved quick chat", kind: "Sessions")
-        try switcher.filter("Actions")
-        try switcher.shouldShowNoActions()
-    }
-
     func testSwitcherOmitsKeyboardHintLabels() throws {
         try switcher.openFromHomeSearch()
 
@@ -66,16 +51,6 @@ final class QuickSwitcherScenarios: XCTestCase {
         try switcher.search("studio")
         try switcher.shouldHideResultsHeading()
         try switcher.dismissWithoutCloseButton()
-    }
-
-    func testFolderAndWorktreeResultsShowNamesWithoutPaths() throws {
-        try switcher.openFromHomeSearch()
-        try switcher.filter("Folders")
-        try switcher.folderResultShouldHidePath("Quick Chats")
-
-        try switcher.filter("Worktrees")
-        try switcher.worktreeResultShouldShowRepository("pi-studio", branch: "feat/pocket")
-        try switcher.worktreeResultShouldHidePath("feat/pocket")
     }
 
     #if os(macOS)

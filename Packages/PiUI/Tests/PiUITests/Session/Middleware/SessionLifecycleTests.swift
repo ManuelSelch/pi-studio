@@ -29,6 +29,9 @@ struct SessionLifecycleTests {
             try await app.wait("settled send") { !app.state.isSending }
             app.chat.clearInstructionShouldBe(nil)
             app.session.shouldShowError(containing: unknown ? "unknown" : "Not now")
+            app.chat.shouldAllowSend(!unknown)
+            app.session.statusShouldBe(unknown ? "Outcome unknown" : "Ready")
+            await app.server.receivedPromptsShouldBe(["Keep\n  draft\n"])
         }
     }
 

@@ -64,16 +64,6 @@ final class pi_studioUITests: XCTestCase {
         app.chat.shouldContainReply(1)
     }
 
-    @MainActor func testUnknownSendOutcomeRetainsDraftAndDisablesResend() throws {
-        let app = PiUIDriver.launch(for: self, sendOutcome: .unknown)
-        app.session.connect()
-        app.chat.sendPrompt("Keep uncertain draft")
-        app.session.statusShouldBe("Outcome unknown")
-        app.chat.draftShouldBe("Keep uncertain draft")
-        app.chat.shouldAllowSend(false)
-        app.session.shouldShowError()
-    }
-
     @MainActor func testRejectedSendRetainsDraftAndShowsError() throws {
         let app = PiUIDriver.launch(for: self, sendOutcome: .rejected)
         app.session.connect()

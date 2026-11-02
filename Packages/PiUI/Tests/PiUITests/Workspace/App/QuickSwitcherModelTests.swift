@@ -81,6 +81,21 @@ import PiSDK
         #expect(items.first?.target == .runtime("live"))
     }
 
+    @Test func searchFiltersQuickChatsWorktreesSessionsAndEmptyActions() {
+        let catalogue = PiCatalogue(projects: [
+            .init(path: "/home", name: "Quick Chats", sessions: [
+                .init(path: "/history/quick", title: "Saved quick chat")
+            ]),
+            .init(path: "/worktrees/pocket", name: "pocket", repositoryPath: "/repos/pi-studio",
+                  repositoryName: "pi-studio", worktree: .init(branch: "feat/pocket", primary: false))
+        ])
+
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "#Quick Chats").map(\.title) == ["Quick Chats"])
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "%feat/pocket").map(\.title) == ["feat/pocket"])
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "@Saved quick chat").map(\.title) == ["Saved quick chat"])
+        #expect(QuickSwitcherModel.results(catalogue: catalogue, query: "/").isEmpty)
+    }
+
     @Test func scopesFilterFoldersWorktreesAndSessions() {
         let catalogue = PiCatalogue(projects: [
             .init(path: "/repo", name: "studio"),

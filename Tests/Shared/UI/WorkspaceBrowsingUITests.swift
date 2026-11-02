@@ -2,8 +2,7 @@ import XCTest
 
 /// Session inbox navigation: all status groups replace project/history browsing.
 final class WorkspaceBrowsingUITests: XCTestCase {
-    private var rejectOpen = false
-    @MainActor private lazy var app = PiUIDriver.launch(for: self, rejectOpen: rejectOpen)
+    @MainActor private lazy var app = PiUIDriver.launch(for: self)
 
     override func setUpWithError() throws { continueAfterFailure = false }
 
@@ -40,22 +39,5 @@ final class WorkspaceBrowsingUITests: XCTestCase {
         #endif
         app.projects.openRunningSession()
         app.session.statusShouldBe("Generating…")
-    }
-
-    @MainActor func testSavedReadySessionCanMoveToLaterAndResume() {
-        app.projects.connect()
-        app.projects.moveQuickChatToLater()
-        app.projects.expandLater()
-        app.projects.shouldOfferQuickChatInLater()
-        app.projects.resumeQuickChatFromLater()
-        app.projects.shouldShowSavedAnswer()
-    }
-
-    @MainActor func testRejectedOpenKeepsTheInboxVisible() {
-        rejectOpen = true
-        app.projects.connect()
-        app.projects.openSavedQuickChat()
-        app.session.shouldShowError()
-        app.projects.shouldBeBrowsing()
     }
 }

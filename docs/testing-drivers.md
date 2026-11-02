@@ -96,6 +96,10 @@ accessibility identifiers.
 Keep integration and UI implementations independent: their boundary, scheduling
 and assertion mechanisms differ. Share vocabulary where behavior matches; do not
 force a generic protocol or expose framework objects just to reuse test code.
+Quick-switcher search/filter and result metadata are covered by `QuickSwitcherModelTests`;
+rejected opens and parking/resuming saved sessions are covered by `WorkspaceMiddlewareTests`.
+These app-boundary checks do not prove that the corresponding results or errors render
+correctly, or that the iOS Later controls are reachable.
 Reducer unit tests intentionally continue to use FluxTestStore directly.
 
 Settings UI scenarios use a unique `PiStudio.UITests.*` UserDefaults suite passed
