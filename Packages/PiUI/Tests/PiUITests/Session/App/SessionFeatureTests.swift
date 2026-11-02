@@ -42,6 +42,27 @@ struct SessionFeatureTests {
         #expect(store.state.statusText == "Ready")
     }
 
+    @Test func workingFollowsAdmissionAndRunUntilSettlementOrDetach() {
+        let fixture = fixture()
+        let store = fixture.store
+        #expect(!store.state.isWorking)
+
+        store.dispatch(.sendRequested(text: "Check"))
+        #expect(store.state.isWorking)
+        store.dispatch(.sendFinished(fixture.token, submitted: "Check", error: nil))
+        #expect(!store.state.isWorking)
+
+        for status: DemoRunStatus in [.starting, .running, .aborting] {
+            store.dispatch(.projectionChanged(fixture.token, .init(session: fixture.session, status: status)))
+            #expect(store.state.isWorking)
+        }
+        store.dispatch(.projectionChanged(fixture.token, .init(session: fixture.session, status: .idle)))
+        #expect(!store.state.isWorking)
+        store.dispatch(.projectionChanged(fixture.token, .init(session: fixture.session, status: .running)))
+        store.dispatch(.detachRequested())
+        #expect(!store.state.isWorking)
+    }
+
     @Test func aRunningSessionAllowsDraftingButNotSending() {
         let store = fixture().store
         store.dispatch(.projectionChanged(store.state.generation,

@@ -198,6 +198,7 @@ public struct WorkspaceContainer: View {
         value.canStop = state.canStop && !isSettingsPresented && !quickSwitcherOpen
         value.isQuickSwitcherPresented = quickSwitcherOpen
         value.isStopping = state.isStopping || state.projection?.status == .aborting
+        value.isWorking = state.isWorking
         value.requiresDisconnectWarning = requiresDisconnectWarning
         value.messages = (state.projection?.messages ?? []).map {
             TranscriptMessage(id: $0.id, role: $0.role == "user" ? "You" : $0.role.capitalized, text: $0.text)

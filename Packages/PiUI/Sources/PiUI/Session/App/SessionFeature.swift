@@ -35,6 +35,10 @@ public struct SessionFeature: Feature {
             guard case .ready = connection else { return false }
             return projection?.status == .running && !isSending && !isStopping
         }
+        public var isWorking: Bool {
+            guard case .ready = connection, let status = projection?.status else { return false }
+            return isSending || isStopping || status == .starting || status == .running || status == .aborting
+        }
         public var statusText: String {
             switch connection {
             case .disconnected: return "Disconnected"

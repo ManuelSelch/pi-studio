@@ -18,6 +18,7 @@ actor UITestConnection: PiSessionConnection {
     private let rejectArchive: Bool
     private let delayedAdmission: Bool
     private let markdownResponse: Bool
+    private let workingResponse: Bool
     private var failNextConnect: Bool
     private var stateObservers: [UUID: AsyncStream<PiConnectionState>.Continuation] = [:]
     private var projectionObservers: [UUID: AsyncStream<DemoSessionProjection>.Continuation] = [:]
@@ -26,10 +27,11 @@ actor UITestConnection: PiSessionConnection {
 
     init(rejectSend: Bool = false, unknownSend: Bool = false, rejectOpen: Bool = false,
          delayedAdmission: Bool = false, failFirstConnection: Bool = false, markdownResponse: Bool = false,
-         rejectArchive: Bool = false) {
+         rejectArchive: Bool = false, workingResponse: Bool = false) {
         self.rejectSend = rejectSend; self.unknownSend = unknownSend; self.rejectOpen = rejectOpen
         self.delayedAdmission = delayedAdmission; self.failNextConnect = failFirstConnection
         self.markdownResponse = markdownResponse; self.rejectArchive = rejectArchive
+        self.workingResponse = workingResponse
     }
     func states() async -> AsyncStream<PiConnectionState> {
         let id = UUID(); let (stream, updates) = AsyncStream<PiConnectionState>.makeStream(bufferingPolicy: .bufferingNewest(1))
@@ -156,6 +158,19 @@ actor UITestConnection: PiSessionConnection {
         let currentTurn = turn
         var messages = projection!.messages
         messages.append(.init(id: "user-\(turn)", role: "user", text: text))
+        if workingResponse {
+            publish(.starting, messages: messages)
+            streaming = Task { [weak self] in
+                do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                await self?.workingFragment(text, turn: currentTurn, second: false)
+                // This gap represents a tool call: no text event is projected while the run remains active.
+                do { try await Task.sleep(for: .seconds(10)) } catch { return }
+                await self?.workingFragment(text, turn: currentTurn, second: true)
+                do { try await Task.sleep(for: .seconds(8)) } catch { return }
+                await self?.finishWorkingResponse(turn: currentTurn)
+            }
+            return
+        }
         messages.append(.init(id: "assistant-\(turn)", role: "assistant", text: markdownResponse ? "## Example\n\n**Par" : "Hello", isPartial: true))
         publish(.running, messages: messages)
         if markdownResponse {
@@ -176,6 +191,24 @@ actor UITestConnection: PiSessionConnection {
             }
             await self?.complete(turn: currentTurn)
         }
+    }
+    private func workingFragment(_ prompt: String, turn: Int, second: Bool) {
+        guard !closed, turn == self.turn, var messages = projection?.messages,
+              projection?.status == .starting || projection?.status == .running else { return }
+        let first: String
+        let last: String
+        switch prompt {
+        case "First request": first = "First part"; last = "Second part"
+        case "Next request": first = "Next answer"; last = "Done"
+        case "Stop request": first = "Partial answer"; last = "More"
+        default: first = "I’ll inspect the implementation."; last = "I’ve updated the tests."
+        }
+        messages.append(.init(id: "assistant-\(turn)-\(second ? 2 : 1)", role: "assistant", text: second ? last : first))
+        publish(.running, messages: messages)
+    }
+    private func finishWorkingResponse(turn: Int) {
+        guard !closed, turn == self.turn else { return }
+        publish(.idle)
     }
     private func append(_ text: String, turn: Int) {
         guard !closed, turn == self.turn, projection?.status == .running, var messages = projection?.messages, let previous = messages.popLast() else { return }
