@@ -28,7 +28,8 @@ final class PiUIDriver {
     static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted,
                        rejectOpen: Bool = false, delayedAdmission: Bool = false,
                        automaticallyConnect: Bool = false, failFirstConnection: Bool = false,
-                       markdownResponse: Bool = false, rejectArchive: Bool = false) -> PiUIDriver {
+                       markdownResponse: Bool = false, rejectArchive: Bool = false,
+                       workingResponse: Bool = false) -> PiUIDriver {
         let app = XCUIApplication()
         // Keep fixture configuration out of AppKit's command-line/defaults parsing.
         app.launchEnvironment = [
@@ -46,6 +47,7 @@ final class PiUIDriver {
         }
         if delayedAdmission { app.launchEnvironment["PI_UI_SEND_DELAYED"] = "1" }
         if markdownResponse { app.launchEnvironment["PI_UI_MARKDOWN_RESPONSE"] = "1" }
+        if workingResponse { app.launchEnvironment["PI_UI_WORKING_RESPONSE"] = "1" }
         if rejectArchive { app.launchEnvironment["PI_UI_ARCHIVE_REJECTED"] = "1" }
         #if os(macOS)
         // A prior windowless launch must not restore into the next UI test.
@@ -278,6 +280,39 @@ final class UIChatDriver {
         context.app.descendants(matching: .any).matching(identifier: "message-assistant-\(number)").firstMatch
     }
 
+    func workingShouldBeVisible(_ visible: Bool, file: StaticString = #filePath, line: UInt = #line) {
+        let indicator = context.app.descendants(matching: .any).matching(identifier: "workingIndicator").firstMatch
+        if visible {
+            context.waitFor(indicator, timeout: 8, file: file, line: line)
+        } else {
+            XCTAssertTrue(indicator.waitForNonExistence(timeout: 20), file: file, line: line)
+        }
+    }
+    func fragmentShouldBeVisible(turn: Int, part: Int, text: String,
+                                 file: StaticString = #filePath, line: UInt = #line) {
+        let id = "message-assistant-\(turn)-\(part)"
+        let message = context.app.descendants(matching: .any).matching(identifier: id).firstMatch
+        context.waitFor(message, timeout: 20, file: file, line: line)
+        XCTAssertTrue(context.renderedText(message).contains(text), file: file, line: line)
+    }
+    func toolActivityShouldBeInProgress(turn: Int, file: StaticString = #filePath, line: UInt = #line) {
+        workingShouldBeVisible(true, file: file, line: line)
+        let next = context.app.descendants(matching: .any).matching(identifier: "message-assistant-\(turn)-2").firstMatch
+        XCTAssertFalse(next.exists, "Expected the fixture's tool-activity gap before the next fragment", file: file, line: line)
+    }
+    func responseLabelsShouldBe(_ labels: [String], turns: Int,
+                                file: StaticString = #filePath, line: UInt = #line) {
+        var actual: [String] = []
+        for turn in 1...turns {
+            for id in ["user-\(turn)", "assistant-\(turn)-1", "assistant-\(turn)-2"] {
+                let label = context.app.staticTexts.matching(identifier: "role-\(id)").firstMatch
+                if label.exists { actual.append(label.label) }
+            }
+        }
+        XCTAssertEqual(actual, labels, file: file, line: line)
+        let piLabels = context.app.staticTexts.matching(NSPredicate(format: "label == %@", "π"))
+        XCTAssertEqual(piLabels.count, labels.filter { $0 == "π" }.count, file: file, line: line)
+    }
     func enterDraft(_ text: String) {
         let field = context.messageField
         field.tap(); field.typeText(text)

@@ -1,3 +1,4 @@
+#if os(macOS)
 import SwiftUI
 
 /// Compact split view: project/history navigation beside one selected conversation.
@@ -39,3 +40,4 @@ struct MacWorkspaceScreen: View {
             .navigationSplitViewColumnWidth(min: 210, ideal: 240, max: 300)
     }
 }
+#endif

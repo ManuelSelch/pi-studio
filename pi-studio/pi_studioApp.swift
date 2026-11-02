@@ -32,7 +32,8 @@ struct pi_studioApp: App {
             let connection = UITestConnection(rejectSend: rejected, unknownSend: unknown,
                                               rejectOpen: rejectOpen, delayedAdmission: delayed,
                                               failFirstConnection: failFirstConnection, markdownResponse: markdown,
-                                              rejectArchive: environment["PI_UI_ARCHIVE_REJECTED"] == "1")
+                                              rejectArchive: environment["PI_UI_ARCHIVE_REJECTED"] == "1",
+                                              workingResponse: environment["PI_UI_WORKING_RESPONSE"] == "1")
             Container.shared.makeSessionConnection.onDebug(factory: { { _ in connection } })
         }
         #endif

@@ -75,7 +75,7 @@ stop icon on iOS. Return, Shift+Return, caret/selection/undo and paste helpers o
 native events; paste restores the prior clipboard. macOS scenarios are compile-only
 while automation is paused. iOS `pressSoftwareReturn` taps the software Return key;
 `typeText` newline events do not prove physical hardware-keyboard behavior.
-`delayedAdmission` uses only the injected debug fixture, never a live server.
+`delayedAdmission` uses only the injected debug fixture, never a live server. The working-response scenarios use a timed debug fixture that emits separate assistant fragments with an active gap simulating a tool call; it does not execute or inspect a real tool.
 
 The root registers app termination with XCTest teardown before launching and selects
 portrait on iOS. macOS UI-test launches pass `-ApplePersistenceIgnoreState YES` to

@@ -20,6 +20,7 @@ public struct SessionPresentation: Equatable, Sendable {
     public var canSend = false
     public var canStop = false
     public var isStopping = false
+    public var isWorking = false
     public var requiresDisconnectWarning = false
     public var isQuickSwitcherPresented = false
     public init() {}
@@ -88,7 +89,7 @@ public struct SessionScreen: View {
             #else
             Divider()
             #endif
-            SessionTranscript(messages: presentation.messages, placeholder: presentation.placeholder,
+            SessionTranscript(messages: presentation.messages, isWorking: presentation.isWorking, placeholder: presentation.placeholder,
                               followTail: presentation.followTail, anchor: presentation.scrollAnchor,
                               onFollowTailChanged: onFollowTailChanged,
                               onAnchorChanged: onScrollAnchorChanged)
