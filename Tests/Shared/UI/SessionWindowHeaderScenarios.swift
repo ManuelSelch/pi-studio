@@ -18,6 +18,7 @@ final class SessionWindowHeaderScenarios: XCTestCase {
         try header.shouldNotShowDuplicateSessionHeaderOrPiStudioTitle()
         try header.shouldShowStatusIndicatorWithoutVisibleName()
         try header.shouldShowAccessibleComposerWithoutMessageLabel()
+        try header.shouldShowIconOnlySettingsAndSendWithoutShortcutHint()
     }
 
     @MainActor func testErrorAndTranscriptHaveSpaceBelowToolbar() throws {
@@ -78,6 +79,12 @@ final class SessionWindowHeaderScenarios: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         XCTAssertEqual(field.label, "Message")
         XCTAssertFalse(app.staticTexts["Message"].exists)
+    }
+    func shouldShowIconOnlySettingsAndSendWithoutShortcutHint() throws {
+        XCTAssertTrue(app.buttons["settingsButton"].exists)
+        XCTAssertTrue(app.buttons["sendButton"].exists)
+        XCTAssertFalse(app.staticTexts["Enter to send · Shift + Enter for a new line"].exists)
+        XCTAssertFalse(app.staticTexts["/repo"].exists)
     }
     func errorShouldBeInsetBelowToolbarDivider() throws {
         let error = app.staticTexts["errorMessage"]

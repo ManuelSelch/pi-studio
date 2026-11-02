@@ -19,7 +19,10 @@ final class QuickSwitcherScenarios: XCTestCase {
 
         try switcher.shouldBeInline()
         try switcher.shouldShowRecentSessions()
-        try switcher.dismiss()
+        try switcher.shouldHideKeyboardHints()
+        try switcher.search("studio")
+        try switcher.shouldHideResultsHeading()
+        try switcher.dismissWithoutCloseButton()
         try switcher.homeSearchShouldBeCollapsed()
     }
 
@@ -27,6 +30,15 @@ final class QuickSwitcherScenarios: XCTestCase {
     func testBothShortcutsOpenSwitcherOnHomeAndSession() throws {
         try switcher.openUsingShortcut("k")
         try switcher.shouldBeInline()
+        try switcher.search("studio")
+        try switcher.pressTab()
+        try switcher.filterShouldBe("Folders", search: "studio")
+        try switcher.pressShiftTab()
+        try switcher.filterShouldBe("All", search: "studio")
+        try switcher.pressShiftTab()
+        try switcher.filterShouldBe("Actions", search: "studio")
+        try switcher.pressTab()
+        try switcher.filterShouldBe("All", search: "studio")
         try switcher.dismiss()
         try switcher.openUsingShortcut("o")
         try switcher.shouldBeInline()
@@ -41,30 +53,6 @@ final class QuickSwitcherScenarios: XCTestCase {
         try switcher.shouldBeDialog()
         try switcher.dismiss()
         try switcher.composerShouldRegainFocus()
-    }
-    #endif
-
-    func testSwitcherOmitsKeyboardHintLabels() throws {
-        try switcher.openFromHomeSearch()
-
-        try switcher.shouldHideKeyboardHints()
-        try switcher.search("studio")
-        try switcher.shouldHideResultsHeading()
-        try switcher.dismissWithoutCloseButton()
-    }
-
-    #if os(macOS)
-    func testShiftTabCyclesFiltersBackwards() throws {
-        try switcher.openFromHomeSearch()
-        try switcher.search("studio")
-        try switcher.pressTab()
-        try switcher.filterShouldBe("Folders", search: "studio")
-        try switcher.pressShiftTab()
-        try switcher.filterShouldBe("All", search: "studio")
-        try switcher.pressShiftTab()
-        try switcher.filterShouldBe("Actions", search: "studio")
-        try switcher.pressTab()
-        try switcher.filterShouldBe("All", search: "studio")
     }
     #endif
 
