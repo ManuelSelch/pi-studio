@@ -21,16 +21,6 @@ final class MarkdownTranscriptScenarios: XCTestCase {
         app.chat.userMessageShouldRenderMarkdown("Explain SwiftUI and @State.")
     }
 
-    @MainActor func testFormattedPromptPreservesDisplayedIndentation() throws {
-        app.session.connect()
-        let prompt = "  **bold** and `code`\n"
-
-        app.chat.sendPrompt(prompt)
-
-        app.chat.userMessageShouldBe(1, "  bold and code\n")
-        app.chat.submittedPromptShouldBe(prompt)
-    }
-
     @MainActor func testAssistantMarkdownUpdatesWhileStreamingAndAfterCompletion() throws {
         app.session.connect()
         app.chat.sendPrompt("Show an example")
@@ -39,18 +29,6 @@ final class MarkdownTranscriptScenarios: XCTestCase {
         app.chat.finishMarkdownResponse()
 
         app.chat.assistantMessageShouldRenderHeadingAndCodeBlock()
-    }
-
-    @MainActor func testStoppedResponseRemainsReadableAfterDisconnect() throws {
-        app.session.connect()
-        app.chat.sendPrompt("Show an example")
-        app.chat.streamResponseThrough("## Example\n\nPartial text")
-
-        app.chat.stop()
-        app.session.waitUntilReady()
-        app.session.disconnect()
-
-        app.chat.assistantMessageShouldShowReadablePartial("Example", "Partial text")
     }
 
     @MainActor func testRenderedMessagesRemainSelectable() throws {

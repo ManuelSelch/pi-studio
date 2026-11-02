@@ -16,19 +16,7 @@ final class SessionWindowHeaderScenarios: XCTestCase {
         try header.shouldShowProjectAndSessionInWindowToolbar()
         try header.shouldShowStatusAndSessionActionsInWindowToolbar()
         try header.shouldNotShowDuplicateSessionHeaderOrPiStudioTitle()
-    }
-
-    @MainActor func testSessionStatusShowsOnlyAnAccessibleIndicator() throws {
-        app.projects.connect()
-        app.projects.openRunningSession()
-
         try header.shouldShowStatusIndicatorWithoutVisibleName()
-    }
-
-    @MainActor func testComposerHasAccessibleInputWithoutVisibleMessageLabel() throws {
-        app.projects.connect()
-        app.projects.openSavedQuickChat()
-
         try header.shouldShowAccessibleComposerWithoutMessageLabel()
     }
 

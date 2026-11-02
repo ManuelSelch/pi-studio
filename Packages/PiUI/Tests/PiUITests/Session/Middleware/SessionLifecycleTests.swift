@@ -89,6 +89,18 @@ struct SessionLifecycleTests {
         }
     }
 
+    @Test func formattedPromptReachesTheConnectionUnchanged() async throws {
+        try await PiIntegrationDriver.run { app in
+            try await app.session.attach()
+            let prompt = "  **bold** and `code`\n"
+
+            try await app.chat.sendPrompt(prompt)
+
+            await app.server.receivedPromptsShouldBe([prompt])
+            app.chat.clearInstructionShouldBe(prompt)
+        }
+    }
+
     @Test func snapshotPreservesWhitespaceAndIdenticalSendsClearIndependently() async throws {
         try await PiIntegrationDriver.run { app in
             try await app.session.attach()

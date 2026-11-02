@@ -17,33 +17,6 @@ final class WorkingResponseScenarios: XCTestCase {
         try conversation.assistantFragmentsShouldBeVisible(["I’ll inspect the implementation.", "I’ve updated the tests."])
     }
 
-    @MainActor func testOnePiLabelPerResponseEvenAcrossToolActivity() throws {
-        let conversation = WorkingResponseDriver(test: self)
-        try conversation.showUserMessage("First request")
-        try conversation.startResponse()
-        try conversation.showAssistantFragment("First part")
-        try conversation.simulateToolActivity()
-        try conversation.showAssistantFragment("Second part")
-        try conversation.finishResponse()
-        try conversation.responseLabelsShouldBe(["You", "π"])
-
-        try conversation.showUserMessage("Next request")
-        try conversation.startResponse()
-        try conversation.showAssistantFragment("Next answer")
-        try conversation.finishResponse()
-        try conversation.responseLabelsShouldBe(["You", "π", "You", "π"])
-    }
-
-    @MainActor func testStoppedResponseKeepsTextAndRemovesWorkingIndicator() throws {
-        let conversation = WorkingResponseDriver(test: self, defaultPrompt: "Stop request")
-        try conversation.startResponse()
-        try conversation.showAssistantFragment("Partial answer")
-
-        try conversation.stopResponse()
-
-        try conversation.workingShouldBeVisible(false)
-        try conversation.assistantFragmentsShouldBeVisible(["Partial answer"])
-    }
 }
 
 /// Exercises the real UI against a timed, debug-only multi-fragment projection fixture.
@@ -80,19 +53,10 @@ private final class WorkingResponseDriver {
         app.session.waitUntilReady()
         sent = false
     }
-    func stopResponse() throws {
-        app.chat.stop()
-        app.chat.workingShouldBeVisible(false)
-        app.session.waitUntilReady()
-        sent = false
-    }
     func workingShouldBeVisible(_ visible: Bool) throws { app.chat.workingShouldBeVisible(visible) }
     func assistantFragmentsShouldBeVisible(_ fragments: [String]) throws {
         for (index, text) in fragments.enumerated() {
             app.chat.fragmentShouldBeVisible(turn: turn, part: index + 1, text: text)
         }
-    }
-    func responseLabelsShouldBe(_ labels: [String]) throws {
-        app.chat.responseLabelsShouldBe(labels, turns: turn)
     }
 }

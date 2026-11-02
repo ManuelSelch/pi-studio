@@ -19,5 +19,6 @@ struct MarkdownPromptWhitespaceTests {
 
     @Test func preservesIndentationAlongsideInlineFormatting() {
         #expect(MarkdownPromptWhitespace.prepare("  **bold** and `code`") == "&#32;&#32;**bold** and `code`")
+        #expect(MarkdownPromptWhitespace.prepare("  **bold** and `code`\n") == "&#32;&#32;**bold** and `code`&#10;")
     }
 }
