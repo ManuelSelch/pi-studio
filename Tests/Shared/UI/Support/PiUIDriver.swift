@@ -205,10 +205,17 @@ final class UISessionDriver {
         context.waitFor(status, file: file, line: line)
     }
     func statusShouldBe(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+        #if os(macOS)
+        let indicator = context.app.descendants(matching: .any).matching(identifier: "headerStatus").firstMatch
+        context.waitFor(indicator, file: file, line: line)
+        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", text), object: indicator)
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 5), .completed, file: file, line: line)
+        #else
         context.waitFor(context.app.staticTexts[text], file: file, line: line)
+        #endif
     }
     func waitUntilReady(file: StaticString = #filePath, line: UInt = #line) {
-        context.waitFor(context.app.staticTexts["Ready"], timeout: 5, file: file, line: line)
+        statusShouldBe("Ready", file: file, line: line)
     }
     func waitUntilStopping(file: StaticString = #filePath, line: UInt = #line) {
         statusShouldBe("Stopping…", file: file, line: line)

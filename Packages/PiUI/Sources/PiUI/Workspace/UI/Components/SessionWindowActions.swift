@@ -35,11 +35,12 @@ struct SessionWindowActions: ToolbarContent {
         }
         .sharedBackgroundVisibility(.hidden)
         ToolbarItem(placement: .primaryAction) {
-            HStack(spacing: 8) {
-                SessionActivityIndicator(activity: selection.activity).accessibilityIdentifier("headerStatus")
-                Text(status).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    .accessibilityIdentifier("sessionStatus")
-            }
+            // Recreate the toolbar item so AppKit refreshes its accessibility label on status changes.
+            SessionActivityIndicator(activity: selection.activity)
+                .id(status)
+                .accessibilityLabel(status)
+                .accessibilityIdentifier("headerStatus")
+                .help(status)
         }
         .sharedBackgroundVisibility(.hidden)
     }

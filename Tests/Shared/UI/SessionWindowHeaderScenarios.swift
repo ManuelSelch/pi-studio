@@ -18,6 +18,13 @@ final class SessionWindowHeaderScenarios: XCTestCase {
         try header.shouldNotShowDuplicateSessionHeaderOrPiStudioTitle()
     }
 
+    @MainActor func testSessionStatusShowsOnlyAnAccessibleIndicator() throws {
+        app.projects.connect()
+        app.projects.openRunningSession()
+
+        try header.shouldShowStatusIndicatorWithoutVisibleName()
+    }
+
     @MainActor func testComposerHasAccessibleInputWithoutVisibleMessageLabel() throws {
         app.projects.connect()
         app.projects.openSavedQuickChat()
@@ -66,6 +73,13 @@ final class SessionWindowHeaderScenarios: XCTestCase {
             XCTAssertEqual(toolbar.buttons[id].label, label)
         }
         XCTAssertTrue(toolbar.descendants(matching: .any)["headerStatus"].exists)
+    }
+    func shouldShowStatusIndicatorWithoutVisibleName() throws {
+        let indicator = toolbar.descendants(matching: .any)["headerStatus"]
+        XCTAssertTrue(indicator.waitForExistence(timeout: 5))
+        let status = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "Generating…"), object: indicator)
+        XCTAssertEqual(XCTWaiter.wait(for: [status], timeout: 5), .completed)
+        XCTAssertFalse(toolbar.staticTexts["sessionStatus"].exists)
     }
     func shouldNotShowDuplicateSessionHeaderOrPiStudioTitle() throws {
         XCTAssertEqual(app.staticTexts.matching(identifier: "sessionTitle").count, 1)
