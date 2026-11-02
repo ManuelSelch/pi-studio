@@ -6,7 +6,7 @@ final class WorkspaceBrowsingUITests: XCTestCase {
 
     override func setUpWithError() throws { continueAfterFailure = false }
 
-    @MainActor func testConnectShowsSessionGroupsWithoutProjectHistory() throws {
+    @MainActor func testInboxShowsGroupsAndOpensReadyAndRunningSessions() throws {
         app.projects.connect()
         app.projects.shouldBeBrowsing()
         app.projects.shouldHaveInboxGroup("Ready")
@@ -15,12 +15,6 @@ final class WorkspaceBrowsingUITests: XCTestCase {
         app.projects.shouldHaveCompactHeader()
         app.projects.recordAppearance("Session inbox")
         try app.projects.shouldShowNewSessionWithoutHeading()
-        app.projects.openSavedQuickChat()
-        app.projects.shouldShowSavedAnswer()
-    }
-
-    @MainActor func testReadyAndRunningSessionsOpenFromTheirInboxGroups() {
-        app.projects.connect()
         app.projects.openSavedQuickChat()
         app.projects.shouldShowSavedAnswer()
         app.projects.recordAppearance("Saved Quick Chat")

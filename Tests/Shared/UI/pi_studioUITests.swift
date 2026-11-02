@@ -3,12 +3,6 @@ import XCTest
 final class pi_studioUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
-    @MainActor func testConnectionCanBeStartedWithoutTakeoverConfirmation() throws {
-        let app = PiUIDriver.launch(for: self)
-        app.projects.connect()
-        app.projects.shouldBeBrowsing()
-    }
-
     @MainActor func testTwoTurnsStreamingStopAndDisconnectRetention() throws {
         let app = PiUIDriver.launch(for: self)
         app.session.connect()

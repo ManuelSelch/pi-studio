@@ -35,7 +35,7 @@ final class MarkdownTranscriptScenarios: XCTestCase {
         app.session.connect()
         app.chat.sendPrompt("Select **this text**")
         app.chat.waitForReply(1)
-        app.session.waitUntilReady()
+        app.chat.finishMarkdownResponse()
 
         app.chat.userAndAssistantTextShouldBeSelectable()
     }

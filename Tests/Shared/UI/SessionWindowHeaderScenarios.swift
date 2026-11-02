@@ -19,6 +19,12 @@ final class SessionWindowHeaderScenarios: XCTestCase {
         try header.shouldShowStatusIndicatorWithoutVisibleName()
         try header.shouldShowAccessibleComposerWithoutMessageLabel()
         try header.shouldShowIconOnlySettingsAndSendWithoutShortcutHint()
+
+        try header.closeRunningSessionFromWindowToolbar()
+        try header.shouldOfferRunningSessionInInbox()
+        app.projects.openRunningSession()
+        app.session.statusShouldBe("Generating…")
+        try header.createSessionInCurrentProjectFromWindowToolbar()
     }
 
     @MainActor func testErrorAndTranscriptHaveSpaceBelowToolbar() throws {
@@ -32,16 +38,6 @@ final class SessionWindowHeaderScenarios: XCTestCase {
         try header.transcriptShouldBeInsetBelowToolbarDivider()
     }
 
-    @MainActor func testWindowToolbarPreservesSessionActions() throws {
-        app.projects.connect()
-        app.projects.openRunningSession()
-
-        try header.closeRunningSessionFromWindowToolbar()
-        try header.shouldOfferRunningSessionInInbox()
-        app.projects.openRunningSession()
-        app.session.statusShouldBe("Generating…")
-        try header.createSessionInCurrentProjectFromWindowToolbar()
-    }
 }
 
 @MainActor private struct SessionWindowHeaderDraftDriver {
