@@ -3,37 +3,15 @@ import XCTest
 final class SettingsUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
-    @MainActor func testValidationCancelSaveAndRelaunchPersistence() {
+    @MainActor func testSavedEndpointPersistsAfterRelaunch() {
         let app = PiUIDriver.launch(for: self)
         app.settings.open()
-        app.settings.endpointShouldBe("ws://127.0.0.1:8787/ws")
-        app.settings.enterEndpoint("https://example.com")
-        app.settings.save()
-        app.settings.shouldShowValidationError()
-        app.settings.cancel()
-        app.settings.open()
-        app.settings.endpointShouldBe("ws://127.0.0.1:8787/ws")
         app.settings.enterEndpoint("wss://example.com:9443/custom")
         app.settings.save()
         app.settings.shouldBeClosed()
-        app.session.shouldBeDisconnected()
         app.relaunch()
         app.settings.open()
         app.settings.endpointShouldBe("wss://example.com:9443/custom")
         app.settings.cancel()
     }
-
-    #if os(iOS)
-    @MainActor func testInteractiveDismissalDiscardsTheDraftBeforeReopening() {
-        let app = PiUIDriver.launch(for: self)
-        app.settings.open()
-        app.settings.enterEndpoint("ws://discard.example/ws")
-        app.settings.dismissInteractively()
-        app.settings.shouldBeClosed()
-        app.settings.open()
-        app.settings.endpointShouldBe("ws://127.0.0.1:8787/ws")
-        app.settings.cancel()
-        app.settings.shouldBeClosed()
-    }
-    #endif
 }

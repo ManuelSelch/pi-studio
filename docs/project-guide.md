@@ -222,7 +222,7 @@ DYLD missing-symbol crashes and misleading macOS compatibility dialogs. Use
 separate Simulator devices via `PI_STUDIO_TEST_DESTINATION` (or run serially);
 separate derived-data directories alone do not isolate Simulator installations.
 
-- PiUI: **97 tests** (including parameterized cases), covering settings
+- PiUI tests cover settings
   reducers, mock-service failure/retry, isolated UserDefaults persistence,
   next-connection snapshots during setup/streaming, and dependency scope
   identity/isolation, configuration/connection overrides, FluxTestStore reducer
@@ -232,12 +232,13 @@ separate derived-data directories alone do not isolate Simulator installations.
   typing, selection newline, undo/redo, submit guards and Escape focus transitions.
 - The settings connection integration scenario and semantic driver also compile
   into both native unit-test targets; their source is shared, not copied.
-- iOS: **21 functional UI tests** (including six multiline scenarios and the
-  session-inbox move/resume scenario), plus four launch/appearance cases. macOS has corresponding Return/Shift+Return,
-  paste/selection/undo, duplicate admission, Escape and retention scenarios,
-  compiled but not executed during the automation pause. Debug-only injected
-  connections are never selected by normal app launches; tests use public SDK
-  projections, not a second wire protocol.
+- Native UI coverage is limited to a Mac conversation journey, an iOS conversation
+  journey, and settings persistence on each platform. Error and workflow variants
+  are exercised in PiUI. Native text selection, long-input scrolling, detailed
+  toolbar layout, appearance permutations, and platform-specific dismissal are
+  not covered by these smoke journeys. Debug-only injected connections are never
+  selected by normal app launches; tests use public SDK projections, not a second
+  wire protocol.
 - For current verification and outstanding native macOS/IME/physical-keyboard
   checks, see [implementation status](../plans/multiline-composer/IMPLEMENTATION.md).
   Off-screen checks are not full desktop, real-IME or physical-keyboard acceptance.

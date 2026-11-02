@@ -119,6 +119,18 @@ struct SessionLifecycleTests {
         }
     }
 
+    @Test func longMultilinePromptReachesTheConnectionUnchanged() async throws {
+        try await PiIntegrationDriver.run { app in
+            try await app.session.attach()
+            let text = (1...8).map { "  Line \($0) with wrapping text" }.joined(separator: "\n")
+
+            try await app.chat.sendPrompt(text)
+
+            await app.server.receivedPromptsShouldBe([text])
+            app.chat.clearInstructionShouldBe(text)
+        }
+    }
+
     @Test func whitespaceSnapshotsNeverReachConnection() async throws {
         try await PiIntegrationDriver.run { app in
             app.chat.submit("Detached")

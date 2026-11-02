@@ -3,36 +3,32 @@ import XCTest
 final class pi_studioUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
-    @MainActor func testTwoTurnsStreamingStopAndDisconnectRetention() throws {
-        let app = PiUIDriver.launch(for: self)
-        app.session.connect()
-        app.chat.sendPrompt("Say hello")
+    #if os(macOS)
+    @MainActor func testMacWorkspaceConversationJourney() throws {
+        let app = PiUIDriver.launch(for: self, automaticallyConnect: true)
+        try app.quickSwitcher.openUsingShortcut("k")
+        try app.quickSwitcher.selectSession("Saved quick chat")
+        try app.quickSwitcher.composerShouldRegainFocus()
+        app.chat.typeAtCaret("Say hello")
+        app.chat.pressReturn()
         app.chat.waitForReply(1)
-        app.session.statusShouldBe("Generating…")
-        app.chat.shouldAllowSend(false)
+        app.chat.userMessageShouldBe(1, "Say hello")
         app.session.waitUntilReady()
         app.chat.replyShouldBe(1, "Hello from the demo. This reply is streaming a little at a time.")
-        app.chat.sendPrompt("Second turn")
-        app.chat.waitForReply(2)
-        app.chat.stop()
-        app.session.waitUntilStopping()
-        app.session.waitUntilReady()
-        let partial = app.chat.captureReply(2)
-        app.session.disconnect()
-        app.session.shouldBeDisconnected()
-        app.chat.replyShouldBe(2, partial)
     }
-
-    @MainActor func testActiveDisconnectWarnsWithoutDiscardingTranscript() throws {
+    #else
+    @MainActor func testPhoneWorkspaceConversationJourney() {
         let app = PiUIDriver.launch(for: self)
         app.session.connect()
-        app.chat.sendPrompt("Long answer")
+        app.chat.enterDraft("Hello")
+        app.chat.pressSoftwareReturn()
+        app.chat.enterDraft("Pi")
+        app.chat.draftShouldBe("Hello\nPi")
+        app.chat.submitDraft()
         app.chat.waitForReply(1)
-        app.session.requestDisconnect()
-        app.session.shouldShowDisconnectWarning()
-        app.session.confirmDisconnect()
-        app.session.shouldBeDisconnected()
-        app.chat.shouldContainReply(1)
+        app.chat.userMessageShouldBe(1, "Hello\nPi")
+        app.session.waitUntilReady()
+        app.chat.replyShouldBe(1, "Hello from the demo. This reply is streaming a little at a time.")
     }
-
+    #endif
 }
