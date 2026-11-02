@@ -239,6 +239,26 @@ final class WorkspaceQuickSwitcherDriver {
     private let context: WorkspaceContext
     fileprivate init(_ context: WorkspaceContext) { self.context = context }
 
+    func createInFolder(_ title: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await createInProject(title, prefix: "#", sourceLocation: sourceLocation)
+    }
+
+    func createInWorktree(_ title: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await createInProject(title, prefix: "%", sourceLocation: sourceLocation)
+    }
+
+    private func createInProject(_ title: String, prefix: String, sourceLocation: SourceLocation) async throws {
+        try await context.wait("quick-switcher project \(title)", sourceLocation: sourceLocation) {
+            QuickSwitcherModel.results(catalogue: self.context.workspace.state.catalogue, query: "\(prefix)\(title)")
+                .contains { $0.title == title && $0.enabled }
+        }
+        let items = QuickSwitcherModel.results(catalogue: context.workspace.state.catalogue, query: "\(prefix)\(title)")
+        let item = try #require(items.first { $0.title == title && $0.enabled }, sourceLocation: sourceLocation)
+        let quick = context.workspace.state.catalogue.projects.first { $0.path == item.projectPath }?.quickChats == true
+        context.workspace.dispatch(.createRequested(projectPath: item.projectPath, title: quick ? "New chat" : "New session"))
+        try await WorkspaceTabsDriver(context).settle(sourceLocation: sourceLocation)
+    }
+
     func openSession(_ title: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
         try await context.wait("quick-switcher session \(title)", sourceLocation: sourceLocation) {
             QuickSwitcherModel.results(catalogue: self.context.workspace.state.catalogue, query: "@\(title)").contains { $0.title == title }
@@ -535,6 +555,7 @@ final class WorkspaceServerDriver {
     func publishLateCatalogue() async { await context.stub.publishLateCatalogue() }
     func publishIdleSavedSession(path: String) async { await context.stub.publishIdleSavedSession(path: path) }
     func publishSavedHistory() async { await context.stub.publishSavedHistory() }
+    func publishWorktree() async { await context.stub.publishWorktree() }
     func shouldHaveClosedRuntime(_ id: String, sourceLocation: SourceLocation = #_sourceLocation) async {
         #expect(await context.stub.closedRuntimeIds.contains(id), sourceLocation: sourceLocation)
     }
@@ -686,6 +707,13 @@ fileprivate actor WorkspaceConnectionStub: PiSessionConnection {
         catalogue = .init(projects: catalogue.projects.filter { $0.path != "/repo" } + [project],
                           sessions: catalogue.sessions, projectRevision: catalogue.projectRevision + 1,
                           inventoryRevision: catalogue.inventoryRevision + 1)
+        publishCatalogue()
+    }
+    func publishWorktree() {
+        let worktree = PiProjectSummary(path: "/worktrees/pocket", name: "pocket", repositoryPath: "/repo",
+                                        repositoryName: "pi-studio", worktree: .init(branch: "feat/pocket", primary: false))
+        catalogue = .init(projects: catalogue.projects + [worktree], sessions: catalogue.sessions,
+                          projectRevision: catalogue.projectRevision + 1, inventoryRevision: catalogue.inventoryRevision + 1)
         publishCatalogue()
     }
     func publishIdleSavedSession(path: String) {

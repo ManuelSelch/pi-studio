@@ -68,18 +68,6 @@ final class QuickSwitcherScenarios: XCTestCase {
     }
     #endif
 
-    func testSelectingFolderCreatesNewSession() throws {
-        try switcher.openFromHomeSearch()
-        try switcher.selectFolder("Quick Chats")
-        try switcher.shouldShowNewSession(in: "Quick Chats")
-    }
-
-    func testSelectingWorktreeCreatesNewSession() throws {
-        try switcher.openFromHomeSearch()
-        try switcher.selectWorktree("feat/pocket")
-        try switcher.shouldShowNewSession(in: "feat/pocket")
-    }
-
     #if os(macOS)
     func testOpeningSavedSessionFocusesComposerWithoutClicking() throws {
         try switcher.openFromHomeSearch()

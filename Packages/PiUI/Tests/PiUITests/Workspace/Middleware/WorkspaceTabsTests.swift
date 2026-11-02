@@ -14,6 +14,29 @@ import Testing
         }
     }
 
+    @Test func quickSwitcherCreatesSessionInSelectedFolder() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.connect()
+
+            try await app.quickSwitcher.createInFolder("Quick Chats")
+
+            app.tabs.shouldSelect("New chat")
+            await app.server.createdPathShouldBe("/home/pi")
+        }
+    }
+
+    @Test func quickSwitcherCreatesSessionInSelectedWorktree() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.connect()
+            await app.server.publishWorktree()
+
+            try await app.quickSwitcher.createInWorktree("feat/pocket")
+
+            app.tabs.shouldSelect("New session")
+            await app.server.createdPathShouldBe("/worktrees/pocket")
+        }
+    }
+
     @Test func quickSwitcherReopensSessionWithoutDuplicatingIt() async throws {
         try await WorkspaceIntegrationDriver.run { app in
             try await app.projects.connect()

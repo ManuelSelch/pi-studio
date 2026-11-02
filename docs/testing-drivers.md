@@ -97,15 +97,18 @@ Keep integration and UI implementations independent: their boundary, scheduling
 and assertion mechanisms differ. Share vocabulary where behavior matches; do not
 force a generic protocol or expose framework objects just to reuse test code.
 Quick-switcher search/filter and result metadata are covered by `QuickSwitcherModelTests`;
-rejected opens and parking/resuming saved sessions are covered by `WorkspaceMiddlewareTests`.
-Settings endpoint changes during a live session, session archiving and quick-switcher
-session deduplication also have app-boundary scenarios. Duplicate send admission,
+rejected opens, launch connection retry and parking/resuming saved sessions are covered by `WorkspaceMiddlewareTests`.
+Settings endpoint changes during a live session, session archiving, quick-switcher
+session deduplication and folder/worktree creation also have app-boundary scenarios.
+The quick-switcher driver resolves catalogue results and dispatches the same store request;
+it does not exercise the UI callback wiring. Duplicate send admission,
 whitespace-only submissions, identical-send clear instructions, formatted prompt
 payloads and stopped-response retention are covered by `SessionLifecycleTests`.
 `MarkdownPromptWhitespaceTests` checks indentation preparation, and
 `TranscriptPresentationTests` checks response-label grouping.
 These checks do not prove that the corresponding results or errors render correctly,
-that iOS Later or macOS archive controls are reachable, or that repeated native Return,
+that iOS Later, home connection retry or macOS archive controls are reachable, that
+folder/worktree result selection is wired correctly, or that repeated native Return,
 whitespace-only drafts and repeated identical local-draft clearing work in the UI.
 Nor do they prove rendered indentation, per-response label grouping, or that a stopped
 Markdown response remains readable after disconnect.
