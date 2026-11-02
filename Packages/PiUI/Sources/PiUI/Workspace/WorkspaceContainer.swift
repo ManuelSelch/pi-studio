@@ -108,7 +108,6 @@ public struct WorkspaceContainer: View {
 
     private func showQuickSwitcher() {
         guard !isSettingsPresented && !confirmDisconnect else { return }
-        quickSwitcherQuery = ""
         quickSwitcherOpen = true
     }
 

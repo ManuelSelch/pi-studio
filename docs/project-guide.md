@@ -5,8 +5,9 @@ Native SwiftUI for **macOS 26** (Pi Studio) and **iPhone/iPad iOS 26.1**
 select **My Mac** for a native desktop app, not Catalyst. The mobile product is
 still a Simulator/local-server demo, not a remotely deployed phone controller.
 
-The app opens to a Home screen with a centered quick-switcher field; selecting it
-expands search inline. On a conversation, macOS ⌘K / ⌘O opens the switcher overlay;
+The app opens to a Home screen with a centered quick-switcher field; clicking it
+focuses the field, and typing expands search inline. On macOS, ⌘K / ⌘O also opens
+it. The search draft survives dismissal and reopening. On a conversation, macOS ⌘K / ⌘O opens the switcher overlay;
 iOS also provides a search button. Filters use # for folders, % for worktrees,
 @ for sessions and / for actions (currently empty). Selecting a folder or worktree
 creates a session there; selecting a session opens or focuses it. Folder and worktree

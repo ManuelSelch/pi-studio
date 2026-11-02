@@ -12,6 +12,21 @@ final class QuickSwitcherScenarios: XCTestCase {
         switcher = app.quickSwitcher
     }
 
+    func testClickingHomeSearchDoesNotExpandSwitcher() throws {
+        try switcher.clickHomeSearch()
+
+        try switcher.homeSearchShouldBeCollapsed()
+    }
+
+    func testTypingInHomeSearchKeepsTheCompleteQuery() throws {
+        try switcher.clickHomeSearch()
+        try switcher.typeOnHomeSearch("Quick Chats")
+
+        try switcher.shouldBeInline()
+        try switcher.searchShouldContain("Quick Chats")
+        try switcher.shouldShowResult("Quick Chats", kind: "Folders")
+    }
+
     func testHomeSearchExpandsInlineAndCollapses() throws {
         try switcher.homeShouldShowHeading("Let's cook")
         try switcher.homeSearchShouldBeCollapsed()
@@ -24,6 +39,24 @@ final class QuickSwitcherScenarios: XCTestCase {
     }
 
     #if os(macOS)
+    func testTypingOnHomeExpandsAndSearchesWithoutClicking() throws {
+        try switcher.typeOnInitiallyFocusedHomeSearch("Quick Chats")
+
+        try switcher.shouldBeInline()
+        try switcher.searchShouldContain("Quick Chats")
+        try switcher.shouldShowResult("Quick Chats", kind: "Folders")
+    }
+
+    func testReopeningHomeSwitcherPreservesSearchDraft() throws {
+        try switcher.typeOnInitiallyFocusedHomeSearch("Quick Chats")
+        try switcher.dismiss()
+        try switcher.openUsingShortcut("k")
+
+        try switcher.shouldBeInline()
+        try switcher.searchShouldContain("Quick Chats")
+        try switcher.shouldShowResult("Quick Chats", kind: "Folders")
+    }
+
     func testBothShortcutsOpenSwitcherOnHomeAndSession() throws {
         try switcher.openUsingShortcut("k")
         try switcher.shouldBeInline()
