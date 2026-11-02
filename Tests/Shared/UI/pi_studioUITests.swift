@@ -35,12 +35,4 @@ final class pi_studioUITests: XCTestCase {
         app.chat.shouldContainReply(1)
     }
 
-    @MainActor func testRejectedSendRetainsDraftAndShowsError() throws {
-        let app = PiUIDriver.launch(for: self, sendOutcome: .rejected)
-        app.session.connect()
-        app.chat.sendPrompt("Keep draft")
-        app.session.shouldShowError()
-        app.chat.draftShouldBe("Keep draft")
-        app.session.statusShouldBe("Ready")
-    }
 }

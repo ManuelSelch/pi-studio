@@ -74,6 +74,7 @@ final class MultilineComposerUITests: XCTestCase {
         app.chat.pressReturn()
         app.session.shouldShowError()
         app.chat.draftShouldBe(text)
+        app.session.statusShouldBe("Ready")
         app.chat.shouldAllowSend(true)
     }
 
@@ -139,6 +140,7 @@ final class MultilineComposerUITests: XCTestCase {
         app.chat.sendPrompt("Keep\n  rejected\n")
         app.session.shouldShowError()
         app.chat.draftShouldBe("Keep\n  rejected\n")
+        app.session.statusShouldBe("Ready")
     }
 
     @MainActor func testUncertainMultilineDraftIsRetained() {
