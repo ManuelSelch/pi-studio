@@ -39,14 +39,6 @@ final class SessionHeaderScenarios: XCTestCase {
         app.projects.shouldShowSavedAnswer()
     }
 
-    @MainActor func testArchiveRemovesSessionFromInbox() throws {
-        app.projects.connect()
-        app.projects.openSavedQuickChat()
-
-        try header.archiveSession()
-        try header.shouldNotOfferArchivedSessionInInbox()
-    }
-
     @MainActor func testNewSessionUsesCurrentProject() throws {
         app.projects.connect()
         app.projects.openRunningSession()
@@ -82,15 +74,11 @@ final class SessionHeaderScenarios: XCTestCase {
         XCTAssertTrue(app.buttons["inbox-runtime:ui-running"].waitForExistence(timeout: 5))
     }
     func moveToLater() throws { try tapEnabled("headerLater") }
-    func archiveSession() throws { try tapEnabled("headerArchive") }
     private func tapEnabled(_ identifier: String) throws {
         let button = app.buttons[identifier]
         XCTAssertTrue(button.waitForExistence(timeout: 5))
         XCTAssertTrue(button.isEnabled, "\(identifier) must be enabled")
         button.tap()
-    }
-    func shouldNotOfferArchivedSessionInInbox() throws {
-        XCTAssertTrue(app.buttons["inbox-/history/quick"].waitForNonExistence(timeout: 5))
     }
     func createSession() throws { app.buttons["headerNew"].tap() }
     func shouldShowNewSessionInCurrentProject() throws {

@@ -98,8 +98,13 @@ and assertion mechanisms differ. Share vocabulary where behavior matches; do not
 force a generic protocol or expose framework objects just to reuse test code.
 Quick-switcher search/filter and result metadata are covered by `QuickSwitcherModelTests`;
 rejected opens and parking/resuming saved sessions are covered by `WorkspaceMiddlewareTests`.
-These app-boundary checks do not prove that the corresponding results or errors render
-correctly, or that the iOS Later controls are reachable.
+Settings endpoint changes during a live session, session archiving and quick-switcher
+session deduplication also have app-boundary scenarios. Duplicate send admission,
+whitespace-only submissions and identical-send clear instructions are covered by
+`SessionLifecycleTests`.
+These checks do not prove that the corresponding results or errors render correctly,
+that iOS Later or macOS archive controls are reachable, or that repeated native Return,
+whitespace-only drafts and repeated identical local-draft clearing work in the UI.
 Reducer unit tests intentionally continue to use FluxTestStore directly.
 
 Settings UI scenarios use a unique `PiStudio.UITests.*` UserDefaults suite passed

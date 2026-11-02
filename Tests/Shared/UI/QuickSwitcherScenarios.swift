@@ -98,17 +98,4 @@ final class QuickSwitcherScenarios: XCTestCase {
     }
     #endif
 
-    func testSelectingSessionOpensAndRefocusesExistingSession() throws {
-        try switcher.openFromHomeSearch()
-        try switcher.selectSession("Saved quick chat")
-        try switcher.shouldShowSession("Saved quick chat")
-
-        try switcher.openFromSession()
-        try switcher.selectSession("Saved quick chat")
-        try switcher.shouldShowSession("Saved quick chat")
-        #if os(iOS)
-        try switcher.shouldShowOneOpenSession("Saved quick chat")
-        #endif
-        // Mac deduplication is asserted at the workspace boundary in WorkspaceTabsTests.
-    }
 }

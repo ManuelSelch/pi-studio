@@ -14,6 +14,7 @@ struct SessionLifecycleTests {
             app.chat.stop()
             await app.server.shouldHaveStopCount(0)
             await app.server.shouldHaveSendCount(1)
+            await app.server.receivedPromptsShouldBe(["Say hello"])
             await app.server.acceptSend()
             try await app.wait("admitted send") { !app.state.isSending }
             app.chat.clearInstructionShouldBe("Say hello")

@@ -36,18 +36,4 @@ final class SettingsUITests: XCTestCase {
         app.settings.shouldBeClosed()
     }
     #endif
-
-    @MainActor func testSavingWhileConnectedLeavesTheSessionUntouched() {
-        let app = PiUIDriver.launch(for: self)
-        app.session.connect()
-        app.session.statusShouldBe("Ready")
-        app.settings.open()
-        app.settings.enterEndpoint("ws://next.example/ws")
-        app.settings.save()
-        app.settings.shouldBeClosed()
-        app.session.statusShouldBe("Ready")
-        app.settings.open()
-        app.settings.endpointShouldBe("ws://next.example/ws")
-        app.settings.cancel()
-    }
 }

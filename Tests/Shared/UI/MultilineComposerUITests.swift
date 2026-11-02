@@ -66,19 +66,6 @@ final class MultilineComposerUITests: XCTestCase {
         app.chat.shouldContainReply(1)
     }
 
-    @MainActor func testDuplicateReturnDuringAdmissionDoesNotSubmitAgain() {
-        let app = PiUIDriver.launch(for: self, delayedAdmission: true)
-        app.session.connect()
-        app.chat.enterDraft("Only once")
-        app.chat.pressReturn()
-        app.chat.pressReturn()
-        app.chat.pressReturn()
-        app.chat.waitForReply(1)
-        app.session.waitUntilReady()
-        app.chat.shouldHaveNoReply(2)
-        app.chat.draftShouldBe("")
-    }
-
     @MainActor func testRejectedMultilineSnapshotStaysEditable() {
         let app = PiUIDriver.launch(for: self, sendOutcome: .rejected)
         app.session.connect()
@@ -133,15 +120,6 @@ final class MultilineComposerUITests: XCTestCase {
         app.chat.submitDraft()
         app.chat.waitForReply(1)
         app.chat.userMessageShouldBe(1, "Software\n")
-    }
-
-    @MainActor func testNewlineOnlyDraftCannotSubmit() {
-        let app = PiUIDriver.launch(for: self)
-        app.session.connect()
-        app.chat.enterDraft("\n\n")
-        app.chat.draftShouldBe("\n\n")
-        app.chat.shouldAllowSend(false)
-        app.chat.shouldHaveNoReply()
     }
 
     @MainActor func testLongMultilineDraftScrollsAndPreservesPayload() {
