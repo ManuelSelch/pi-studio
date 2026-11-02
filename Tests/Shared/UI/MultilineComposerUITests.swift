@@ -66,29 +66,6 @@ final class MultilineComposerUITests: XCTestCase {
         app.chat.shouldContainReply(1)
     }
 
-    @MainActor func testRejectedMultilineSnapshotStaysEditable() {
-        let app = PiUIDriver.launch(for: self, sendOutcome: .rejected)
-        app.session.connect()
-        let text = "Keep\n  rejected\n"
-        app.chat.pasteDraft(text)
-        app.chat.pressReturn()
-        app.session.shouldShowError()
-        app.chat.draftShouldBe(text)
-        app.session.statusShouldBe("Ready")
-        app.chat.shouldAllowSend(true)
-    }
-
-    @MainActor func testUncertainMultilineSnapshotIsNotResent() {
-        let app = PiUIDriver.launch(for: self, sendOutcome: .unknown)
-        app.session.connect()
-        let text = "Keep\n  uncertain\n"
-        app.chat.pasteDraft(text)
-        app.chat.pressReturn()
-        app.session.statusShouldBe("Outcome unknown")
-        app.chat.pressReturn()
-        app.chat.draftShouldBe(text)
-        app.chat.shouldAllowSend(false)
-    }
     #else
     @MainActor func testReturnAndShiftReturnInsertNewlinesAndOnlyIconSubmits() {
         let app = PiUIDriver.launch(for: self)
@@ -134,21 +111,5 @@ final class MultilineComposerUITests: XCTestCase {
         app.chat.userMessageShouldBe(1, text)
     }
 
-    @MainActor func testRejectedMultilineDraftIsRetained() {
-        let app = PiUIDriver.launch(for: self, sendOutcome: .rejected)
-        app.session.connect()
-        app.chat.sendPrompt("Keep\n  rejected\n")
-        app.session.shouldShowError()
-        app.chat.draftShouldBe("Keep\n  rejected\n")
-        app.session.statusShouldBe("Ready")
-    }
-
-    @MainActor func testUncertainMultilineDraftIsRetained() {
-        let app = PiUIDriver.launch(for: self, sendOutcome: .unknown)
-        app.session.connect()
-        app.chat.sendPrompt("Keep\n  uncertain\n")
-        app.session.statusShouldBe("Outcome unknown")
-        app.chat.draftShouldBe("Keep\n  uncertain\n")
-    }
     #endif
 }

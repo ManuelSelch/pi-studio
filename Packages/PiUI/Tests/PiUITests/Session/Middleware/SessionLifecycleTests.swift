@@ -32,6 +32,7 @@ struct SessionLifecycleTests {
             app.session.shouldShowError(containing: unknown ? "unknown" : "Not now")
             app.chat.shouldAllowSend(!unknown)
             app.session.statusShouldBe(unknown ? "Outcome unknown" : "Ready")
+            if unknown { app.chat.submit("Keep\n  draft\n") }
             await app.server.receivedPromptsShouldBe(["Keep\n  draft\n"])
         }
     }
