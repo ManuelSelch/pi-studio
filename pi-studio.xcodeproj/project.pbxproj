@@ -59,11 +59,6 @@
 			path = Tests/iOS/Integration;
 			sourceTree = "<group>";
 		};
-		972B0B523087E5CF0068614C /* pi-studioUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "pi-studioUITests";
-			sourceTree = "<group>";
-		};
 		A11111111111111111111111 /* Tests/Shared/UI */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Tests/Shared/UI;
@@ -116,7 +111,6 @@
 			children = (
 				972B0B3A3087E5CD0068614C /* pi-studio */,
 				972B0B483087E5CF0068614C /* Tests/iOS/Integration */,
-				972B0B523087E5CF0068614C /* pi-studioUITests */,
 				A11111111111111111111111 /* Tests/Shared/UI */,
 				A22222222222222222222222 /* Tests/iOS/UI */,
 				972B0B393087E5CD0068614C /* Products */,
@@ -216,7 +210,6 @@
 				972B0B513087E5CF0068614C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				972B0B523087E5CF0068614C /* pi-studioUITests */,
 				A11111111111111111111111 /* Tests/Shared/UI */,
 				A22222222222222222222222 /* Tests/iOS/UI */,
 			);

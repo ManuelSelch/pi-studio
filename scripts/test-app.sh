@@ -23,10 +23,23 @@ if [[ "$platform" == macos ]]; then
   args+=(CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=)
 else
   args+=(CODE_SIGNING_ALLOWED=NO)
+  # Start the shared simulator booting now so it overlaps the build instead of
+  # delaying the first test; later suites reuse the same booted device.
+  [[ "$suite" == release ]] || boot_simulator_background "$destination"
 fi
 case "$suite" in
-  unit) xcodebuild "${args[@]}" -only-testing:pi-studioTests test ;;
-  ui) xcodebuild "${args[@]}" -only-testing:pi-studioUITests test ;;
-  release) xcodebuild "${args[@]}" -configuration Release build ;;
+  unit) test_target=pi-studioTests ;;
+  ui) test_target=pi-studioUITests ;;
+  release) test_target= ;;
   *) echo "Unknown suite: $suite" >&2; exit 2 ;;
 esac
+if [[ "$suite" == release ]]; then
+  # Shippability compile check only: the host architecture is enough, so skip
+  # the unused universal slice. ONLY_ACTIVE_ARCH does not reach SwiftPM package
+  # targets (swift-syntax still built both slices), so set ARCHS explicitly.
+  xcodebuild "${args[@]}" -configuration Release ARCHS="$(uname -m)" build
+else
+  # Build only this suite's test bundle, then run it without rebuilding.
+  xcodebuild "${args[@]}" -only-testing:"$test_target" build-for-testing
+  xcodebuild "${args[@]}" -only-testing:"$test_target" test-without-building
+fi
