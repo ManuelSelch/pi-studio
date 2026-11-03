@@ -23,7 +23,7 @@ Pi Studio is a native SwiftUI app for macOS and iOS. `PiUI` is a shared Swift pa
 
 ## Dependencies
 
-`PiUI` is a local Swift package shared by both platform targets. It imports PiSDK from the local `.dependencies/pi-sdk-swift` checkout so the Swift SDK's `closeSession(sessionId:)` API can be tested directly; `scripts/prepare.sh` links it from `PI_SDK_SWIFT_PATH`. Flux **2.0.1**, Router **2.0.0**, and FactoryKit from **2.5.3** remain resolved packages. SwiftStreamingMarkdown **0.7.0** is pinned to its release commit because its manifest uses revision-based dependencies. See [development and dependency setup](project-guide.md#development-wiring).
+`PiUI` is a local Swift package shared by both platform targets. PiSDK **0.2.0** (ManuelSelch/pi-sdk-swift), Flux **2.0.1**, Router **2.0.0**, FactoryKit **2.5.3** and swift-markdown **0.7.3** are resolved as exact public releases; SwiftStreamingMarkdown **0.7.0** is pinned to its release commit because its manifest uses revision-based dependencies. `scripts/prepare.sh` resolves those remote packages, so no local SDK checkout or path override is required. See [development and dependency setup](project-guide.md#development-wiring).
 
 ## Runtime boundaries
 

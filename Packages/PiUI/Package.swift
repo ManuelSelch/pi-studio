@@ -7,7 +7,7 @@ let package = Package(
     products: [.library(name: "PiUI", targets: ["PiUI"])],
     dependencies: [
         .package(url: "https://github.com/ManuelSelch/Router.git", exact: "2.0.0"),
-        .package(path: "../../.dependencies/pi-sdk-swift"),
+        .package(url: "https://github.com/ManuelSelch/pi-sdk-swift.git", exact: "0.2.0"),
         .package(url: "https://github.com/hmlongco/Factory.git", from: "2.5.3"),
         .package(url: "https://github.com/ManuelSelch/Flux.git", exact: "2.0.1"),
         // v0.7.0 declares revision-based dependencies, so SwiftPM requires a revision here.

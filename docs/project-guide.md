@@ -51,15 +51,15 @@ See the dedicated [architecture document](architecture.md) for component ownersh
 ## Development wiring
 
 - Verified stable toolchain: **Xcode 26.1.1 (17B100), Swift 6.2.1**.
-- PiSDK is imported from the local `.dependencies/pi-sdk-swift` checkout so the app
-  can use and test SDK changes directly. `scripts/prepare.sh` links the sibling
-  PiSDK main checkout under `~/Documents/A_Personal/40 Projekte/47 Agents/Pi Agent/pi-sdk-swift` by default; set
-  `PI_SDK_SWIFT_PATH` to select another SDK checkout. Flux **2.0.1**, Router
-  **2.0.0**, and FactoryKit are resolved through SwiftPM.
+- Every dependency is a pinned public release resolved through SwiftPM: PiSDK
+  **0.2.0** (`ManuelSelch/pi-sdk-swift`), Flux **2.0.1**, Router **2.0.0**,
+  FactoryKit **2.5.3**, swift-markdown **0.7.3**, and SwiftStreamingMarkdown
+  **0.7.0** pinned to its release commit because its manifest uses
+  revision-based dependencies. No local SDK checkout or path override is needed.
 - Run `bash scripts/prepare.sh` before opening Xcode or testing on a fresh
-  checkout/worktree. The script links PiSDK and resolves the remote dependencies.
-- Xcode's Package.resolved files pin remote dependencies; PiSDK is a local path.
-  Hosted CI must check out the matching PiSDK API before this branch is merged.
+  checkout/worktree. The script resolves the pinned remote dependencies.
+- Xcode's Package.resolved files pin the same remote dependencies, so a fresh
+  checkout and hosted CI resolve identical revisions.
 - AppContainer owns the settings modal scope through Router; inbox/session
   selection and phone navigation remain workspace state. Both platform shells
   use the session inbox sidebar; iPhone opens it from Home and retains its open-sessions overview.
@@ -167,10 +167,9 @@ tests → Run workflow**, or with `gh workflow run macos-ui.yml`.
 The Xcode build jobs explicitly use `-skipMacroValidation` for the Equatable
 macro dependency. This skips validation for every compiler macro in those builds;
 local Xcode builds can instead use **Trust & Enable** for the specific macro.
-SwiftPM fetches Flux 2.0.1 and Router 2.0.0; the local PiSDK path dependency
-requires configuring the SDK checkout in each worktree before preparation. The
-hosted dependency workflow must use the corresponding SDK change before merging
-this app feature.
+SwiftPM fetches every dependency from its public repository (PiSDK 0.2.0, Flux
+2.0.1, Router 2.0.0, FactoryKit, swift-markdown 0.7.3, SwiftStreamingMarkdown
+0.7.0), so hosted CI resolves the same revisions as a fresh local checkout.
 No model credentials or development server are needed for the listed checks.
 Each job has isolated temporary build products, bounded execution and failure logs
 retained for seven days; iOS failures also upload available `.xcresult` bundles.

@@ -1,5 +1,5 @@
 {
-  "originHash" : "9283340eb52321cb612f9c6152cff588d00ae9c1b9b7efc46b7405a96ef1c093",
+  "originHash" : "5f1ce23084f488ce2683bf31ce848a9aea73252723ce07efb7cefe837904dcda",
   "pins" : [
     {
       "identity" : "equatable",
@@ -42,6 +42,15 @@
       "location" : "https://github.com/junyan72/iosMath",
       "state" : {
         "revision" : "ba9ab7729b151329c54fd895a7c1859981d9484c"
+      }
+    },
+    {
+      "identity" : "pi-sdk-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ManuelSelch/pi-sdk-swift.git",
+      "state" : {
+        "revision" : "b59b8ede71b49dd799b1440e901ac640e7cd7ebf",
+        "version" : "0.2.0"
       }
     },
     {
