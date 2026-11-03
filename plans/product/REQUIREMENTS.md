@@ -61,7 +61,7 @@ This is the consolidated product backlog. It expands earlier MVP/Pocket exclusio
 | R29 | Native steering | Accept ordinary text while running through Pi's steering queue; show pending/consumed messages and restore queue from snapshots. | P1 | Planned |
 | R30 | Stop | Mac Esc/iOS stop icon cancels the targeted work; retain partial output and wait for authoritative settlement. | P0 | Present |
 | R31 | Reading position | Follow only at the tail; preserve each open session's reading position when switching. | P0 | Present |
-| R32 | Markdown and math | Render GFM, tables, syntax-coloured code and display LaTeX; reject unsafe links/raw active HTML. | P1 | Planned |
+| R32 | Markdown and math | Render GFM, tables, syntax-coloured code and display LaTeX; reject unsafe links/raw active HTML. Markdown/whitespace rendering ships via SwiftStreamingMarkdown (`a9c9291`); sanitisation and GFM table/code/math verification outstanding. | P1 | Partial |
 | R33 | Thinking and custom messages | Show collapsible thinking, extension custom messages and persistent notices in correct transcript order. | P1 | Planned |
 | R34 | Composer focus | Preserve caret/selection/undo/IME; restore focus after dialogs/actions without stealing another editor's focus. | P0 | Partial |
 
@@ -165,7 +165,7 @@ Description: Complete R11/R12/R22/R23 and project preferences in R62; verify pin
 Description: Deliver R13/R14 through typed SDK operations and native picker; verify invalid/symlink/relative paths, pagination and stale responses.
 
 ### S9 — Rich Transcript
-Description: Deliver R32/R33 and R61/R73 rendering foundations; verify math, safe links, ordered notices, thinking and unchanged-history rendering during streaming.
+Description: Deliver the remaining rich-transcript scope on top of the shipped SwiftStreamingMarkdown rendering (`a9c9291`): R33 (thinking, custom messages, ordered notices), the unshipped R32 sanitisation for raw HTML/images/unsafe links, and R61/R73 rendering foundations; verify GFM tables/code/math, safe links, ordered notices, thinking and unchanged-history rendering during streaming. The renderer choice is settled by the implementation; [plans/rich-transcript/DESIGN.md](../rich-transcript/DESIGN.md) is superseded for MarkdownView and retained for the remaining scope.
 
 ### S10 — Tools and File Actions
 Description: After S9, deliver R35–R40 and density preference R62; verify syntax/diffs, failed tools and server-targeted opens without model or shell side effects.
