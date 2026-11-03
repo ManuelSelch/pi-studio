@@ -13,7 +13,7 @@ PRIVATE_NAME = f"PiStudio-{WORKTREE}"
 
 
 class SimulatorIsolationTests(unittest.TestCase):
-    def run_script(self, devices, override=None, platform="ios", skip_macro_validation=False):
+    def run_script(self, devices, override=None, platform="ios", skip_macro_validation=False, ci=False):
         with tempfile.TemporaryDirectory(prefix="pi-simulator-test-") as directory:
             path = Path(directory)
             bin_path = path / "bin"
@@ -30,6 +30,9 @@ class SimulatorIsolationTests(unittest.TestCase):
                    "TEST_DEVICES": json.dumps({"devices": {"runtime-26": devices}})}
             env.pop("PI_STUDIO_TEST_DESTINATION", None)
             env.pop("PI_STUDIO_SKIP_MACRO_VALIDATION", None)
+            env.pop("CI", None)
+            if ci:
+                env["CI"] = "1"
             if skip_macro_validation:
                 env["PI_STUDIO_SKIP_MACRO_VALIDATION"] = "1"
             if override:
@@ -49,6 +52,11 @@ class SimulatorIsolationTests(unittest.TestCase):
         output, calls = self.run_script([{"name": "iPhone 17", "udid": "SHARED-UUID"}])
         self.assertIn("platform=iOS Simulator,id=CREATED-UUID", output)
         self.assertIn(f"simctl create {PRIVATE_NAME} com.apple.CoreSimulator.SimDeviceType.iPhone-17 runtime-26", calls)
+
+    def test_ci_reuses_preinstalled_simulator_without_creating(self):
+        output, calls = self.run_script([{"name": "iPhone 17", "udid": "SHARED-UUID"}], ci=True)
+        self.assertIn("platform=iOS Simulator,id=SHARED-UUID", output)
+        self.assertNotIn("create", calls)
 
     def test_explicit_override_does_not_query_or_create_simulators(self):
         output, calls = self.run_script([], "platform=iOS Simulator,id=OVERRIDE")
