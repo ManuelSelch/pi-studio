@@ -175,7 +175,9 @@ struct SettingsMiddlewareTests {
 
     private func waitUntil(sourceLocation: SourceLocation = #_sourceLocation,
                            _ condition: @escaping @MainActor () -> Bool) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(1))
+        // Middleware runs on the main actor asynchronously; slower shared runners can
+        // stall it for over a second, so keep the same bounded budget as the other suites.
+        let deadline = ContinuousClock.now.advanced(by: .seconds(4))
         while ContinuousClock.now < deadline {
             if condition() { return }
             try await Task.sleep(for: .milliseconds(5))
