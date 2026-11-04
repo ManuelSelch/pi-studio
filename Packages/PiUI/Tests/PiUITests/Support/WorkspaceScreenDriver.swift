@@ -107,6 +107,15 @@ final class ScreenQuickSwitcherDriver {
         }
     }
 
+    /// The scope is carried by the query's prefix, exactly as the app encodes it, so the
+    /// assertion reads the rendered query back and resolves the active scope from it.
+    func scopeShouldBe(_ scope: QuickSwitcherScope, sourceLocation: SourceLocation = #_sourceLocation) throws {
+        let rendered = try content().inspect().find(ViewType.TextField.self).input()
+        #expect(QuickSwitcherScope.active(for: rendered) == scope,
+                "The quick switcher should be scoped to '\(scope.name)', not '\(QuickSwitcherScope.active(for: rendered).name)'",
+                sourceLocation: sourceLocation)
+    }
+
     private func content() -> QuickSwitcherContent {
         var presentation = WorkspacePresentation()
         presentation.quickSwitcherOpen = true
@@ -124,6 +133,35 @@ final class ScreenQuickSwitcherDriver {
             self?.context.workspace.dispatch(.openRequested(target: target, title: item.title))
         }
         return QuickSwitcherContent(presentation: presentation, actions: actions)
+    }
+}
+
+/// The search scopes the quick switcher recognizes, encoded as a query prefix.
+enum QuickSwitcherScope: CaseIterable {
+    case all, folders, worktrees, sessions, actions
+
+    var prefix: String {
+        switch self {
+        case .all: ""
+        case .folders: "#"
+        case .worktrees: "%"
+        case .sessions: "@"
+        case .actions: "/"
+        }
+    }
+    var name: String {
+        switch self {
+        case .all: "All"
+        case .folders: "Folders"
+        case .worktrees: "Worktrees"
+        case .sessions: "Sessions"
+        case .actions: "Actions"
+        }
+    }
+
+    /// Mirrors `QuickSwitcherContent`: the first character selects a scope, else All.
+    static func active(for query: String) -> QuickSwitcherScope {
+        allCases.first { !$0.prefix.isEmpty && query.hasPrefix($0.prefix) } ?? .all
     }
 }
 
