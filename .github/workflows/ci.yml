@@ -66,41 +66,9 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
-  ios:
-    name: iOS tests
-    runs-on: macos-26
-    timeout-minutes: 30
-    env:
-      PI_STUDIO_SKIP_MACRO_VALIDATION: '1'
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - name: Toolchain and Simulator diagnostics
-        run: |
-          mkdir -p .build/ci-logs
-          echo "PI_STUDIO_BUILD_ROOT=$RUNNER_TEMP/pi-studio-ios" >> "$GITHUB_ENV"
-          { xcodebuild -version; swift --version; xcrun simctl list runtimes; xcrun simctl list devices available; } 2>&1 | tee .build/ci-logs/toolchain.log
-      - name: Resolve packages
-        run: bash scripts/prepare.sh 2>&1 | tee .build/ci-logs/prepare.log
-      - name: Native unit tests
-        run: bash scripts/test-app.sh ios unit 2>&1 | tee .build/ci-logs/ios-unit.log
-      - name: Native UI tests
-        run: bash scripts/test-app.sh ios ui 2>&1 | tee .build/ci-logs/ios-ui.log
-      - name: Upload failure logs and test results
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: ios-failure-results
-          path: |
-            .build/ci-logs/
-            ${{ env.PI_STUDIO_BUILD_ROOT }}/xcode-ios/Logs/Test/
-          retention-days: 7
-          if-no-files-found: warn
-
   sonar:
     name: SonarCloud analysis and quality gate
-    needs: [package, ios]
+    needs: [package]
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15

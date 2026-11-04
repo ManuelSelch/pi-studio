@@ -148,34 +148,36 @@ behind. Avoid repeated connections without cleanup.
 ## GitHub Actions
 
 [CI](../.github/workflows/ci.yml) runs on pull requests, pushes to `main`, and
-manual dispatch. Two independent GitHub-hosted `macos-26` jobs select Xcode 26.2:
+manual dispatch. The hosted `macos-26` build selects Xcode 26.2 and runs one job:
 
 - **Package:** PiUI tests, released-dependency/lockfile checks, icon validation,
-  Simulator-isolation tests and loopback-launcher tests (no actual backend).
-- **iOS:** native unit tests, then native UI tests, serially. Each suite builds
-  only its own test bundle once and then runs it without rebuilding
-  (`build-for-testing` + `test-without-building`). On CI it reuses the
-  preinstalled iPhone 17 instead of creating a device and starts it booting in
-  the background so boot overlaps the build; locally each worktree keeps its own
-  device to avoid cross-worktree Simulator collisions.
+  Simulator-isolation tests and loopback-launcher tests (no actual backend). The
+  PiUI tests are the unit, integration-driver and screen-driver scenarios; they
+  run headlessly, without a Simulator.
+
+Native app tests are **manual-only**, because building the app for a Simulator is
+what makes them slow:
+
+- [iOS native tests](../.github/workflows/ios-native.yml) runs the iOS native unit
+  suite (the integration drivers linked into the iOS app) and then the native UI
+  suite. Each suite builds only its own test bundle once and then runs it without
+  rebuilding (`build-for-testing` + `test-without-building`); it reuses the
+  preinstalled iPhone 17 and starts it booting in the background so boot overlaps
+  the build.
+- [macOS UI tests](../.github/workflows/macos-ui.yml) runs the macOS native UI
+  suite without controlling your Mac. Hosted UI-testing authorization is not yet
+  verified; an Accessibility failure remains a failed test run, not a skip.
+
+Run them from **Actions → the workflow → Run workflow**, or with
+`gh workflow run ios-native.yml` / `gh workflow run macos-ui.yml`.
 
 [Release builds](../.github/workflows/release.yml) is a separate workflow for the
 native Release (**shippability**) compile checks. It runs only on tag pushes and
 manual dispatch, never on regular pushes or PRs, and builds the iOS Simulator and
 macOS apps in parallel. These verification builds target only the host
-architecture (`ARCHS=$(uname -m)`) rather than the unused universal slice. Because Release
-builds are tag-gated, `#if DEBUG`-only and whole-module optimization regressions
-surface at release time, not on every PR; macOS sources are only compiled there
-until macOS automation is re-enabled.
-
-[macOS UI tests](../.github/workflows/macos-ui.yml) is a separate, **manual-only**
-workflow on a GitHub-hosted `macos-26` runner with Xcode 26.2. It runs the existing
-native UI suite without controlling your Mac, and uploads logs and available
-`.xcresult` bundles on success or failure for seven days. It does not run on
-pushes/PRs or gate the regular CI/Sonar jobs. Hosted UI-testing authorization is
-not yet verified; an Accessibility failure remains a failed test run, not a skip.
-After the workflow reaches the default branch, run it from **Actions → macOS UI
-tests → Run workflow**, or with `gh workflow run macos-ui.yml`.
+architecture (`ARCHS=$(uname -m)`) rather than the unused universal slice. Because
+app compilation is tag-gated, `#if DEBUG`-only and whole-module optimization
+regressions surface at release time, not on every PR.
 
 The Xcode build jobs explicitly use `-skipMacroValidation` for the Equatable
 macro dependency. This skips validation for every compiler macro in those builds;
