@@ -20,8 +20,8 @@ struct WorkspaceScreenTests {
         try await WorkspaceScreenDriver.run { screen in
             try await screen.launch()
 
+            // The "@" prefix scopes the search to sessions by itself; no filter tap is needed.
             try screen.quickSwitcher.type("@Fix")
-            try screen.quickSwitcher.selectScope(.sessions)
             try await screen.quickSwitcher.choose("Fix the layout")
 
             try await screen.selectedSessionShouldBe("Fix the layout")

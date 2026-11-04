@@ -89,19 +89,13 @@ final class ScreenQuickSwitcherDriver {
 
     fileprivate init(_ context: ScreenContext) { self.context = context }
 
-    /// Types into the search field and reads the rendered value back.
+    /// Types into the search field and reads the rendered value back. A scope prefix typed here
+    /// ("#", "%", "@", "/") switches the scope by itself, exactly as it does in the app.
     func type(_ value: String, sourceLocation: SourceLocation = #_sourceLocation) throws {
         try content().inspect().find(ViewType.TextField.self).setInput(value)
         #expect(query == value, "The search field should report the typed query", sourceLocation: sourceLocation)
         #expect(try content().inspect().find(ViewType.TextField.self).input() == value,
                 "The search field should render the typed query", sourceLocation: sourceLocation)
-    }
-
-    /// Switches the scope with its filter button; the button supplies the prefix.
-    func selectScope(_ scope: QuickSwitcherScope, sourceLocation: SourceLocation = #_sourceLocation) throws {
-        try content().inspect().find(button: scope.buttonTitle).tap()
-        #expect(query == scope.prefix, "Scope '\(scope.buttonTitle)' should replace the query prefix",
-                sourceLocation: sourceLocation)
     }
 
     /// Clicks a result; the real store opens it and the driver waits for the selection.
@@ -111,12 +105,6 @@ final class ScreenQuickSwitcherDriver {
         try await context.wait("chosen session '\(title)' to open", sourceLocation: sourceLocation) {
             self.context.workspace.state.selectedSession?.title == title
         }
-    }
-
-    func shouldOffer(_ titles: [String], sourceLocation: SourceLocation = #_sourceLocation) {
-        let rendered = context.workspace.state.catalogue
-        let items = QuickSwitcherModel.results(catalogue: rendered, query: query).map(\.title)
-        #expect(items == titles, sourceLocation: sourceLocation)
     }
 
     private func content() -> QuickSwitcherContent {
@@ -136,29 +124,6 @@ final class ScreenQuickSwitcherDriver {
             self?.context.workspace.dispatch(.openRequested(target: target, title: item.title))
         }
         return QuickSwitcherContent(presentation: presentation, actions: actions)
-    }
-}
-
-enum QuickSwitcherScope {
-    case all, folders, worktrees, sessions, actions
-
-    var buttonTitle: String {
-        switch self {
-        case .all: "All"
-        case .folders: "# Folders"
-        case .worktrees: "% Worktrees"
-        case .sessions: "@ Sessions"
-        case .actions: "/ Actions"
-        }
-    }
-    var prefix: String {
-        switch self {
-        case .all: ""
-        case .folders: "#"
-        case .worktrees: "%"
-        case .sessions: "@"
-        case .actions: "/"
-        }
     }
 }
 
