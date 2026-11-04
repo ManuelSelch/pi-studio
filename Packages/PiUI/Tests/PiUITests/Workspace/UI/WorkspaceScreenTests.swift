@@ -4,7 +4,6 @@ import Testing
 /// In-process screen scenarios. The real shell is rendered with ViewInspector and driven through
 /// `WorkspaceScreenDriver`, so each scenario reads as a user journey and reports coverage.
 @MainActor
-@Suite(.serialized)
 struct WorkspaceScreenTests {
     @Test func aFailedConnectionRecoversWhenTheUserRetriesFromHome() async throws {
         try await WorkspaceScreenDriver.run(failingFirstConnection: true) { screen in
