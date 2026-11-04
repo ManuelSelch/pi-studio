@@ -7,8 +7,8 @@ import Testing
 import ViewInspector
 @testable import PiUI
 
-/// In-process screen scenarios. The real shell is rendered with ViewInspector and driven through
-/// `WorkspaceContainerDriver`, so each scenario reads as a user journey and reports coverage.
+/// In-process inspection of the home screen and a separately constructed quick switcher.
+/// Connection setup dispatches directly to the store; this does not exercise mounted view lifecycle.
 @MainActor
 struct WorkspaceScreenTests {
     @Test func aFailedConnectionRecoversWhenTheUserRetriesFromHome() async throws {
@@ -21,7 +21,7 @@ struct WorkspaceScreenTests {
         }
     }
 
-    @Test func theQuickSwitcherFiltersAndOpensTheChosenSession() async throws {
+    @Test func quickSwitcherContentFiltersAndDispatchesTheChosenSession() async throws {
         try await WorkspaceContainerDriver.run { screen in
             try await screen.launch()
 
@@ -35,10 +35,9 @@ struct WorkspaceScreenTests {
     }
 }
 
-/// In-process screen driver: it renders the real production shell with ViewInspector and
-/// translates scenario vocabulary into taps, typing and store waits. Render assertions read the
-/// view tree; asynchronous assertions read the Flux stores. It needs no simulator and no XCUITest.
-/// Shared vocabulary with the integration driver, separate implementation.
+/// Inspects the container's home view and separately constructed quick-switcher content.
+/// Launch dispatches to the store directly; the quick-switcher callbacks are test wiring,
+/// not the container's callbacks. No SwiftUI view is mounted for lifecycle testing.
 @MainActor
 private final class WorkspaceContainerDriver {
     let quickSwitcher: ScreenQuickSwitcherDriver
@@ -65,7 +64,7 @@ private final class WorkspaceContainerDriver {
 
     // MARK: Connection
 
-    /// Connect from Home and settle either on a catalogue or on a visible failure.
+    /// Dispatch a connection request and wait for a catalogue or connection failure.
     func launch(sourceLocation: SourceLocation = #_sourceLocation) async throws {
         context.workspace.dispatch(.connectRequested(takingControl: true))
         try await context.wait("launch connection", sourceLocation: sourceLocation) {
@@ -91,12 +90,10 @@ private final class WorkspaceContainerDriver {
 
     /// The user taps Home's "Try again" button; the real middleware reconnects.
     func retryFromHome(sourceLocation: SourceLocation = #_sourceLocation) async throws {
-        let tapped = context.rendered { view -> Bool in
-            guard let button = try? view.inspect().find(button: "Try again") else { return false }
-            try? button.tap()
-            return true
+        try context.rendered { view in
+            let button = try view.inspect().find(button: "Try again")
+            try button.tap()
         }
-        #expect(tapped, "Home should offer a retry button", sourceLocation: sourceLocation)
         try await context.wait("reconnection", sourceLocation: sourceLocation) {
             !self.context.workspace.state.catalogue.projects.isEmpty && self.context.workspace.state.error == nil
         }
@@ -135,8 +132,7 @@ private final class ScreenQuickSwitcherDriver {
         }
     }
 
-    /// The scope is carried by the query's prefix, exactly as the app encodes it, so the
-    /// assertion reads the rendered query back and resolves the active scope from it.
+    /// Checks the query prefix using test-side scope parsing, not the rendered scope selection.
     func scopeShouldBe(_ scope: QuickSwitcherScope, sourceLocation: SourceLocation = #_sourceLocation) throws {
         let rendered = try content().inspect().find(ViewType.TextField.self).input()
         #expect(QuickSwitcherScope.active(for: rendered) == scope,
@@ -164,7 +160,7 @@ private final class ScreenQuickSwitcherDriver {
     }
 }
 
-/// The search scopes the quick switcher recognizes, encoded as a query prefix.
+/// Test-side interpretation of query prefixes; this does not inspect the selected scope.
 private enum QuickSwitcherScope: CaseIterable {
     case all, folders, worktrees, sessions, actions
 

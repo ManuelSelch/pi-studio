@@ -8,12 +8,11 @@ import SwiftUI
 import Testing
 @testable import PiUI
 
-/// The whole macOS path: the real `WorkspaceContainer` on one scoped connection, connect,
-/// open a session, then type into the hosted composer. macOS XCUITest cannot read this app's
-/// accessibility tree in this environment, so the container is hosted in-process instead.
+/// Exercises a hosted session screen against workspace and session stores using a test-only
+/// presentation probe. It does not mount or verify the real WorkspaceContainer.
 extension MacComposerTests {
 @MainActor
-struct MacWorkspaceComposerTests {
+struct MacWorkspaceComposerProbeTests {
     @MainActor private final class Fixture {
         let container = Container()
         let connection = MacWorkspaceConnectionStub()
@@ -30,7 +29,7 @@ struct MacWorkspaceComposerTests {
         let session: FluxStore<SessionFeature>
 
         func host() -> MacComposerDriver {
-            MacComposerDriver(WorkspaceContainerProbe(store: workspace, session: session), width: 900)
+            MacComposerDriver(SessionScreenProbe(store: workspace, session: session), width: 900)
         }
 
         func wait(_ description: String, sourceLocation: SourceLocation = #_sourceLocation,
@@ -44,8 +43,8 @@ struct MacWorkspaceComposerTests {
         }
     }
 
-    /// Mirrors the container's own mapping: the composer takes the selected tab's draft.
-    private struct WorkspaceContainerProbe: View {
+    /// Test-only session presentation and local draft; this is not the container's wiring.
+    private struct SessionScreenProbe: View {
         @ObservedObject var store: FluxStore<WorkspaceFeature>
         @ObservedObject var session: FluxStore<SessionFeature>
         @State private var draft = ""
@@ -62,7 +61,7 @@ struct MacWorkspaceComposerTests {
         }
     }
 
-    @Test func aSessionOpenedThroughTheWorkspaceAcceptsTyping() async throws {
+    @Test func sessionScreenProbeAcceptsTypingWhenWorkspaceSessionIsReady() async throws {
         let fixture = Fixture()
         let hosting = fixture.host()
         fixture.workspace.dispatch(.connectRequested(takingControl: true))
