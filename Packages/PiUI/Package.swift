@@ -13,6 +13,8 @@ let package = Package(
         // v0.7.0 declares revision-based dependencies, so SwiftPM requires a revision here.
         .package(url: "https://github.com/microsoft/SwiftStreamingMarkdown", revision: "5f7c04e0558df6146f90d482edb62cb456986bda"),
         .package(url: "https://github.com/swiftlang/swift-markdown.git", exact: "0.7.3"),
+        // Test-only: view-tree inspection for wiring scenarios, never linked by the app.
+        .package(url: "https://github.com/nalexn/ViewInspector", from: "0.10.5"),
     ],
     targets: [
         .target(name: "PiUI", dependencies: [
@@ -27,6 +29,7 @@ let package = Package(
             "PiUI", .product(name: "FluxTestStore", package: "Flux"),
             .product(name: "Router", package: "router"),
             .product(name: "FactoryKit", package: "Factory"),
+            .product(name: "ViewInspector", package: "ViewInspector"),
         ]),
     ]
 )
