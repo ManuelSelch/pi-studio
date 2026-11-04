@@ -17,7 +17,7 @@ struct SettingsIntegrationTests {
             app.settings.save()
             try await app.settings.waitUntilSaved("wss://second.test/custom")
             // The live connection and transcript are untouched until an explicit reconnect.
-            await app.server.connectionEndpointsShouldBe(["ws://first.test/ws"])
+            app.server.connectionEndpointsShouldBe(["ws://first.test/ws"])
             app.tabs.transcriptShouldBe(["Answer from new-1"])
             try await app.settings.open()
             app.settings.draftShouldBe("wss://second.test/custom")
@@ -26,7 +26,7 @@ struct SettingsIntegrationTests {
             await app.projects.disconnect()
             try await app.server.waitForDisconnected()
             try await app.projects.connect()
-            await app.server.connectionEndpointsShouldBe(["ws://first.test/ws", "wss://second.test/custom"])
+            app.server.connectionEndpointsShouldBe(["ws://first.test/ws", "wss://second.test/custom"])
         }
     }
 
