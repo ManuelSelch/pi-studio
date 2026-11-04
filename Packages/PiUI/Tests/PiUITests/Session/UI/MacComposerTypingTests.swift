@@ -36,7 +36,7 @@ struct MacComposerTypingTests {
 
     private let workspace: FluxStore<WorkspaceFeature>
     private let state: ComposerState
-    private let app: MacComposerDriver
+    private let app: MacTextInputHarness
 
     init() {
         let workspace = FluxStore<WorkspaceFeature>(state: .init())
@@ -46,12 +46,12 @@ struct MacComposerTypingTests {
         let state = ComposerState()
         self.workspace = workspace
         self.state = state
-        app = MacComposerDriver(Harness(workspace: workspace, state: state), width: 760)
+        app = MacTextInputHarness(Harness(workspace: workspace, state: state), width: 760)
     }
 
     @Test(arguments: [CGFloat(360), CGFloat(760), CGFloat(1708)])
     func theEditorFillsItsVisibleInputArea(width: CGFloat) async throws {
-        let widthApp = MacComposerDriver(Harness(workspace: workspace, state: state), width: width)
+        let widthApp = MacTextInputHarness(Harness(workspace: workspace, state: state), width: width)
         try await widthApp.settle()
         try widthApp.wholeWidthShouldAcceptClicks()
     }
@@ -74,7 +74,7 @@ struct MacComposerTypingTests {
     }
 
     @Test func autoFocusedComposerRejectsEditsWhenLocked() async throws {
-        let focusedApp = MacComposerDriver(Harness(workspace: workspace, state: state))
+        let focusedApp = MacTextInputHarness(Harness(workspace: workspace, state: state))
         try await focusedApp.settle()
         try focusedApp.composerShouldBeFocused()
 

@@ -25,12 +25,12 @@ struct MacQuickSwitcherKeyboardTests {
     }
 
     private let state: State
-    private let app: MacComposerDriver
+    private let app: MacTextInputHarness
 
     init() {
         let state = State()
         self.state = state
-        app = MacComposerDriver(Harness(state: state))
+        app = MacTextInputHarness(Harness(state: state))
     }
 
     @Test func tabAndShiftTabCycleInOppositeDirections() async throws {

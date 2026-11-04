@@ -2,7 +2,7 @@ import XCTest
 
 /// The iPhone session overview: a sheet, never a tab strip. Queries are scoped to the overview so
 /// a session title in the sidebar behind it cannot be tapped by accident.
-@MainActor final class UISessionOverviewDriver {
+@MainActor final class SessionOverviewUIDriver {
     private let app: XCUIApplication
     init(_ app: XCUIApplication) { self.app = app }
 

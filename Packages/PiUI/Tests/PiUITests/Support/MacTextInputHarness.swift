@@ -9,7 +9,7 @@ struct MacComposerTests {}
 
 /// In-process, off-screen driver. Never activates a window or posts system input.
 @MainActor
-final class MacComposerDriver {
+final class MacTextInputHarness {
     private let hosting: NSHostingView<AnyView>
     private let window: NSWindow
 

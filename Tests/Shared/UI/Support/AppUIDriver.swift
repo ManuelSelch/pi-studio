@@ -5,31 +5,31 @@ import AppKit
 
 /// UI implementation of the semantic DSL. Never reads controller/store state.
 @MainActor
-final class PiUIDriver {
+final class AppUIDriver {
     enum SendOutcome { case accepted, rejected, unknown }
-    let session: UISessionDriver
-    let chat: UIChatDriver
-    let settings: UISettingsDriver
-    let projects: UIProjectsDriver
-    let overview: UISessionOverviewDriver
-    let quickSwitcher: UIQuickSwitcherDriver
+    let session: SessionUIDriver
+    let chat: ChatUIDriver
+    let settings: SettingsUIDriver
+    let projects: ProjectsUIDriver
+    let overview: SessionOverviewUIDriver
+    let quickSwitcher: QuickSwitcherUIDriver
     private let context: UIContext
 
     private init(_ context: UIContext) {
         self.context = context
-        session = UISessionDriver(context)
-        chat = UIChatDriver(context)
-        settings = UISettingsDriver(context)
-        projects = UIProjectsDriver(context.app)
-        overview = UISessionOverviewDriver(context.app)
-        quickSwitcher = UIQuickSwitcherDriver(context.app)
+        session = SessionUIDriver(context)
+        chat = ChatUIDriver(context)
+        settings = SettingsUIDriver(context)
+        projects = ProjectsUIDriver(context.app)
+        overview = SessionOverviewUIDriver(context.app)
+        quickSwitcher = QuickSwitcherUIDriver(context.app)
     }
 
     static func launch(for test: XCTestCase, sendOutcome: SendOutcome = .accepted,
                        rejectOpen: Bool = false, delayedAdmission: Bool = false,
                        automaticallyConnect: Bool = false, failFirstConnection: Bool = false,
                        markdownResponse: Bool = false, rejectArchive: Bool = false,
-                       workingResponse: Bool = false) -> PiUIDriver {
+                       workingResponse: Bool = false) -> AppUIDriver {
         let app = XCUIApplication()
         // Keep fixture configuration out of AppKit's command-line/defaults parsing.
         app.launchEnvironment = [
@@ -73,7 +73,7 @@ final class PiUIDriver {
         recordLaunchState(app, stage: "after activation")
         checkLaunchReadiness(app, stage: "initial launch")
         #endif
-        return PiUIDriver(UIContext(app))
+        return AppUIDriver(UIContext(app))
     }
 
     func relaunch() {
@@ -164,7 +164,7 @@ fileprivate final class UIContext {
 }
 
 @MainActor
-final class UISessionDriver {
+final class SessionUIDriver {
     private let context: UIContext
     fileprivate init(_ context: UIContext) { self.context = context }
 
@@ -228,7 +228,7 @@ final class UISessionDriver {
 }
 
 @MainActor
-final class UISettingsDriver {
+final class SettingsUIDriver {
     private let context: UIContext
     fileprivate init(_ context: UIContext) { self.context = context }
     private var field: XCUIElement { context.app.textFields["endpointField"].firstMatch }
@@ -280,7 +280,7 @@ final class UISettingsDriver {
 }
 
 @MainActor
-final class UIChatDriver {
+final class ChatUIDriver {
     private let context: UIContext
     fileprivate init(_ context: UIContext) { self.context = context }
     private func reply(_ number: Int) -> XCUIElement {

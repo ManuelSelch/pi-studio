@@ -9,7 +9,7 @@ import Testing
 /// to the workspace in production, so here the driver publishes a stub connection into the
 /// same `SessionTransport` seam the workspace uses.
 @MainActor
-final class PiIntegrationDriver {
+final class SessionIntegrationDriver {
     let session: IntegrationSessionDriver
     let chat: IntegrationChatDriver
     let server: IntegrationServerDriver
@@ -29,8 +29,8 @@ final class PiIntegrationDriver {
         server = IntegrationServerDriver(context)
     }
 
-    static func run(_ scenario: (PiIntegrationDriver) async throws -> Void) async throws {
-        let app = PiIntegrationDriver()
+    static func run(_ scenario: (SessionIntegrationDriver) async throws -> Void) async throws {
+        let app = SessionIntegrationDriver()
         do {
             try await scenario(app)
             await app.context.dispose()

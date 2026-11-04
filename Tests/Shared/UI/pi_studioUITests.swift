@@ -5,7 +5,7 @@ final class pi_studioUITests: XCTestCase {
 
     #if os(macOS)
     @MainActor func testMacWorkspaceConversationJourney() throws {
-        let app = PiUIDriver.launch(for: self, automaticallyConnect: true)
+        let app = AppUIDriver.launch(for: self, automaticallyConnect: true)
         try app.quickSwitcher.typeOnInitiallyFocusedHomeSearch("Quick Chats")
         try app.quickSwitcher.shouldBeInline()
         try app.quickSwitcher.searchShouldContain("Quick Chats")
@@ -30,7 +30,7 @@ final class pi_studioUITests: XCTestCase {
     }
     #else
     @MainActor func testPhoneWorkspaceConversationJourney() throws {
-        let app = PiUIDriver.launch(for: self, automaticallyConnect: true)
+        let app = AppUIDriver.launch(for: self, automaticallyConnect: true)
         try app.quickSwitcher.clickHomeSearch()
         try app.quickSwitcher.homeSearchShouldBeCollapsed()
         try app.quickSwitcher.typeOnHomeSearch("Quick Chats")

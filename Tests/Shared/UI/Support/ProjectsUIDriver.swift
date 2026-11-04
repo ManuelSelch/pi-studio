@@ -1,7 +1,7 @@
 import XCTest
 
 /// Session inbox gestures and rendered assertions; independent of integration mechanics.
-@MainActor final class UIProjectsDriver {
+@MainActor final class ProjectsUIDriver {
     private let app: XCUIApplication
     init(_ app: XCUIApplication) { self.app = app }
 

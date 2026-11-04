@@ -2,7 +2,7 @@ import XCTest
 
 /// UI-only quick-switcher actions and assertions; fixture identities stay here.
 @MainActor
-final class UIQuickSwitcherDriver {
+final class QuickSwitcherUIDriver {
     private let app: XCUIApplication
     init(_ app: XCUIApplication) { self.app = app }
 

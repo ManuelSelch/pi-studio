@@ -19,13 +19,13 @@ Use Swift **lowerCamelCase**, not C# PascalCase or Given/When/Then.
 
 ## Integration driver
 
-[PiIntegrationDriver](../Packages/PiUI/Tests/PiUITests/Support/PiIntegrationDriver.swift)
+[SessionIntegrationDriver](../Packages/PiUI/Tests/PiUITests/Support/SessionIntegrationDriver.swift)
 dispatches request actions through the real Flux store, SessionMiddleware and reducer. Only the PiDemoConnection
 boundary is stubbed by default; assertions inspect app-observable state rather than
 the stub. Fixture assertions separately verify received requests and disposal.
 
 ```swift
-try await PiIntegrationDriver.run { app in
+try await SessionIntegrationDriver.run { app in
     try await app.session.connect()
     try await app.chat.sendPrompt("Say hello")
     await app.server.receivedPromptsShouldBe(["Say hello"])
@@ -57,12 +57,12 @@ the development backend. The host loopback script owns server/runtime cleanup.
 
 ## UI driver
 
-[PiUIDriver](../pi-studioUITests/Support/PiUIDriver.swift) translates the vocabulary
+[AppUIDriver](../Tests/Shared/UI/Support/AppUIDriver.swift) translates the vocabulary
 into actual XCTest taps, typing, dialogs and accessibility assertions. It never
 reads middleware, Flux store or SDK state.
 
 ```swift
-let app = PiUIDriver.launch(for: self)
+let app = AppUIDriver.launch(for: self)
 app.session.connect()
 app.chat.sendPrompt("Say hello")
 app.chat.waitForReply(1)

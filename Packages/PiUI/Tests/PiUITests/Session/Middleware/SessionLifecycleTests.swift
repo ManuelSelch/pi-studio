@@ -4,7 +4,7 @@ import Testing
 @MainActor
 struct SessionLifecycleTests {
     @Test func sendClearsDraftOnlyAfterAdmissionAndBlocksDuplicates() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             app.chat.shouldAllowSend(true)
             try await app.chat.beginSend("Say hello")
@@ -23,7 +23,7 @@ struct SessionLifecycleTests {
 
     @Test(arguments: [false, true])
     func sendRejectionAndUnknownOutcomeRetainDraft(unknown: Bool) async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             try await app.chat.beginSend("Keep\n  draft\n")
             if unknown { await app.server.loseSendReceipt() } else { await app.server.rejectSend() }
@@ -38,7 +38,7 @@ struct SessionLifecycleTests {
     }
 
     @Test func projectionDrivesGeneratingAndStoppingWithoutDiscardingText() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             try await app.server.streamReply("Partial")
             app.session.statusShouldBe("Generating…")
@@ -64,7 +64,7 @@ struct SessionLifecycleTests {
     }
 
     @Test func detachingDuringPendingSendRetainsDraftAndIgnoresLateFailure() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             try await app.chat.beginSend("Keep this")
             app.session.detach()
@@ -81,7 +81,7 @@ struct SessionLifecycleTests {
     }
 
     @Test func semanticPromptUsesMiddlewareAdmissionAndForwardsText() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             try await app.chat.sendPrompt("Say hello")
             await app.server.receivedPromptsShouldBe(["Say hello"])
@@ -91,7 +91,7 @@ struct SessionLifecycleTests {
     }
 
     @Test func formattedPromptReachesTheConnectionUnchanged() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             let prompt = "  **bold** and `code`\n"
 
@@ -103,7 +103,7 @@ struct SessionLifecycleTests {
     }
 
     @Test func snapshotPreservesWhitespaceAndIdenticalSendsClearIndependently() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             let text = "  First\n\n    second\n"
             try await app.chat.sendPrompt(text)
@@ -120,7 +120,7 @@ struct SessionLifecycleTests {
     }
 
     @Test func longMultilinePromptReachesTheConnectionUnchanged() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             let text = (1...8).map { "  Line \($0) with wrapping text" }.joined(separator: "\n")
 
@@ -132,7 +132,7 @@ struct SessionLifecycleTests {
     }
 
     @Test func whitespaceSnapshotsNeverReachConnection() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             app.chat.submit("Detached")
             try await app.session.attach()
             for text in ["", " ", "\n\n", " \t\n"] { app.chat.submit(text) }
@@ -143,7 +143,7 @@ struct SessionLifecycleTests {
     }
 
     @Test func queuedSendUsesOriginalSnapshotAndRejectsLaterSubmission() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             let snapshot = "  Submit this\n\n    exactly\n"
             try await app.chat.beginSendThenSubmit(snapshot, duplicate: "Next draft")
@@ -155,7 +155,7 @@ struct SessionLifecycleTests {
     }
 
     @Test func duplicateStopRequestsReachSDKOnlyOnce() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             try await app.server.streamReply("Partial")
             app.chat.stopTwice()
@@ -167,7 +167,7 @@ struct SessionLifecycleTests {
     }
 
     @Test func releasingTheConversationStoreLeavesTheWorkspaceConnectionAlone() async throws {
-        try await PiIntegrationDriver.run { app in
+        try await SessionIntegrationDriver.run { app in
             try await app.session.attach()
             app.session.releaseStore()
             // The workspace owns the transport; dropping the conversation view must not close it.

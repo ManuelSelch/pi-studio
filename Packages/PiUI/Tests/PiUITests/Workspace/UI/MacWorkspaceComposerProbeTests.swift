@@ -28,8 +28,8 @@ struct MacWorkspaceComposerProbeTests {
         let workspace: FluxStore<WorkspaceFeature>
         let session: FluxStore<SessionFeature>
 
-        func host() -> MacComposerDriver {
-            MacComposerDriver(SessionScreenProbe(store: workspace, session: session), width: 900)
+        func host() -> MacTextInputHarness {
+            MacTextInputHarness(SessionScreenProbe(store: workspace, session: session), width: 900)
         }
 
         func wait(_ description: String, sourceLocation: SourceLocation = #_sourceLocation,
