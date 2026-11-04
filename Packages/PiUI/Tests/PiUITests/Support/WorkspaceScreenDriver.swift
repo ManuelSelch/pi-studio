@@ -1,0 +1,255 @@
+import FactoryKit
+import Flux
+import Foundation
+import PiSDK
+import SwiftUI
+import Testing
+import ViewInspector
+@testable import PiUI
+
+/// In-process screen driver: it renders the real production shell with ViewInspector and
+/// translates scenario vocabulary into taps, typing and store waits. Render assertions read the
+/// view tree; asynchronous assertions read the Flux stores. It needs no simulator and no XCUITest.
+/// Shared vocabulary with the integration driver, separate implementation.
+@MainActor
+final class WorkspaceScreenDriver {
+    let quickSwitcher: ScreenQuickSwitcherDriver
+    private let context: ScreenContext
+
+    private init(catalogue: PiCatalogue, failingFirstConnection: Bool) {
+        context = ScreenContext(catalogue: catalogue, failingFirstConnection: failingFirstConnection)
+        quickSwitcher = ScreenQuickSwitcherDriver(context)
+    }
+
+    /// A default catalogue with one Quick Chats project and one open runtime session.
+    static func run(failingFirstConnection: Bool = false,
+                    catalogue: PiCatalogue = .screenFixture,
+                    _ scenario: (WorkspaceScreenDriver) async throws -> Void) async throws {
+        let driver = WorkspaceScreenDriver(catalogue: catalogue, failingFirstConnection: failingFirstConnection)
+        do {
+            try await scenario(driver)
+            await driver.context.dispose()
+        } catch {
+            await driver.context.dispose()
+            throw error
+        }
+    }
+
+    // MARK: Connection
+
+    /// Connect from Home and settle either on a catalogue or on a visible failure.
+    func launch(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        context.workspace.dispatch(.connectRequested(takingControl: true))
+        try await context.wait("launch connection", sourceLocation: sourceLocation) {
+            if !self.context.workspace.state.catalogue.projects.isEmpty { return true }
+            if case .failed = self.context.workspace.state.connection { return true }
+            return false
+        }
+    }
+
+    func homeShouldShowConnectionError(sourceLocation: SourceLocation = #_sourceLocation) {
+        let shown = context.rendered { view in
+            (try? view.inspect().find(viewWithAccessibilityIdentifier: "homeConnectionError")) != nil
+        }
+        #expect(shown, "Home should show the connection error", sourceLocation: sourceLocation)
+    }
+
+    func homeShouldShowGreeting(sourceLocation: SourceLocation = #_sourceLocation) {
+        let shown = context.rendered { view in
+            (try? view.inspect().find(viewWithAccessibilityIdentifier: "homeGreeting")) != nil
+        }
+        #expect(shown, "Home should show the greeting", sourceLocation: sourceLocation)
+    }
+
+    /// The user taps Home's "Try again" button; the real middleware reconnects.
+    func retryFromHome(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        let tapped = context.rendered { view -> Bool in
+            guard let button = try? view.inspect().find(button: "Try again") else { return false }
+            try? button.tap()
+            return true
+        }
+        #expect(tapped, "Home should offer a retry button", sourceLocation: sourceLocation)
+        try await context.wait("reconnection", sourceLocation: sourceLocation) {
+            !self.context.workspace.state.catalogue.projects.isEmpty && self.context.workspace.state.error == nil
+        }
+    }
+
+    func selectedSessionShouldBe(_ title: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await context.wait("session '\(title)' to be selected", sourceLocation: sourceLocation) {
+            self.context.workspace.state.selectedSession?.title == title
+        }
+    }
+}
+
+/// Quick-switcher searches, scope filters and result selection.
+@MainActor
+final class ScreenQuickSwitcherDriver {
+    private let context: ScreenContext
+    private var query = ""
+
+    fileprivate init(_ context: ScreenContext) { self.context = context }
+
+    /// Types into the search field and reads the rendered value back.
+    func type(_ value: String, sourceLocation: SourceLocation = #_sourceLocation) throws {
+        try content().inspect().find(ViewType.TextField.self).setInput(value)
+        #expect(query == value, "The search field should report the typed query", sourceLocation: sourceLocation)
+        #expect(try content().inspect().find(ViewType.TextField.self).input() == value,
+                "The search field should render the typed query", sourceLocation: sourceLocation)
+    }
+
+    /// Switches the scope with its filter button; the button supplies the prefix.
+    func selectScope(_ scope: QuickSwitcherScope, sourceLocation: SourceLocation = #_sourceLocation) throws {
+        try content().inspect().find(button: scope.buttonTitle).tap()
+        #expect(query == scope.prefix, "Scope '\(scope.buttonTitle)' should replace the query prefix",
+                sourceLocation: sourceLocation)
+    }
+
+    /// Clicks a result; the real store opens it and the driver waits for the selection.
+    func choose(_ title: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        let button = try content().inspect().find(button: title)
+        try button.tap()
+        try await context.wait("chosen session '\(title)' to open", sourceLocation: sourceLocation) {
+            self.context.workspace.state.selectedSession?.title == title
+        }
+    }
+
+    func shouldOffer(_ titles: [String], sourceLocation: SourceLocation = #_sourceLocation) {
+        let rendered = context.workspace.state.catalogue
+        let items = QuickSwitcherModel.results(catalogue: rendered, query: query).map(\.title)
+        #expect(items == titles, sourceLocation: sourceLocation)
+    }
+
+    private func content() -> QuickSwitcherContent {
+        var presentation = WorkspacePresentation()
+        presentation.quickSwitcherOpen = true
+        presentation.quickSwitcherQuery = query
+        presentation.quickSwitcherItems = QuickSwitcherModel.results(
+            catalogue: context.workspace.state.catalogue, query: query)
+        var actions = WorkspaceActions(
+            open: { _, _ in }, create: { _ in }, connection: {}, settings: {}, back: {},
+            draftChanged: { _ in }, send: { _ in }, stop: {}, selectTab: { _ in },
+            closeTab: { _ in }, followTailChanged: { _ in }, scrollAnchorChanged: { _ in })
+        actions.openQuickSwitcher = {}
+        actions.quickSwitcherQueryChanged = { [weak self] value in self?.query = value }
+        actions.chooseQuickSwitcherItem = { [weak self] item in
+            guard let target = item.target else { return }
+            self?.context.workspace.dispatch(.openRequested(target: target, title: item.title))
+        }
+        return QuickSwitcherContent(presentation: presentation, actions: actions)
+    }
+}
+
+enum QuickSwitcherScope {
+    case all, folders, worktrees, sessions, actions
+
+    var buttonTitle: String {
+        switch self {
+        case .all: "All"
+        case .folders: "# Folders"
+        case .worktrees: "% Worktrees"
+        case .sessions: "@ Sessions"
+        case .actions: "/ Actions"
+        }
+    }
+    var prefix: String {
+        switch self {
+        case .all: ""
+        case .folders: "#"
+        case .worktrees: "%"
+        case .sessions: "@"
+        case .actions: "/"
+        }
+    }
+}
+
+@MainActor
+private final class ScreenContext {
+    let container = Container()
+    let connection: ScreenConnection
+    let transport = SessionTransport()
+    let workspace: FluxStore<WorkspaceFeature>
+    let session: FluxStore<SessionFeature>
+
+    init(catalogue: PiCatalogue, failingFirstConnection: Bool) {
+        connection = ScreenConnection(catalogue: catalogue, failingFirstConnection: failingFirstConnection)
+        let transport = self.transport
+        container.endpointSettingsService.register { @MainActor in ScreenSettings() }
+        container.makeSessionConnection.register { [connection] in { _ in connection } }
+        container.sessionTransport.register { @MainActor in transport }
+        workspace = container.workspaceStore()
+        session = container.sessionStore()
+    }
+
+    /// The app resolves `@InjectedObject` from the shared task-local container; scope ours.
+    func rendered<T>(_ body: (WorkspaceContainer) throws -> T) rethrows -> T {
+        try Container.$shared.withValue(container) { try body(WorkspaceContainer(onOpenSettings: {})) }
+    }
+
+    func wait(_ description: String, sourceLocation: SourceLocation,
+              _ predicate: @escaping () -> Bool) async throws {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(4))
+        while ContinuousClock.now < deadline {
+            if predicate() { return }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        Issue.record("Timed out waiting for \(description)", sourceLocation: sourceLocation)
+        throw ScreenTimeout()
+    }
+
+    func dispose() async {
+        workspace.dispatch(.disconnectRequested())
+        for _ in 0..<200 where workspace.state.connection != .disconnected {
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+        await connection.release()
+    }
+
+    struct ScreenTimeout: Error {}
+}
+
+@MainActor
+private final class ScreenSettings: EndpointSettingsService {
+    var value: String?
+    func load() -> String? { value }
+    func save(_ endpoint: String) throws { value = endpoint }
+}
+
+private actor ScreenConnection: PiSessionConnection {
+    private let catalogue: PiCatalogue
+    private let failingFirstConnection: Bool
+    private var connects = 0
+
+    init(catalogue: PiCatalogue, failingFirstConnection: Bool) {
+        self.catalogue = catalogue
+        self.failingFirstConnection = failingFirstConnection
+    }
+
+    func connect(takingControl: Bool) async throws {
+        connects += 1
+        if failingFirstConnection && connects == 1 { throw PiError.invalidState }
+    }
+    func catalogues() async -> AsyncStream<PiCatalogue> { AsyncStream { $0.yield(catalogue) } }
+    func sessionEvents() async -> AsyncStream<PiSessionEvent> { AsyncStream { $0.finish() } }
+    func createSession(projectPath: String) async throws -> DemoSession { DemoSession(sessionId: "new", projectPath: projectPath) }
+    func attachSession(sessionId: String) async throws -> DemoSession { DemoSession(sessionId: sessionId, projectPath: "/home/pi") }
+    func openSession(sessionPath: String) async throws -> DemoSession { DemoSession(sessionId: "saved", projectPath: "/home/pi") }
+    func archiveSession(path: String) async throws { throw PiError.invalidState }
+    func closeSession(sessionId: String) async throws {}
+    func connectDemo(projectPath: String, takingControl: Bool) async throws -> DemoSession { throw PiError.invalidState }
+    func states() async -> AsyncStream<PiConnectionState> { AsyncStream { $0.finish() } }
+    func projections() async -> AsyncStream<DemoSessionProjection> { AsyncStream { $0.finish() } }
+    func send(_ text: String) async throws {}
+    func stop() async throws {}
+    func disconnect() async {}
+    func release() async {}
+}
+
+extension PiCatalogue {
+    /// Default screen-driver fixture: one Quick Chats project and one idle runtime session.
+    static var screenFixture: PiCatalogue {
+        PiCatalogue(
+            projects: [.init(path: "/home/pi", name: "Quick Chats", quickChats: true)],
+            sessions: [.init(sessionId: "runtime-1", title: "Fix the layout",
+                             projectPath: "/home/pi", projectName: "Quick Chats", status: "idle")])
+    }
+}
