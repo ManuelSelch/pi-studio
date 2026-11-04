@@ -19,11 +19,11 @@ struct WorkspaceSidebarTests {
                                       session("parked", status: .later, path: "/parked")]
         let sidebar = WorkspaceSidebarDriver(presentation)
 
-        #expect(try sidebar.showsSection("Needs you"))
-        #expect(try sidebar.showsSection("Ready"))
-        #expect(try sidebar.sessionIsDisabled("running"))
-        #expect(try !sidebar.showsSession("parked"))
-        #expect(try sidebar.disclosureCount("Later", expected: "1") == "1")
+        try sidebar.sectionShouldBeVisible("Needs you")
+        try sidebar.sectionShouldBeVisible("Ready")
+        try sidebar.sessionShouldBeDisabled("running")
+        try sidebar.sessionShouldBeAbsent("parked")
+        try sidebar.disclosureShouldShowCount("1", for: "Later")
     }
 
     @Test func emptySectionsAreAbsentAndErrorsAreDisplayed() throws {
@@ -31,10 +31,10 @@ struct WorkspaceSidebarTests {
         presentation.error = "Connection failed"
         let sidebar = WorkspaceSidebarDriver(presentation)
 
-        #expect(try sidebar.errorMessage() == "Connection failed")
-        #expect(try !sidebar.showsSection("Needs you"))
-        #expect(try !sidebar.showsDisclosure("Running"))
-        #expect(try !sidebar.showsDisclosure("Later"))
+        try sidebar.errorShouldBe("Connection failed")
+        try sidebar.sectionShouldBeAbsent("Needs you")
+        try sidebar.disclosureShouldBeAbsent("Running")
+        try sidebar.disclosureShouldBeAbsent("Later")
     }
 
     @Test func openAndSavedSessionActionsForwardTheirIdentity() throws {
@@ -47,10 +47,9 @@ struct WorkspaceSidebarTests {
         try sidebar.moveToLater("ready")
         try sidebar.archive("ready")
 
-        #expect(sidebar.openedTarget == .history("/ready"))
-        #expect(sidebar.openedTitle == "Title ready")
-        #expect(sidebar.movedPath == "/ready")
-        #expect(sidebar.archivedPath == "/ready")
+        sidebar.openShouldHaveBeenRequested(.history("/ready"), title: "Title ready")
+        sidebar.moveToLaterShouldHaveBeenRequested("/ready")
+        sidebar.archiveShouldHaveBeenRequested("/ready")
     }
 
     @Test func creationAndFooterActionsForwardCallbacks() throws {
@@ -65,10 +64,10 @@ struct WorkspaceSidebarTests {
         try sidebar.changeConnection()
         try sidebar.openSettings()
 
-        #expect(sidebar.createdPath == "/repo")
-        #expect(sidebar.connectionRequests == 1)
-        #expect(sidebar.settingsRequests == 1)
-        #expect(try sidebar.connectionStatus() == "Connected")
+        sidebar.creationShouldHaveBeenRequested("/repo")
+        sidebar.connectionShouldHaveBeenRequestedOnce()
+        sidebar.settingsShouldHaveBeenRequestedOnce()
+        try sidebar.connectionStatusShouldBe("Connected")
     }
 
     @Test func creationAndOpeningRespectAvailability() throws {
@@ -77,9 +76,9 @@ struct WorkspaceSidebarTests {
         presentation.inboxSessions = [session("closed", status: .ready, canOpen: false)]
         let sidebar = WorkspaceSidebarDriver(presentation)
 
-        #expect(try sidebar.creationIsDisabled())
-        #expect(try sidebar.sessionIsDisabled("closed"))
-        #expect(try !sidebar.showsMoveToLater("closed"))
-        #expect(try !sidebar.showsArchive("closed"))
+        try sidebar.creationShouldBeDisabled()
+        try sidebar.sessionShouldBeDisabled("closed")
+        try sidebar.moveToLaterShouldBeAbsent("closed")
+        try sidebar.archiveShouldBeAbsent("closed")
     }
 }
