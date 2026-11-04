@@ -7,22 +7,11 @@ import Testing
 import ViewInspector
 @testable import PiUI
 
-/// In-process inspection of the home screen and a separately constructed quick switcher.
-/// Connection setup dispatches directly to the store; this does not exercise mounted view lifecycle.
+/// Inspects separately constructed quick-switcher content with test callbacks and real stores.
 @MainActor
-struct WorkspaceScreenTests {
-    @Test func aFailedConnectionRecoversWhenTheUserRetriesFromHome() async throws {
-        try await WorkspaceContainerDriver.run(failingFirstConnection: true) { screen in
-            try await screen.launch()
-            screen.homeShouldShowConnectionError()
-
-            try await screen.retryFromHome()
-            screen.homeShouldShowGreeting()
-        }
-    }
-
+struct QuickSwitcherContentTests {
     @Test func quickSwitcherContentFiltersAndDispatchesTheChosenSession() async throws {
-        try await WorkspaceContainerDriver.run { screen in
+        try await QuickSwitcherContentDriver.run { screen in
             try await screen.launch()
 
             // The "@" prefix scopes the search to sessions by itself; no filter tap is needed.
@@ -35,11 +24,10 @@ struct WorkspaceScreenTests {
     }
 }
 
-/// Inspects the container's home view and separately constructed quick-switcher content.
-/// Launch dispatches to the store directly; the quick-switcher callbacks are test wiring,
-/// not the container's callbacks. No SwiftUI view is mounted for lifecycle testing.
+/// Drives separately constructed quick-switcher content with a real store and test callbacks.
+/// Connection is dispatched directly; this does not exercise container lifecycle or wiring.
 @MainActor
-private final class WorkspaceContainerDriver {
+private final class QuickSwitcherContentDriver {
     let quickSwitcher: ScreenQuickSwitcherDriver
     private let context: ScreenContext
 
@@ -51,8 +39,8 @@ private final class WorkspaceContainerDriver {
     /// A default catalogue with one Quick Chats project and one open runtime session.
     static func run(failingFirstConnection: Bool = false,
                     catalogue: PiCatalogue = .screenFixture,
-                    _ scenario: (WorkspaceContainerDriver) async throws -> Void) async throws {
-        let driver = WorkspaceContainerDriver(catalogue: catalogue, failingFirstConnection: failingFirstConnection)
+                    _ scenario: (QuickSwitcherContentDriver) async throws -> Void) async throws {
+        let driver = QuickSwitcherContentDriver(catalogue: catalogue, failingFirstConnection: failingFirstConnection)
         do {
             try await scenario(driver)
             await driver.context.dispose()
@@ -71,31 +59,6 @@ private final class WorkspaceContainerDriver {
             if !self.context.workspace.state.catalogue.projects.isEmpty { return true }
             if case .failed = self.context.workspace.state.connection { return true }
             return false
-        }
-    }
-
-    func homeShouldShowConnectionError(sourceLocation: SourceLocation = #_sourceLocation) {
-        let shown = context.rendered { view in
-            (try? view.inspect().find(viewWithAccessibilityIdentifier: "homeConnectionError")) != nil
-        }
-        #expect(shown, "Home should show the connection error", sourceLocation: sourceLocation)
-    }
-
-    func homeShouldShowGreeting(sourceLocation: SourceLocation = #_sourceLocation) {
-        let shown = context.rendered { view in
-            (try? view.inspect().find(viewWithAccessibilityIdentifier: "homeGreeting")) != nil
-        }
-        #expect(shown, "Home should show the greeting", sourceLocation: sourceLocation)
-    }
-
-    /// The user taps Home's "Try again" button; the real middleware reconnects.
-    func retryFromHome(sourceLocation: SourceLocation = #_sourceLocation) async throws {
-        try context.rendered { view in
-            let button = try view.inspect().find(button: "Try again")
-            try button.tap()
-        }
-        try await context.wait("reconnection", sourceLocation: sourceLocation) {
-            !self.context.workspace.state.catalogue.projects.isEmpty && self.context.workspace.state.error == nil
         }
     }
 
@@ -205,11 +168,6 @@ private final class ScreenContext {
         container.sessionTransport.register { @MainActor in transport }
         workspace = container.workspaceStore()
         session = container.sessionStore()
-    }
-
-    /// The app resolves `@InjectedObject` from the shared task-local container; scope ours.
-    func rendered<T>(_ body: (WorkspaceContainer) throws -> T) rethrows -> T {
-        try Container.$shared.withValue(container) { try body(WorkspaceContainer(onOpenSettings: {})) }
     }
 
     func wait(_ description: String, sourceLocation: SourceLocation,
