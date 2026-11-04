@@ -2,6 +2,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import Vision
 
 /// Hosted native editors share AppKit focus/field-editor machinery; serialize their scenarios.
 @Suite(.serialized)
@@ -35,6 +36,30 @@ final class MacTextInputHarness {
         let input = try input()
         if input.currentEditor() == nil { window.makeFirstResponder(input) }
         return try #require(input.currentEditor() as? NSTextView)
+    }
+
+    private func recognizedText() throws -> [VNRecognizedTextObservation] {
+        hosting.layoutSubtreeIfNeeded()
+        let bitmap = try #require(hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds))
+        hosting.cacheDisplay(in: hosting.bounds, to: bitmap)
+        let image = try #require(bitmap.cgImage)
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        try VNImageRequestHandler(cgImage: image).perform([request])
+        return request.results ?? []
+    }
+
+    func renderedText() throws -> [String] {
+        try recognizedText().compactMap { $0.topCandidates(1).first?.string }
+    }
+
+    func moveFocusAwayFromComposer() { window.makeFirstResponder(hosting) }
+
+    func composerShouldNotBeFocused(_ sourceLocation: SourceLocation = #_sourceLocation) throws {
+        let field = try input()
+        #expect(field.currentEditor() == nil || window.firstResponder !== field.currentEditor(),
+                sourceLocation: sourceLocation)
     }
 
     func settle() async throws {
