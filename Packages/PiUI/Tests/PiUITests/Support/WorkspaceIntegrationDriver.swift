@@ -55,13 +55,13 @@ fileprivate final class WorkspaceContext {
     let container = Container()
     let stub = WorkspaceConnectionStub()
     let endpoint = MemoryWorkspaceEndpointSettings()
+    let later = MemoryLaterSessions()
 
     let endpointLog = EndpointLog()
 
     init(endpoint: URL? = nil) {
         container.endpointSettingsService.register { @MainActor [settings = self] in settings.endpoint }
-        let later = MemoryLaterSessions()
-        container.laterSessionsService.register { @MainActor in later }
+        container.laterSessionsService.register { @MainActor [later] in later }
         if let endpoint {
             endpointLog.values.withLock { $0.append(endpoint.absoluteString) }
             container.makeSessionConnection.register { { url in
@@ -109,6 +109,7 @@ final class EndpointLog: Sendable {
 @MainActor
 private final class MemoryLaterSessions: LaterSessionsService {
     private var values: [String: Set<String>] = [:]
+    var savedPaths: [Set<String>] { Array(values.values) }
     func load(endpoint: URL) -> Set<String> { values[endpoint.absoluteString, default: []] }
     func save(_ paths: Set<String>, endpoint: URL) { values[endpoint.absoluteString] = paths }
 }
@@ -177,6 +178,15 @@ final class WorkspaceProjectsDriver {
         try await context.wait("session moved to Later", sourceLocation: sourceLocation) {
             self.context.workspace.state.laterSessionPaths.contains(path)
         }
+    }
+    func waitForError(sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await context.wait("workspace error", sourceLocation: sourceLocation) {
+            self.context.workspace.state.error != nil
+        }
+    }
+    func laterShouldContain(_ path: String, _ expected: Bool, sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(context.workspace.state.laterSessionPaths.contains(path) == expected, sourceLocation: sourceLocation)
+        #expect(context.later.savedPaths.contains { $0.contains(path) } == expected, sourceLocation: sourceLocation)
     }
     func waitForInboxSession(path: String, sourceLocation: SourceLocation = #_sourceLocation) async throws {
         try await context.wait("session appears in inbox", sourceLocation: sourceLocation) {
@@ -542,6 +552,8 @@ final class WorkspaceServerDriver {
     func allowConnect() async { await context.stub.setConnectError(nil) }
     func rejectOpens() async { await context.stub.setError(.rejected(code: "notFound", message: "Not found")) }
     func loseOpenReceipt() async { await context.stub.setError(.requestExpired(outcomeUnknown: true)) }
+    func rejectRequests() async { await context.stub.setError(.rejected(code: "denied", message: "Request denied")) }
+    func loseRequestReceipt() async { await context.stub.setError(.requestExpired(outcomeUnknown: true)) }
     func holdOpen() async { await context.stub.holdOpen() }
     func waitForHeldOpen(sourceLocation: SourceLocation = #_sourceLocation) async throws {
         try await context.wait("held open", sourceLocation: sourceLocation) { await self.context.stub.holding }

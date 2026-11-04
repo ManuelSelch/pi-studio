@@ -47,6 +47,53 @@ import PiUI
         }
     }
 
+    @Test func rejectedMoveToLaterRollsBackTheSavedPath() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.connect()
+            let path = "/history/parkable"
+            await app.server.publishIdleSavedSession(path: path)
+            try await app.projects.waitForInboxSession(path: path)
+            await app.server.rejectRequests()
+
+            app.projects.moveToLater(path)
+            try await app.projects.waitForError()
+
+            app.projects.shouldShowError(containing: "Request denied")
+            app.projects.laterShouldContain(path, false)
+        }
+    }
+
+    @Test func unknownMoveToLaterOutcomeKeepsTheSavedPath() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.connect()
+            let path = "/history/parkable"
+            await app.server.publishIdleSavedSession(path: path)
+            try await app.projects.waitForInboxSession(path: path)
+            await app.server.loseRequestReceipt()
+
+            app.projects.moveToLater(path)
+            try await app.projects.waitForError()
+
+            app.projects.laterShouldContain(path, true)
+        }
+    }
+
+    @Test func failedTabAttachmentReportsErrorWithoutObservingTheRequestedRuntime() async throws {
+        try await WorkspaceIntegrationDriver.run { app in
+            try await app.projects.connect()
+            try await app.tabs.openQuickChat()
+            try await app.tabs.openRunningSession()
+            await app.server.rejectRequests()
+
+            app.tabs.beginSelect("New chat")
+            try await app.projects.waitForError()
+
+            app.projects.shouldShowError(containing: "Request denied")
+            app.tabs.shouldSelect("New chat")
+            #expect(app.workspace.observedRuntimeId == nil)
+        }
+    }
+
     @Test func archiveSavedSessionRemovesItFromInboxAndClosesItsTab() async throws {
         try await WorkspaceIntegrationDriver.run { app in
             try await app.projects.connect()
